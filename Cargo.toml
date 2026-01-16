@@ -3,6 +3,7 @@ members = [
     "crates/rivet",
     "crates/rivet-utils",
     "crates/rivet-orm",
+    "crates/rivet-orm/rivet-orm-macros",
     "crates/rivet-view",
     "crates/rivet-web"
 ]
