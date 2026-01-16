@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "crates/rivet",
+    "crates/rivet-orm",
+    "crates/rivet-view",
+    "crates/rivet-web"
+]
+resolver = "2"

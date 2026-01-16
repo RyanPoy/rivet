@@ -1,0 +1,9 @@
+[package]
+name = "rivet"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+rivet-web = { path = "../rivet-web" }
+rivet-orm = { path = "../rivet-orm" }
+rivet-view = { path = "../rivet-view" }
