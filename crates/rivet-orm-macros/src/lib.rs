@@ -1,10 +1,9 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use proc_macro2::Ident;
 use quote::quote;
 use rivet_utils::inflection;
-use syn::{DeriveInput, Field, LitStr, parse_macro_input};
+use syn::{DeriveInput, LitStr, parse_macro_input};
 
 #[proc_macro_attribute]
 pub fn table(attrs: TokenStream, item: TokenStream) -> TokenStream {
@@ -20,7 +19,7 @@ pub fn table(attrs: TokenStream, item: TokenStream) -> TokenStream {
                 table_name = Some(meta.value()?.parse()?);
                 Ok(())
             } else {
-                Err(meta.error(String::from("unsupported attribute key")))
+                Err(meta.error(String::from("unsupported #[table] attribute key")))
             }
         });
         parse_macro_input!(attrs with parser);
@@ -50,37 +49,27 @@ pub fn table(attrs: TokenStream, item: TokenStream) -> TokenStream {
 struct ColumnMeta {
     rust_name: syn::Ident,
     column_name: syn::LitStr,
-    ty: syn::Type,
-    primary_key: bool,
-    nullable: bool,
 }
 
 fn parse_column(field: &syn::Field) -> ColumnMeta {
     let rust_name = field.ident.clone().unwrap();
-    let ty = field.ty.clone();
-
     let mut column_name: Option<syn::LitStr> = None;
-    let mut primary_key = false;
-    let mut nullable = false;
-
-    for attr in &field.attrs {
-        if !attr.path().is_ident("column") {
-            continue;
-        }
-
-        attr.parse_nested_meta(|meta| {
-            if meta.path.is_ident("name") {
-                column_name = Some(meta.value()?.parse()?);
-            } else if meta.path.is_ident("primary_key") {
-                primary_key = true;
-            } else if meta.path.is_ident("nullable") {
-                nullable = true;
-            } else {
-                return Err(meta.error("unsupported #[column] attribute".to_string()));
+    let attrs = &field.attrs;
+    if !attrs.is_empty() {
+        for attr in attrs {
+            if !attr.path().is_ident("col") {
+                continue;
             }
-            Ok(())
-        })
-        .unwrap();
+
+            let _ = attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident("name") {
+                    column_name = Some(meta.value()?.parse()?);
+                    Ok(())
+                } else {
+                    Err(meta.error(String::from("unsupported #[col] attribute key")))
+                }
+            });
+        }
     }
 
     // 默认列名
@@ -94,8 +83,5 @@ fn parse_column(field: &syn::Field) -> ColumnMeta {
     ColumnMeta {
         rust_name,
         column_name,
-        ty,
-        primary_key,
-        nullable,
     }
 }
