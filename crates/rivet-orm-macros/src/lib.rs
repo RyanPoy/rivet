@@ -19,7 +19,8 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
     } else {
         parse_arg_from(table_args.into(), "name")
     };
-    let table_name = inflection::table_name_of(&table_name.unwrap_or(struct_name.to_string()));
+    let table_name =
+        table_name.unwrap_or_else(|| inflection::table_name_of(&struct_name.to_string()));
 
     // 3. 提取字段元数据
     let mut columns = Vec::new();

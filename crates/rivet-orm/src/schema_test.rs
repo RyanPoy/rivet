@@ -14,9 +14,9 @@ fn test_table_name() {
     struct STUDENT {}
     assert_eq!(STUDENT::TABLE_NAME, "student_lists");
 
-    #[table("mycards")]
+    #[table("myCards")]
     struct Card {}
-    assert_eq!(Card::TABLE_NAME, "mycards");
+    assert_eq!(Card::TABLE_NAME, "myCards");
 
     #[table(name = "customers")]
     struct User {}
