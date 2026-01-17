@@ -10,21 +10,21 @@ fn test_table_name() {
     struct Person {}
     assert_eq!(Person::TABLE_NAME, "people");
 
-    #[table(students)]
+    #[table(student_lists)]
     struct STUDENT {}
-    assert_eq!(STUDENT::TABLE_NAME, "students");
+    assert_eq!(STUDENT::TABLE_NAME, "student_lists");
 
-    #[table("cards")]
+    #[table("mycards")]
     struct Card {}
-    assert_eq!(Card::TABLE_NAME, "cards");
+    assert_eq!(Card::TABLE_NAME, "mycards");
 
-    #[table(name = "users")]
+    #[table(name = "customers")]
     struct User {}
-    assert_eq!(User::TABLE_NAME, "users");
+    assert_eq!(User::TABLE_NAME, "customers");
 
-    #[table(name = profiles)]
+    #[table(name = user_profiles)]
     struct Profile {}
-    assert_eq!(Profile::TABLE_NAME, "profiles");
+    assert_eq!(Profile::TABLE_NAME, "user_profiles");
 }
 
 //
