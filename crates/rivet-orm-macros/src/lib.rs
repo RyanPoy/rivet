@@ -4,13 +4,13 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::quote;
 use rivet_utils::inflection;
-use syn::{ItemStruct, Meta};
+use syn::{Fields, ItemStruct, Meta, parse_macro_input};
 
 #[proc_macro_attribute]
 pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
     // 1. 解析被修饰的 struct 整体
     // 注意：这里的 struct_input 包含了字段上的 #[col] 属性
-    let struct_input: syn::ItemStruct = syn::parse_macro_input!(item as ItemStruct);
+    let mut struct_input = parse_macro_input!(item as ItemStruct);
     let struct_name = &struct_input.ident;
 
     // 2. 解析表名：直接解析宏函数的第一个参数 table_args
@@ -23,7 +23,9 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
 
     // 3. 提取字段元数据
     let mut columns = Vec::new();
-    if let syn::Fields::Named(ref mut fields) = struct_input.fields {
+    // 只处理带名字的struct，例如: struct User{}
+    // 其他的不处理，例如：struct Color(i32, i32, i32) 或者 struct Empty
+    if let Fields::Named(ref mut fields) = struct_input.fields {
         for field in &mut fields.named {
             // 获取字段在代码中的原始名称 (如 id)
             let field_ident = field.ident.as_ref().unwrap().to_string();
@@ -32,7 +34,7 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
             let col_attr = field.attrs.iter().find(|a| a.path().is_ident("col"));
 
             // 核心复用点：将 #[col(...)] 转换为与 table_args 相同的格式
-            let col_name_attr = col_attr.and_then(|attr| {
+            let col_name = col_attr.and_then(|attr| {
                 match &attr.meta {
                     // 如果是 #[col(name = "xxx")] 或 #[col("xxx")]
                     Meta::List(list) => parse_arg_from(list.tokens.clone(), "name"),
@@ -43,8 +45,8 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
             });
 
             // 确定最终列名：手动指定 > 字段名
-            let final_col_name = col_name_attr.unwrap_or(field_ident);
-            columns.push(final_col_name);
+            let col_name = col_name.unwrap_or(field_ident);
+            columns.push(inflection::snake_case_of(&col_name));
 
             // 关键动作：清理掉字段上的 #[col] 属性
             // 否则生成的代码中保留 #[col] 会导致编译器报错（因为它不是标准属性）
@@ -52,11 +54,13 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
         }
     }
 
+    // 4. 生成代码：回填 struct 定义，并注入常量映射
     let expanded = quote! {
-        #struct_input
+        #struct_input // 这里的 struct 已经过属性清理
 
         impl #struct_name {
             pub const TABLE_NAME: &'static str = #table_name;
+            pub const COLUMNS: &'static [&'static str] = &[ #(#columns),* ];
         }
     };
     expanded.into()

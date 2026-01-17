@@ -27,17 +27,22 @@ fn test_table_name() {
     assert_eq!(Profile::TABLE_NAME, "user_profiles");
 }
 
-//
-// #[test]
-// fn test_col() {
-//     #[table(name = "users")]
-//     struct User {
-//         #[cold]
-//         id: usize,
-//         #[col(name = "name")]
-//         username: String,
-//         #[col]
-//         password: String,
-//     }
-//     assert_eq!(User::TABLE_NAME, "users");
-// }
+#[test]
+fn test_col() {
+    #[table(name = "users")]
+    struct User {
+        #[col]
+        id: usize,
+
+        #[col(name = "name")]
+        username: String,
+
+        #[col(password)]
+        password: String,
+
+        #[col()]
+        age: String,
+    }
+    assert_eq!(User::TABLE_NAME, "users");
+    assert_eq!(User::COLUMNS, &["id", "name", "password", "age"]);
+}
