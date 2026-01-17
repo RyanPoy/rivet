@@ -37,12 +37,12 @@ fn test_col() {
         #[col(name = "name")]
         username: String,
 
-        #[col(password)]
+        #[col(passWord)]
         password: String,
 
         #[col()]
         age: String,
     }
     assert_eq!(User::TABLE_NAME, "users");
-    assert_eq!(User::COLUMNS, &["id", "name", "password", "age"]);
+    assert_eq!(User::COLUMNS, &["id", "name", "passWord", "age"]);
 }

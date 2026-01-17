@@ -46,8 +46,8 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
             });
 
             // 确定最终列名：手动指定 > 字段名
-            let col_name = col_name.unwrap_or(field_ident);
-            columns.push(inflection::snake_case_of(&col_name));
+            let col_name = col_name.unwrap_or_else(|| inflection::snake_case_of(&field_ident));
+            columns.push(col_name);
 
             // 关键动作：清理掉字段上的 #[col] 属性
             // 否则生成的代码中保留 #[col] 会导致编译器报错（因为它不是标准属性）
