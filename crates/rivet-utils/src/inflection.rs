@@ -165,17 +165,25 @@ pub fn pascal_case_of(name: &str) -> String {
 
 pub fn snake_case_of(name: &str) -> String {
     let mut python_name = Vec::new();
-
+    let mut last_uppercase_idx: i32 = -1;
     for (i, ch) in name.chars().enumerate() {
+        let i = i as i32;
         if i == 0 {
             // 第一个字符
+            if ch.is_uppercase() {
+                last_uppercase_idx = i;
+            }
             python_name.push(ch.to_ascii_lowercase());
         } else if ch.is_uppercase() {
             // 如果是大写字母，在前面添加下划线（如果不是最后一个字符是下划线）
-            if !python_name.is_empty() && *python_name.last().unwrap() != '_' {
+            if !python_name.is_empty()
+                && *python_name.last().unwrap() != '_'
+                && last_uppercase_idx + 1 != i
+            {
                 python_name.push('_');
             }
             python_name.push(ch.to_ascii_lowercase());
+            last_uppercase_idx = i;
         } else if ch == '_' {
             // 如果是下划线，确保不会重复添加
             if !python_name.is_empty() && *python_name.last().unwrap() != '_' {

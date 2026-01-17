@@ -185,4 +185,6 @@ fn test_table_name_of() {
     assert_eq!(table_name_of("Person"), String::from("people")); // irregular case
     assert_eq!(table_name_of("Fish"), String::from("fish")); // uncountable case
     assert_eq!(table_name_of("Box"), String::from("boxes"));
+    assert_eq!(table_name_of("STUDENT"), String::from("students"));
+    assert_eq!(table_name_of("ID"), String::from("ids"));
 }
