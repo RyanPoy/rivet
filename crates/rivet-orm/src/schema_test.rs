@@ -45,8 +45,8 @@ fn test_col() {
     }
 
     assert_eq!(User::TABLE_NAME, "users");
-    assert_eq!(User::COLUMNS.id, "id");
-    assert_eq!(User::COLUMNS.username, "name");
-    assert_eq!(User::COLUMNS.password, "passWord");
-    assert_eq!(User::COLUMNS.age, "age");
+    assert_eq!(User::COLUMNS.id.name, "id");
+    assert_eq!(User::COLUMNS.username.name, "name");
+    assert_eq!(User::COLUMNS.password.name, "passWord");
+    assert_eq!(User::COLUMNS.age.name, "age");
 }

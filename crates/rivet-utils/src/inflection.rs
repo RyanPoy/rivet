@@ -200,3 +200,10 @@ pub fn snake_case_of(name: &str) -> String {
 pub fn table_name_of(name: &str) -> String {
     pluralize(&snake_case_of(name))
 }
+
+
+
+
+#[cfg(test)]
+#[path = "inflection_test.rs"]
+mod inflection_test;

@@ -4,6 +4,8 @@ pub mod web {
 
 pub mod orm {
     pub use rivet_orm::*;
+    pub use rivet_orm::schema::*;
+    pub use rivet_orm_macros::table;
 }
 
 pub mod view {

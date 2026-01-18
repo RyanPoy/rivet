@@ -1,4 +1,4 @@
-use super::inflection::*;
+use super::*;
 
 #[cfg(test)]
 const CASES: [(&str, &str); 75] = [

@@ -68,7 +68,7 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
     let expanded = quote! {
         #[allow(non_camel_case_types, non_upper_case_globals)]
         #vis struct #columns_struct_name {
-            #( pub #column_idents: &'static str, )*
+            #( pub #column_idents: ::rivet::orm::Column, )*
         }
 
         #struct_input // 这里的 struct 已经过属性清理
@@ -79,7 +79,7 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
             // 这样 User::Columns::id 就能通过“常量实例”找到该类型的关联常量
             #[allow(non_upper_case_globals)]
             pub const COLUMNS: #columns_struct_name = #columns_struct_name {
-                #(  #column_idents: #column_names, )*
+                #(  #column_idents: ::rivet::orm::Column::new(#column_names), )*
             };
         }
     };

@@ -7,3 +7,4 @@ edition = "2024"
 rivet-web = { path = "../rivet-web" }
 rivet-orm = { path = "../rivet-orm" }
 rivet-view = { path = "../rivet-view" }
+rivet-orm-macros = { path = "../rivet-orm-macros" }
