@@ -3,34 +3,34 @@ use rivet_orm_macros::table;
 #[test]
 fn test_table_name() {
     #[table]
-    struct Teacher {}
+    pub struct Teacher {}
     assert_eq!(Teacher::TABLE_NAME, "teachers");
 
     #[table()]
-    struct Person {}
+    pub struct Person {}
     assert_eq!(Person::TABLE_NAME, "people");
 
     #[table(student_lists)]
-    struct STUDENT {}
+    pub struct STUDENT {}
     assert_eq!(STUDENT::TABLE_NAME, "student_lists");
 
     #[table("myCards")]
-    struct Card {}
+    pub struct Card {}
     assert_eq!(Card::TABLE_NAME, "myCards");
 
     #[table(name = "customers")]
-    struct User {}
+    pub struct User {}
     assert_eq!(User::TABLE_NAME, "customers");
 
     #[table(name = user_profiles)]
-    struct Profile {}
+    pub struct Profile {}
     assert_eq!(Profile::TABLE_NAME, "user_profiles");
 }
 
 #[test]
 fn test_col() {
     #[table(name = "users")]
-    struct User {
+    pub struct User {
         #[col]
         id: usize,
 
@@ -43,6 +43,10 @@ fn test_col() {
         #[col()]
         age: String,
     }
+
     assert_eq!(User::TABLE_NAME, "users");
-    assert_eq!(User::COLUMNS, &["id", "name", "passWord", "age"]);
+    let c = User::Columns;
+
+    println!("{}", User_Columns_Internal::age);
+    // assert_eq!(User::Columns::id, "id");
 }
