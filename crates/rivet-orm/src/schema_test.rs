@@ -45,8 +45,8 @@ fn test_col() {
     }
 
     assert_eq!(User::TABLE_NAME, "users");
-    let c = User::Columns;
-
-    println!("{}", User_Columns_Internal::age);
-    // assert_eq!(User::Columns::id, "id");
+    assert_eq!(User::COLUMNS.id, "id");
+    assert_eq!(User::COLUMNS.username, "name");
+    assert_eq!(User::COLUMNS.password, "passWord");
+    assert_eq!(User::COLUMNS.age, "age");
 }

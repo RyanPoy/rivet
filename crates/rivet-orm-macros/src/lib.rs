@@ -51,7 +51,6 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
             // 确定最终列名：手动指定 > 字段名
             let col_name =
                 col_name.unwrap_or_else(|| inflection::snake_case_of(&field_ident.to_string()));
-            // columns.push(col_name);
 
             // 关键点：这里我们要保留原始的字段标识符（或处理后的标识符）用于结构体成员
             column_idents.push(field_ident.clone());
@@ -63,26 +62,25 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
         }
     }
 
-    let columns_struct_name = quote::format_ident!("{}_Columns_Internal", struct_name);
+    let columns_struct_name = quote::format_ident!("{}ColumnsInternal", struct_name);
 
     // 生成代码：回填 struct 定义，并注入常量映射
     let expanded = quote! {
-        #struct_input // 这里的 struct 已经过属性清理
-
         #[allow(non_camel_case_types, non_upper_case_globals)]
-        #vis struct #columns_struct_name;
-
-        #[allow(non_upper_case_globals)]
-        impl #columns_struct_name {
-            #( pub const #column_idents: &'static str = #column_names; )*
+        #vis struct #columns_struct_name {
+            #( pub #column_idents: &'static str, )*
         }
 
+        #struct_input // 这里的 struct 已经过属性清理
         impl #struct_name {
             pub const TABLE_NAME: &'static str = #table_name;
 
             // 这里是关键：定义一个关联常量，它的类型是上面的 struct
             // 这样 User::Columns::id 就能通过“常量实例”找到该类型的关联常量
-            pub const Columns: #columns_struct_name = #columns_struct_name;
+            #[allow(non_upper_case_globals)]
+            pub const COLUMNS: #columns_struct_name = #columns_struct_name {
+                #(  #column_idents: #column_names, )*
+            };
         }
     };
     expanded.into()
