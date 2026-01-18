@@ -28,7 +28,7 @@ fn test_table_name() {
 }
 
 #[test]
-fn test_col() {
+fn test_columns() {
     #[table(name = "users")]
     pub struct User {
         #[col]
@@ -41,12 +41,35 @@ fn test_col() {
         password: String,
 
         #[col()]
-        age: String,
-    }
+        age: u8,
 
-    assert_eq!(User::TABLE_NAME, "users");
+        #[no_col]
+        temp: String,
+
+        is_a_column_event_do_not_set_col_macro: bool,
+
+        has_children: bool
+    }
     assert_eq!(User::COLUMNS.id.name, "id");
     assert_eq!(User::COLUMNS.username.name, "name");
     assert_eq!(User::COLUMNS.password.name, "passWord");
     assert_eq!(User::COLUMNS.age.name, "age");
+    assert_eq!(User::COLUMNS.is_a_column_event_do_not_set_col_macro.name, "is_a_column_event_do_not_set_col_macro");
+    assert_eq!(User::COLUMNS.has_children.name, "has_children");
+}
+
+#[test]
+fn test_column() {
+    #[table(name = "users")]
+    pub struct User {
+        id: usize,
+        username: String,
+        password: String,
+        age: u8,
+    }
+
+    // assert_eq!(User::COLUMNS.id.eq("id"));
+    // assert_eq!(User::COLUMNS.username.eq("name"));
+    // assert_eq!(User::COLUMNS.password.eq("passWord"));
+    // assert_eq!(User::COLUMNS.age.eq("age"));
 }

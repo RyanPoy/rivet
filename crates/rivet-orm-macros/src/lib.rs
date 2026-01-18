@@ -26,14 +26,21 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
     // 3. 提取字段元数据
     let mut column_idents = Vec::new(); // 用于 Columns 结构体的字段名
     let mut column_names = Vec::new(); // 对应的字符串值
+    let mut column_types = Vec::new(); // 新增：用于存储字段原始类型
 
     // 只处理带名字的struct，例如: struct User{}
     // 其他的不处理，例如：struct Color(i32, i32, i32) 或者 struct Empty
     if let Fields::Named(ref mut fields) = struct_input.fields {
         for field in &mut fields.named {
+            // 检查是否存在 #[not_col] 属性
+            if field.attrs.iter().any(|a| a.path().is_ident("no_col")) {
+                // 如果有 #[not_col]，从最终生成的结构体字段中移除该属性并跳过元数据生成
+                field.attrs.retain(|a| !a.path().is_ident("no_col"));
+                continue;
+            }
+
             // 获取字段在代码中的原始名称 (如 id)
             let field_ident = field.ident.as_ref().unwrap();
-
             // 查找该字段上是否挂了 #[col] 属性
             let col_attr = field.attrs.iter().find(|a| a.path().is_ident("col"));
 
@@ -55,6 +62,7 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
             // 关键点：这里我们要保留原始的字段标识符（或处理后的标识符）用于结构体成员
             column_idents.push(field_ident.clone());
             column_names.push(col_name);
+            column_types.push(&field.ty);
 
             // 关键动作：清理掉字段上的 #[col] 属性
             // 否则生成的代码中保留 #[col] 会导致编译器报错（因为它不是标准属性）
@@ -68,7 +76,7 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
     let expanded = quote! {
         #[allow(non_camel_case_types, non_upper_case_globals)]
         #vis struct #columns_struct_name {
-            #( pub #column_idents: ::rivet::orm::Column, )*
+            #( pub #column_idents: ::rivet::orm::Column<#column_types>, )*
         }
 
         #struct_input // 这里的 struct 已经过属性清理

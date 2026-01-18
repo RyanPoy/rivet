@@ -1,11 +1,20 @@
+use std::marker::PhantomData;
 #[derive(Debug)]
-pub struct Column {
+pub struct Column<T> {
     pub name: &'static str,
+    _marker: PhantomData<T>,
 }
 
-impl Column {
+impl<T> Column<T> {
     pub const fn new(name: &'static str) -> Self {
-        Self { name }
+        Self {
+            name,
+            _marker: PhantomData,
+        }
+    }
+    
+    pub const fn eq(&self, other: &Self) -> bool {
+        true
     }
 }
 
