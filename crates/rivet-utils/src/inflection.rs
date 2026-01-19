@@ -1,6 +1,8 @@
 use regex::Regex;
 use std::iter::Iterator;
 
+/// 不可数名词列表。
+/// List of uncountable words.
 pub const UNCOUNTABLE_WORDS: &[&str] = &[
     "equipment",
     "information",
@@ -13,6 +15,8 @@ pub const UNCOUNTABLE_WORDS: &[&str] = &[
     "sms",
 ];
 
+/// 不规则复数词列表。
+/// List of irregular plural words.
 pub const PLURALIZE_IRREGULAR_WORDS: &[(&str, &str)] = &[
     ("person", "people"),
     ("man", "men"),
@@ -20,6 +24,8 @@ pub const PLURALIZE_IRREGULAR_WORDS: &[(&str, &str)] = &[
     ("sex", "sexes"),
     ("move", "moves"),
 ];
+/// 不规则单数词列表。
+/// List of irregular singular words.
 pub const SINGULARIZE_IRREGULAR_WORDS: &[(&str, &str)] = &[
     ("people", "person"),
     ("men", "man"),
@@ -27,6 +33,8 @@ pub const SINGULARIZE_IRREGULAR_WORDS: &[(&str, &str)] = &[
     ("sexes", "sex"),
     ("moves", "move"),
 ];
+/// 复数化规则列表。
+/// List of pluralization rules.
 pub const PLURALIZE_RULES: &[(&str, &str)] = &[
     (r"(?i)(quiz)$", r"${1}zes"),
     (r"(?i)^(ox)$", r"${1}en"),
@@ -48,6 +56,8 @@ pub const PLURALIZE_RULES: &[(&str, &str)] = &[
     (r"(?i)$", "s"),
 ];
 
+/// 单数化规则列表。
+/// List of singularization rules.
 const SINGULARIZE_RULES: &[(&str, &str)] = &[
     (r"(?i)(quiz)zes$", r"${1}"),
     (r"(?i)(matr)ices$", r"${1}ix"),
@@ -78,6 +88,8 @@ const SINGULARIZE_RULES: &[(&str, &str)] = &[
     (r"(?i)s$", ""),
 ];
 
+/// 判断单词是否为不可数名词。
+/// Determines if the word is an uncountable noun.
 pub fn is_uncountable(word: &str) -> bool {
     let lower_cased_word = word.to_lowercase();
     UNCOUNTABLE_WORDS
@@ -85,6 +97,8 @@ pub fn is_uncountable(word: &str) -> bool {
         .any(|&uncountable_word| lower_cased_word.ends_with(uncountable_word))
 }
 
+/// 处理不规则词。
+/// Handles irregular words.
 pub fn irregular(word: &str, irregular_words: &[(&str, &str)]) -> Option<String> {
     for &(irregular, dest) in irregular_words {
         if let Ok(re) = Regex::new(&format!(r"(?i){}$", regex::escape(irregular))) {
@@ -99,6 +113,8 @@ pub fn irregular(word: &str, irregular_words: &[(&str, &str)]) -> Option<String>
     None
 }
 
+/// 核心处理函数，应用规则进行转换。
+/// Core function to apply rules and perform the transformation.
 pub fn core_deal(word: &str, rules: &[(&str, &str)]) -> String {
     for &(pattern, replacement) in rules {
         if let Ok(re) = Regex::new(pattern) {
@@ -110,14 +126,20 @@ pub fn core_deal(word: &str, rules: &[(&str, &str)]) -> String {
     word.to_string()
 }
 
+/// 将单词转换为单数形式。
+/// Converts a word to its singular form.
 pub fn singularize(word: &str) -> String {
     singularize_or_pluralize(word, SINGULARIZE_RULES, SINGULARIZE_IRREGULAR_WORDS)
 }
 
+/// 将单词转换为复数形式。
+/// Converts a word to its plural form.
 pub fn pluralize(word: &str) -> String {
     singularize_or_pluralize(word, PLURALIZE_RULES, PLURALIZE_IRREGULAR_WORDS)
 }
 
+/// 根据规则和不规则词列表将单词转换为单数或复数形式。
+/// Converts a word to its singular or plural form based on the rules and irregular words list.
 fn singularize_or_pluralize(
     word: &str,
     rules: &[(&str, &str)],
@@ -134,14 +156,20 @@ fn singularize_or_pluralize(
     core_deal(word, rules)
 }
 
+/// 判断字符是否为字母。
+/// Determines if the character is a letter.
 fn is_letter(ch: char) -> bool {
     ('a'..='z').contains(&ch) || ('A'..='Z').contains(&ch)
 }
 
+/// 判断字符是否为字母或数字。
+/// Determines if the character is a letter or digit.
 fn is_char(ch: char) -> bool {
     ('a'..='z').contains(&ch) || ('A'..='Z').contains(&ch) || ('0'..='9').contains(&ch)
 }
 
+/// 将名称转换为PascalCase格式。
+/// Converts a name to PascalCase format.
 pub fn pascal_case_of(name: &str) -> String {
     let name = snake_case_of(name);
     let pos = name.chars().position(|ch| is_letter(ch)).unwrap_or(0);
@@ -163,6 +191,8 @@ pub fn pascal_case_of(name: &str) -> String {
     java_name.iter().collect()
 }
 
+/// 将名称转换为snake_case格式。
+/// Converts a name to snake_case format.
 pub fn snake_case_of(name: &str) -> String {
     let mut python_name = Vec::new();
     let mut last_uppercase_idx: i32 = -1;
@@ -197,12 +227,11 @@ pub fn snake_case_of(name: &str) -> String {
     python_name.iter().collect()
 }
 
+/// 生成表名。
+/// Generates a table name.
 pub fn table_name_of(name: &str) -> String {
     pluralize(&snake_case_of(name))
 }
-
-
-
 
 #[cfg(test)]
 #[path = "inflection_test.rs"]
