@@ -1,10 +1,10 @@
 [workspace]
 members = [
-    "crates/rivet",
-    "crates/rivet-utils",
-    "crates/rivet-orm",
-    "crates/rivet-orm-macros",
-    "crates/rivet-view",
-    "crates/rivet-web"
+    "rivet",
+    "rivet-utils",
+    "rivet-orm",
+    "rivet-orm-macros",
+    "rivet-view",
+    "rivet-web"
 ]
 resolver = "2"
