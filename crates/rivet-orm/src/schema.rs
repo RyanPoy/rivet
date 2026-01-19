@@ -1,6 +1,5 @@
 use crate::ast::expression::Expr;
 use crate::ast::sql_value::SqlValue;
-
 use std::marker::PhantomData;
 
 #[derive(Debug)]
@@ -20,7 +19,7 @@ impl<T> Column<T> {
     pub fn eq<V: SqlValue<T> + 'static>(&self, v: V) -> Expr {
         Expr::Binary {
             left: self.name,
-            op: "=",
+            op: v.binary_op_eq(),
             right: Box::new(v),
         }
     }

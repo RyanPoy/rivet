@@ -1,6 +1,4 @@
-use crate::ast::expression::Expr;
-use crate::ast::sql_value::{SqlValue, ToSql};
-use crate::schema::Column;
+use super::*;
 use rivet_orm_macros::table;
 
 #[test]
@@ -68,6 +66,7 @@ fn test_columns() {
 pub fn test_column() {
     #[table(name = "users")]
     pub struct User {
+        id: usize,
         username: String,
         password: Option<String>,
         age: u8,
@@ -82,8 +81,23 @@ pub fn test_column() {
     assert_eq!(op, "=");
     assert_eq!(right.to_sql(), "20");
 
-    // let Expr::Binary { left, op, right } = User::COLUMNS.password.eq("abc".to_string());
-    // assert_eq!(left, "age");
-    // assert_eq!(op, "=");
-    // assert_eq!(right.to_sql(), "20");
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.eq("123qwe");
+    assert_eq!(left, "password");
+    assert_eq!(op, "=");
+    assert_eq!(right.to_sql(), "123qwe");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.eq("123qwe".to_string());
+    assert_eq!(left, "password");
+    assert_eq!(op, "=");
+    assert_eq!(right.to_sql(), "123qwe");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.eq(Some("123qwe".to_string()));
+    assert_eq!(left, "password");
+    assert_eq!(op, "=");
+    assert_eq!(right.to_sql(), "123qwe");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.eq(None);
+    assert_eq!(left, "password");
+    assert_eq!(op, "IS");
+    assert_eq!(right.to_sql(), "NULL");
 }
