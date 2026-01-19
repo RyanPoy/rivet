@@ -1,4 +1,8 @@
+use crate::ast::expression::Expr;
+use crate::ast::sql_value::SqlValue;
+
 use std::marker::PhantomData;
+
 #[derive(Debug)]
 pub struct Column<T> {
     pub name: &'static str,
@@ -12,9 +16,13 @@ impl<T> Column<T> {
             _marker: PhantomData,
         }
     }
-    
-    pub const fn eq(&self, other: &Self) -> bool {
-        true
+
+    pub fn eq<V: SqlValue<T> + 'static>(&self, v: V) -> Expr {
+        Expr::Binary {
+            left: self.name,
+            op: "=",
+            right: Box::new(v),
+        }
     }
 }
 
