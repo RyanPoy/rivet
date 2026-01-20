@@ -138,17 +138,6 @@ pub fn irregular(word: &str, irregular_words: &[(&str, &str)]) -> Option<String>
     None
 }
 
-/// 核心处理函数，应用规则进行转换。
-/// Core function to apply rules and perform the transformation.
-pub fn core_deal(word: &str, rules: &[(Regex, &str)]) -> String {
-    for (re, replacement) in rules.iter() {
-        if re.is_match(word) {
-            return re.replace_all(word, *replacement).to_string();
-        }
-    }
-    word.to_string()
-}
-
 /// 将单词转换为单数形式。
 /// Converts a word to its singular form.
 pub fn singularize(word: &str) -> String {
@@ -176,7 +165,13 @@ fn singularize_or_pluralize(
         return result;
     }
 
-    core_deal(word, rules)
+    for (re, replacement) in rules.iter() {
+        if re.is_match(word) {
+            return re.replace(word, *replacement).to_string();
+        }
+    }
+
+    word.to_string()
 }
 
 /// 将名称转换为PascalCase格式。

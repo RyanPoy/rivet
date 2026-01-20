@@ -84,6 +84,10 @@ fn test_pluralize() {
     for (singular, plural) in CASES {
         assert_eq!(pluralize(singular), String::from(plural))
     }
+    assert_eq!(pluralize("cat"), String::from("cats"));
+    assert_eq!(pluralize("box"), String::from("boxes"));
+    assert_eq!(pluralize("quiz"), String::from("quizzes"));
+    assert_eq!(pluralize("ox"), String::from("oxen"));
 }
 
 #[test]
@@ -91,6 +95,10 @@ fn test_singularize() {
     for (singular, plural) in CASES {
         assert_eq!(singularize(plural), String::from(singular))
     }
+    assert_eq!(singularize("cats"), String::from("cat"));
+    assert_eq!(singularize("boxes"), String::from("box"));
+    assert_eq!(singularize("quizzes"), String::from("quiz"));
+    assert_eq!(singularize("oxen"), String::from("ox"));
 }
 
 #[test]
@@ -169,14 +177,6 @@ fn test_irregular() {
     );
     assert_eq!(irregular("cat", &PLURALIZE_IRREGULAR_WORDS), None);
     assert_eq!(irregular("dog", &SINGULARIZE_IRREGULAR_WORDS), None);
-}
-
-#[test]
-fn test_core_deal() {
-    assert_eq!(core_deal("cat", &PLURALIZE_RULES), String::from("cats"));
-    assert_eq!(core_deal("box", &PLURALIZE_RULES), String::from("boxes"));
-    assert_eq!(core_deal("quiz", &PLURALIZE_RULES), String::from("quizzes"));
-    assert_eq!(core_deal("ox", &PLURALIZE_RULES), String::from("oxen"));
 }
 
 #[test]
