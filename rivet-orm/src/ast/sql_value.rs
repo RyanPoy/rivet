@@ -1,3 +1,4 @@
+use crate::ast::expression::{Expr, Op};
 use std::fmt::Debug;
 
 /// 将类型转换为SQL字符串的trait。
@@ -36,13 +37,15 @@ impl_ToSql!(
 /// 表示SQL值的trait。
 /// A trait for representing an SQL value.
 pub trait SqlValue<T>: ToSql {
-    /// 返回二元操作符等于（=）的字符串表示。
-    /// Returns the string representation of the binary operator equal (=).
-    fn binary_op_eq(&self) -> &'static str {
-        "="
-    }
-    fn binary_op_neq(&self) -> &'static str {
-        "<>"
+    fn into_binary_expr(self, col_name: &'static str, op: Op) -> Expr
+    where
+        Self: Sized + 'static,
+    {
+        Expr::Binary {
+            left: col_name,
+            op,
+            right: Box::new(self),
+        }
     }
 }
 /// 为多种类型实现 `SqlValue` trait 的宏。
@@ -53,19 +56,39 @@ macro_rules! impl_SqlValue {
         $(
             impl SqlValue<$t> for $t {}
             impl SqlValue<Option<$t>> for Option<$t> {
-                fn binary_op_eq(&self) -> &'static str {
-                    match self {
-                        Some(_) => "=",
-                        None => "IS",
-                    } 
-                }
-                fn binary_op_neq(&self) -> &'static str {
-                       match self {
-                        Some(_) => "<>",
-                        None => "IS NOT",
+                fn into_binary_expr(self, col_name: &'static str, op: Op) -> Expr
+                where
+                    Self: Sized + 'static,
+                {
+                    let new_op = match op {
+                        Op::Eq => {
+                            match self {
+                                Some(_) => Op::Eq,
+                                None => Op::Is,
+                            }
+                        },
+                        Op::Neq => {
+                            match self {
+                                Some(_) => Op::Neq,
+                                None => Op::IsNot,
+                            }
+                        },
+                        operator => {
+                            match self {
+                                Some(_) => operator,
+                                None => Op::Empty
+                            }
+                        },
+                    };
+                    match new_op {
+                        Op::Empty => Expr::Empty,
+                        _ => Expr:: Binary {
+                            left: col_name,
+                            op: new_op,
+                            right: Box::new(self),
+                        },
                     }
                 }
-
             }
             impl SqlValue<Option<$t>> for $t {}
         )*

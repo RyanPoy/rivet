@@ -71,38 +71,50 @@ pub fn test_column_eq() {
         password: Option<String>,
         age: u8,
     }
-    let Expr::Binary { left, op, right } = User::COLUMNS.username.eq("lucy");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.username.eq("lucy") else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "username");
-    assert_eq!(op, "=");
+    assert_eq!(op, Op::Eq);
     assert_eq!(right.to_sql(), "lucy");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.age.eq(20);
+    let Expr::Binary { left, op, right } = User::COLUMNS.age.eq(20) else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "age");
-    assert_eq!(op, "=");
+    assert_eq!(op, Op::Eq);
     assert_eq!(right.to_sql(), "20");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.eq("123qwe");
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.eq("123qwe") else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, "=");
+    assert_eq!(op, Op::Eq);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.eq("123qwe".to_string());
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.eq("123qwe".to_string()) else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, "=");
+    assert_eq!(op, Op::Eq);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.eq(Some("123qwe".to_string()));
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.eq(Some("123qwe".to_string()))
+    else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, "=");
+    assert_eq!(op, Op::Eq);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.eq(None);
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.eq(None) else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, "IS");
+    assert_eq!(op, Op::Is);
     assert_eq!(right.to_sql(), "NULL");
 }
-
-
 #[test]
 pub fn test_column_neq() {
     #[table(name = "users")]
@@ -112,34 +124,47 @@ pub fn test_column_neq() {
         password: Option<String>,
         age: u8,
     }
-    let Expr::Binary { left, op, right } = User::COLUMNS.username.neq("lucy");
+    let Expr::Binary { left, op, right } = User::COLUMNS.username.neq("lucy") else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "username");
-    assert_eq!(op, "<>");
+    assert_eq!(op, Op::Neq);
     assert_eq!(right.to_sql(), "lucy");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.age.neq(20);
+    let Expr::Binary { left, op, right } = User::COLUMNS.age.neq(20) else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "age");
-    assert_eq!(op, "<>");
+    assert_eq!(op, Op::Neq);
     assert_eq!(right.to_sql(), "20");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.neq("123qwe");
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.neq("123qwe") else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, "<>");
+    assert_eq!(op, Op::Neq);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.neq("123qwe".to_string());
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.neq("123qwe".to_string()) else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, "<>");
+    assert_eq!(op, Op::Neq);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.neq(Some("123qwe".to_string()));
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.neq(Some("123qwe".to_string()))
+    else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, "<>");
+    assert_eq!(op, Op::Neq);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.neq(None);
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.neq(None) else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, "IS NOT");
+    assert_eq!(op, Op::IsNot);
     assert_eq!(right.to_sql(), "NULL");
 }
 
@@ -152,35 +177,43 @@ pub fn test_column_gt() {
         password: Option<String>,
         age: u8,
     }
-    let Expr::Binary { left, op, right } = User::COLUMNS.username.gt("lucy");
+    let Expr::Binary { left, op, right } = User::COLUMNS.username.gt("lucy") else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "username");
-    assert_eq!(op, ">");
+    assert_eq!(op, Op::Gt);
     assert_eq!(right.to_sql(), "lucy");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.age.gt(20);
+    let Expr::Binary { left, op, right } = User::COLUMNS.age.gt(20) else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "age");
-    assert_eq!(op, ">");
+    assert_eq!(op, Op::Gt);
     assert_eq!(right.to_sql(), "20");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.gt("123qwe");
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.gt("123qwe") else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, ">");
+    assert_eq!(op, Op::Gt);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.gt("123qwe".to_string());
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.gt("123qwe".to_string()) else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, ">");
+    assert_eq!(op, Op::Gt);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.gt(Some("123qwe".to_string()));
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.gt(Some("123qwe".to_string()))
+    else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, ">");
+    assert_eq!(op, Op::Gt);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.gt(None);
-    assert_eq!(left, "password");
-    assert_eq!(op, ">");
-    assert_eq!(right.to_sql(), "NULL");
+    assert!(User::COLUMNS.password.gt(None).is_empty());
 }
 
 #[test]
@@ -192,35 +225,43 @@ pub fn test_column_gte() {
         password: Option<String>,
         age: u8,
     }
-    let Expr::Binary { left, op, right } = User::COLUMNS.username.gte("lucy");
+    let Expr::Binary { left, op, right } = User::COLUMNS.username.gte("lucy") else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "username");
-    assert_eq!(op, ">=");
+    assert_eq!(op, Op::Gte);
     assert_eq!(right.to_sql(), "lucy");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.age.gte(20);
+    let Expr::Binary { left, op, right } = User::COLUMNS.age.gte(20) else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "age");
-    assert_eq!(op, ">=");
+    assert_eq!(op, Op::Gte);
     assert_eq!(right.to_sql(), "20");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.gte("123qwe");
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.gte("123qwe") else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, ">=");
+    assert_eq!(op, Op::Gte);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.gte("123qwe".to_string());
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.gte("123qwe".to_string()) else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, ">=");
+    assert_eq!(op, Op::Gte);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.gte(Some("123qwe".to_string()));
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.gte(Some("123qwe".to_string()))
+    else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, ">=");
+    assert_eq!(op, Op::Gte);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.gte(None);
-    assert_eq!(left, "password");
-    assert_eq!(op, ">=");
-    assert_eq!(right.to_sql(), "NULL");
+    assert!(User::COLUMNS.password.gte(None).is_empty());
 }
 
 #[test]
@@ -232,35 +273,43 @@ pub fn test_column_lt() {
         password: Option<String>,
         age: u8,
     }
-    let Expr::Binary { left, op, right } = User::COLUMNS.username.lt("lucy");
+    let Expr::Binary { left, op, right } = User::COLUMNS.username.lt("lucy") else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "username");
-    assert_eq!(op, "<");
+    assert_eq!(op, Op::Lt);
     assert_eq!(right.to_sql(), "lucy");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.age.lt(20);
+    let Expr::Binary { left, op, right } = User::COLUMNS.age.lt(20) else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "age");
-    assert_eq!(op, "<");
+    assert_eq!(op, Op::Lt);
     assert_eq!(right.to_sql(), "20");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.lt("123qwe");
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.lt("123qwe") else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, "<");
+    assert_eq!(op, Op::Lt);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.lt("123qwe".to_string());
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.lt("123qwe".to_string()) else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, "<");
+    assert_eq!(op, Op::Lt);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.lt(Some("123qwe".to_string()));
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.lt(Some("123qwe".to_string()))
+    else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, "<");
+    assert_eq!(op, Op::Lt);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.lt(None);
-    assert_eq!(left, "password");
-    assert_eq!(op, "<");
-    assert_eq!(right.to_sql(), "NULL");
+    assert!(User::COLUMNS.password.lt(None).is_empty());
 }
 
 #[test]
@@ -272,33 +321,41 @@ pub fn test_column_lte() {
         password: Option<String>,
         age: u8,
     }
-    let Expr::Binary { left, op, right } = User::COLUMNS.username.lte("lucy");
+    let Expr::Binary { left, op, right } = User::COLUMNS.username.lte("lucy") else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "username");
-    assert_eq!(op, "<=");
+    assert_eq!(op, Op::Lte);
     assert_eq!(right.to_sql(), "lucy");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.age.lte(20);
+    let Expr::Binary { left, op, right } = User::COLUMNS.age.lte(20) else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "age");
-    assert_eq!(op, "<=");
+    assert_eq!(op, Op::Lte);
     assert_eq!(right.to_sql(), "20");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.lte("123qwe");
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.lte("123qwe") else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, "<=");
+    assert_eq!(op, Op::Lte);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.lte("123qwe".to_string());
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.lte("123qwe".to_string()) else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, "<=");
+    assert_eq!(op, Op::Lte);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.lte(Some("123qwe".to_string()));
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.lte(Some("123qwe".to_string()))
+    else {
+        panic!("Should not process: expected Expr::Binary, but got Expr::Empty.");
+    };
     assert_eq!(left, "password");
-    assert_eq!(op, "<=");
+    assert_eq!(op, Op::Lte);
     assert_eq!(right.to_sql(), "123qwe");
 
-    let Expr::Binary { left, op, right } = User::COLUMNS.password.lte(None);
-    assert_eq!(left, "password");
-    assert_eq!(op, "<=");
-    assert_eq!(right.to_sql(), "NULL");
+    assert!(User::COLUMNS.password.lte(None).is_empty());
 }

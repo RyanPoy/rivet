@@ -1,4 +1,4 @@
-use crate::ast::expression::Expr;
+use crate::ast::expression::{Expr, Op};
 use crate::ast::sql_value::SqlValue;
 use std::marker::PhantomData;
 
@@ -44,51 +44,27 @@ impl<T> Column<T> {
     /// * 表示列等于给定值的表达式。
     /// * An expression representing the column being equal to the given value.
     pub fn eq<V: SqlValue<T> + 'static>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: v.binary_op_eq(),
-            right: Box::new(v),
-        }
+        v.into_binary_expr(self.name, Op::Eq)
     }
 
     pub fn neq<V: SqlValue<T> + 'static>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: v.binary_op_neq(),
-            right: Box::new(v),
-        }
+        v.into_binary_expr(self.name, Op::Neq)
     }
 
     pub fn gt<V: SqlValue<T> + 'static>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: ">",
-            right: Box::new(v),
-        }
+        v.into_binary_expr(self.name, Op::Gt)
     }
 
     pub fn gte<V: SqlValue<T> + 'static>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: ">=",
-            right: Box::new(v),
-        }
+        v.into_binary_expr(self.name, Op::Gte)
     }
 
     pub fn lt<V: SqlValue<T> + 'static>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: "<",
-            right: Box::new(v),
-        }
+        v.into_binary_expr(self.name, Op::Lt)
     }
 
     pub fn lte<V: SqlValue<T> + 'static>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: "<=",
-            right: Box::new(v),
-        }
+        v.into_binary_expr(self.name, Op::Lte)
     }
 }
 
