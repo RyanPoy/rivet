@@ -97,43 +97,44 @@ fn test_singularize() {
 fn test_pascal_case() {
     assert_eq!(String::from("User"), pascal_case_of("User"));
     assert_eq!(
-        String::from("TestModelForTableName"),
-        pascal_case_of("TestModelForTableName")
+        pascal_case_of("TestModelForTableName"),
+        String::from("TestModelForTableName")
     );
     assert_eq!(
-        String::from("TestModelForTableName"),
-        pascal_case_of("Test_model_for_Table_Name")
+        pascal_case_of("Test_model_for_Table_Name"),
+        String::from("TestModelForTableName")
     );
     assert_eq!(
-        String::from("TestModelForTableName"),
-        pascal_case_of("Test_model_forTableName")
+        pascal_case_of("Test_model_forTableName"),
+        String::from("TestModelForTableName")
     );
     assert_eq!(
-        String::from("TestModelForTableName"),
-        pascal_case_of("_Test_model_forTableName")
+        pascal_case_of("_Test_model_forTableName"),
+        String::from("TestModelForTableName")
     );
     assert_eq!(
-        String::from("TestModelForTableName"),
-        pascal_case_of("1002_test_model_forTableName")
+        pascal_case_of("1002_test_model_forTableName"),
+        String::from("TestModelForTableName")
     );
 }
 
 #[test]
 fn test_snake_case() {
-    assert_eq!(String::from("user"), snake_case_of("User"));
+    assert_eq!(snake_case_of("USER"), String::from("user"));
+    assert_eq!(snake_case_of("User"), String::from("user"));
     assert_eq!(
-        String::from("test_model_for_table_name"),
-        snake_case_of("TestModelForTableName")
+        snake_case_of("TestModelForTableName"),
+        String::from("test_model_for_table_name")
     );
     assert_eq!(
-        String::from("test_model_for_table_name"),
-        snake_case_of("Test_model_for_Table_Name")
+        snake_case_of("Test_model_for_Table_Name"),
+        String::from("test_model_for_table_name")
     );
     assert_eq!(
-        String::from("test_model_for_table_name"),
-        snake_case_of("Test_model_forTableName")
+        snake_case_of("Test_model_forTableName"),
+        String::from("test_model_for_table_name")
     );
-    assert_eq!(String::from("create_user"), snake_case_of("CreateUser"));
+    assert_eq!(snake_case_of("CreateUser"), String::from("create_user"));
 }
 
 #[test]
@@ -172,10 +173,10 @@ fn test_irregular() {
 
 #[test]
 fn test_core_deal() {
-    assert_eq!(core_deal("cat", PLURALIZE_RULES), String::from("cats"));
-    assert_eq!(core_deal("box", PLURALIZE_RULES), String::from("boxes"));
-    assert_eq!(core_deal("quiz", PLURALIZE_RULES), String::from("quizzes"));
-    assert_eq!(core_deal("ox", PLURALIZE_RULES), String::from("oxen"));
+    assert_eq!(core_deal("cat", &PLURALIZE_RULES), String::from("cats"));
+    assert_eq!(core_deal("box", &PLURALIZE_RULES), String::from("boxes"));
+    assert_eq!(core_deal("quiz", &PLURALIZE_RULES), String::from("quizzes"));
+    assert_eq!(core_deal("ox", &PLURALIZE_RULES), String::from("oxen"));
 }
 
 #[test]
