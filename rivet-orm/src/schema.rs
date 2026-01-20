@@ -50,6 +50,14 @@ impl<T> Column<T> {
             right: Box::new(v),
         }
     }
+
+    pub fn neq<V: SqlValue<T> + 'static>(&self, v: V) -> Expr {
+        Expr::Binary {
+            left: self.name,
+            op: v.binary_op_neq(),
+            right: Box::new(v),
+        }
+    }
 }
 
 /// 测试模块。

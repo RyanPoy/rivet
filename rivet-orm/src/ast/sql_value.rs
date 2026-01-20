@@ -41,6 +41,9 @@ pub trait SqlValue<T>: ToSql {
     fn binary_op_eq(&self) -> &'static str {
         "="
     }
+    fn binary_op_neq(&self) -> &'static str {
+        "<>"
+    }
 }
 /// 为多种类型实现 `SqlValue` trait 的宏。
 /// A macro for implementing the `SqlValue` trait for multiple types.
@@ -54,8 +57,15 @@ macro_rules! impl_SqlValue {
                     match self {
                         Some(_) => "=",
                         None => "IS",
+                    } 
+                }
+                fn binary_op_neq(&self) -> &'static str {
+                       match self {
+                        Some(_) => "<>",
+                        None => "IS NOT",
                     }
                 }
+
             }
             impl SqlValue<Option<$t>> for $t {}
         )*
