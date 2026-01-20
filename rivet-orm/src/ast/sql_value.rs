@@ -55,6 +55,7 @@ macro_rules! impl_SqlValue {
     ($($t:ty),*) => {
         $(
             impl SqlValue<$t> for $t {}
+            impl SqlValue<Option<$t>> for $t {}
             impl SqlValue<Option<$t>> for Option<$t> {
                 fn into_binary_expr(self, col_name: &'static str, op: Op) -> Expr
                 where
@@ -68,7 +69,6 @@ macro_rules! impl_SqlValue {
                     }
                 }
             }
-            impl SqlValue<Option<$t>> for $t {}
         )*
     };
 }

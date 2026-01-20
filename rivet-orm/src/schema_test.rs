@@ -359,3 +359,4 @@ pub fn test_column_lte() {
 
     assert!(User::COLUMNS.password.lte(None).is_empty());
 }
+
