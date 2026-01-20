@@ -101,3 +101,4 @@ pub fn test_column() {
     assert_eq!(op, "IS");
     assert_eq!(right.to_sql(), "NULL");
 }
+

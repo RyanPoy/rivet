@@ -4,87 +4,114 @@ use proc_macro::TokenStream;
 use proc_macro2::{Ident, TokenStream as TokenStream2};
 use quote::quote;
 use rivet_utils::inflection;
-use syn::{Fields, ItemStruct, Meta, parse_macro_input};
+use syn::{Field, Fields, ItemStruct, LitStr, Meta, Type, meta, parse_macro_input, parse2};
+
+struct ColumnMeta {
+    ident: Ident,
+    name: String,
+    tp: Type,
+}
 
 #[proc_macro_attribute]
 pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
     // 1. 解析被修饰的 struct 整体
     // 注意：这里的 struct_input 包含了字段上的 #[col] 属性
-    let mut struct_input = parse_macro_input!(item as ItemStruct);
+    let struct_input = &mut parse_macro_input!(item as ItemStruct);
     let struct_name = &struct_input.ident;
-    let vis = &struct_input.vis; // 保持可见性一致
-
     let table_name = parse_table_name(&struct_name, table_args);
-
-    // 3. 提取字段元数据
-    let mut column_idents = Vec::new(); // 用于 Columns 结构体的字段名
-    let mut column_names = Vec::new(); // 对应的字符串值
-    let mut column_types = Vec::new(); // 新增：用于存储字段原始类型
 
     // 只处理带名字的struct，例如: struct User{}
     // 其他的不处理，例如：struct Color(i32, i32, i32) 或者 struct Empty
-    if let Fields::Named(ref mut fields) = struct_input.fields {
-        for field in &mut fields.named {
-            // 检查是否存在 #[not_col] 属性
-            if field.attrs.iter().any(|a| a.path().is_ident("no_col")) {
+    let column_metas: Vec<ColumnMeta> = if let Fields::Named(ref mut fields) = struct_input.fields {
+        fields
+            .named
+            .iter_mut()
+            .filter_map(|field| {
                 // 如果有 #[not_col]，从最终生成的结构体字段中移除该属性并跳过元数据生成
-                field.attrs.retain(|a| !a.path().is_ident("no_col"));
-                continue;
-            }
-
-            // 获取字段在代码中的原始名称 (如 id)
-            let field_ident = field.ident.as_ref().unwrap();
-            // 查找该字段上是否挂了 #[col] 属性
-            let col_attr = field.attrs.iter().find(|a| a.path().is_ident("col"));
-
-            // 核心复用点：将 #[col(...)] 转换为与 table_args 相同的格式
-            let col_name = col_attr.and_then(|attr| {
-                match &attr.meta {
-                    // 如果是 #[col(name = "xxx")] 或 #[col("xxx")]
-                    Meta::List(list) => parse_arg_from(list.tokens.clone(), "name"),
-                    // 如果是单独的 #[col]
-                    Meta::Path(_) => None,
-                    _ => None,
+                if find_arg(field, "no_col", true).is_some() {
+                    return None;
                 }
-            });
+                let col_token = find_arg(field, "col", true);
 
-            // 确定最终列名：手动指定 > 字段名
-            let col_name =
-                col_name.unwrap_or_else(|| inflection::snake_case_of(&field_ident.to_string()));
+                // 获取字段在代码中的原始名称 (如 id)
+                let field_ident = field.ident.as_ref()?.clone();
+                let col_name = col_token
+                    .and_then(|meta| parse_arg_value_from(meta, "name"))
+                    .unwrap_or_else(|| inflection::snake_case_of(&field_ident.to_string()));
 
-            // 关键点：这里我们要保留原始的字段标识符（或处理后的标识符）用于结构体成员
-            column_idents.push(field_ident.clone());
-            column_names.push(col_name);
-            column_types.push(&field.ty);
+                // 关键点：这里我们要保留原始的字段标识符（或处理后的标识符）用于结构体成员
+                Some(ColumnMeta {
+                    ident: field_ident,
+                    name: col_name,
+                    tp: field.ty.clone(),
+                })
+            })
+            .collect()
+    } else {
+        vec![]
+    };
 
-            // 关键动作：清理掉字段上的 #[col] 属性
-            // 否则生成的代码中保留 #[col] 会导致编译器报错（因为它不是标准属性）
-            field.attrs.retain(|a| !a.path().is_ident("col"));
-        }
-    }
+    let metadata_gen = expand_columns_metadata(struct_input, column_metas, &table_name);
 
-    let columns_struct_name = quote::format_ident!("{}ColumnsInternal", struct_name);
+    // 3. 提取字段元数据
 
     // 生成代码：回填 struct 定义，并注入常量映射
     let expanded = quote! {
+        #struct_input // 这里的 struct 已经过属性清理
+        #metadata_gen
+    };
+    expanded.into()
+}
+
+fn expand_columns_metadata(
+    struct_input: &ItemStruct,
+    metas: Vec<ColumnMeta>,
+    table_name: &str,
+) -> TokenStream2 {
+    let column_idents: Vec<_> = metas.iter().map(|m| &m.ident).collect();
+    let column_names: Vec<_> = metas.iter().map(|m| &m.name).collect();
+    let column_types: Vec<_> = metas.iter().map(|m| &m.tp).collect();
+
+    let visibility = &struct_input.vis;
+    let struct_name = &struct_input.ident;
+    let columns_struct_name = quote::format_ident!("{}ColumnsInternal", struct_name);
+
+    quote! {
         #[allow(non_camel_case_types, non_upper_case_globals)]
-        #vis struct #columns_struct_name {
+        #visibility struct #columns_struct_name {
             #( pub #column_idents: ::rivet::orm::Column<#column_types>, )*
         }
 
-        #struct_input // 这里的 struct 已经过属性清理
         impl #struct_name {
             pub const TABLE_NAME: &'static str = #table_name;
 
-            // 这里是关键：定义一个关联常量，它的类型是上面的 struct
-            // 这样 User::Columns::id 就能通过“常量实例”找到该类型的关联常量
             #[allow(non_upper_case_globals)]
             pub const COLUMNS: #columns_struct_name = #columns_struct_name {
-                #(  #column_idents: ::rivet::orm::Column::new(#column_names), )*
+                #( #column_idents: ::rivet::orm::Column::new(#column_names), )*
             };
         }
+    }
+}
+
+fn find_arg(token: &mut Field, attr_name: &str, take: bool) -> Option<TokenStream2> {
+    // 寻找属性位置
+    let pos = token
+        .attrs
+        .iter()
+        .position(|a| a.path().is_ident(attr_name))?;
+
+    let attr = if take {
+        token.attrs.remove(pos) // 将属性从列表中移除
+    } else {
+        token.attrs[pos].clone()
     };
-    expanded.into()
+
+    // 转换并返回其内部 Tokens
+    match attr.meta {
+        Meta::List(l) => Some(l.tokens), // 匹配 #[col(name = "id")]
+        Meta::Path(_) => Some(TokenStream2::new()), // 匹配 #[col] 或 #[no_col]
+        Meta::NameValue(nv) => Some(quote!(#nv)), // 兼容 #[col = "id"]
+    }
 }
 
 fn parse_table_name(struct_name: &Ident, table_args: TokenStream) -> String {
@@ -92,31 +119,34 @@ fn parse_table_name(struct_name: &Ident, table_args: TokenStream) -> String {
     let table_name = if table_args.is_empty() {
         None
     } else {
-        parse_arg_from(table_args.into(), "name")
+        parse_arg_value_from(table_args.into(), "name")
     };
     table_name.unwrap_or_else(|| inflection::table_name_of(&struct_name.to_string()))
 }
 
-fn parse_arg_from(args: TokenStream2, key: &str) -> Option<String> {
+fn parse_arg_value_from(args: TokenStream2, arg_name: &str) -> Option<String> {
+    if args.is_empty() {
+        return None;
+    }
     // #[table("users")] -> args 是 "users" (一个 LitStr)
-    if let Ok(lit) = syn::parse2::<syn::LitStr>(args.clone()) {
+    if let Ok(lit) = parse2::<LitStr>(args.clone()) {
         return Some(lit.value());
     }
 
     // #[table(users)] -> args 是 users (一个 Ident)
-    if let Ok(ident) = syn::parse2::<syn::Ident>(args.clone()) {
+    if let Ok(ident) = parse2::<Ident>(args.clone()) {
         return Some(ident.to_string());
     }
 
     // #[table(name = "users")] 或 #[table(name = users)]
-    // 使用 syn 2.0 提供的匿名解析器处理 key = value
+    // 使用 syn 2.0 提供的匿名解析器处理 arg_name = value
     let mut relt = None;
-    let parser = syn::meta::parser(|meta| {
-        if meta.path.is_ident(key) {
+    let parser = meta::parser(|meta| {
+        if meta.path.is_ident(arg_name) {
             let value = meta.value()?; // 得到 = 后面的内容
-            if let Ok(lit) = value.parse::<syn::LitStr>() {
+            if let Ok(lit) = value.parse::<LitStr>() {
                 relt = Some(lit.value());
-            } else if let Ok(ident) = value.parse::<syn::Ident>() {
+            } else if let Ok(ident) = value.parse::<Ident>() {
                 relt = Some(ident.to_string());
             }
         }
