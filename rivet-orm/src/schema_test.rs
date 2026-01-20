@@ -142,3 +142,163 @@ pub fn test_column_neq() {
     assert_eq!(op, "IS NOT");
     assert_eq!(right.to_sql(), "NULL");
 }
+
+#[test]
+pub fn test_column_gt() {
+    #[table(name = "users")]
+    pub struct User {
+        id: usize,
+        username: String,
+        password: Option<String>,
+        age: u8,
+    }
+    let Expr::Binary { left, op, right } = User::COLUMNS.username.gt("lucy");
+    assert_eq!(left, "username");
+    assert_eq!(op, ">");
+    assert_eq!(right.to_sql(), "lucy");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.age.gt(20);
+    assert_eq!(left, "age");
+    assert_eq!(op, ">");
+    assert_eq!(right.to_sql(), "20");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.gt("123qwe");
+    assert_eq!(left, "password");
+    assert_eq!(op, ">");
+    assert_eq!(right.to_sql(), "123qwe");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.gt("123qwe".to_string());
+    assert_eq!(left, "password");
+    assert_eq!(op, ">");
+    assert_eq!(right.to_sql(), "123qwe");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.gt(Some("123qwe".to_string()));
+    assert_eq!(left, "password");
+    assert_eq!(op, ">");
+    assert_eq!(right.to_sql(), "123qwe");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.gt(None);
+    assert_eq!(left, "password");
+    assert_eq!(op, ">");
+    assert_eq!(right.to_sql(), "NULL");
+}
+
+#[test]
+pub fn test_column_gte() {
+    #[table(name = "users")]
+    pub struct User {
+        id: usize,
+        username: String,
+        password: Option<String>,
+        age: u8,
+    }
+    let Expr::Binary { left, op, right } = User::COLUMNS.username.gte("lucy");
+    assert_eq!(left, "username");
+    assert_eq!(op, ">=");
+    assert_eq!(right.to_sql(), "lucy");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.age.gte(20);
+    assert_eq!(left, "age");
+    assert_eq!(op, ">=");
+    assert_eq!(right.to_sql(), "20");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.gte("123qwe");
+    assert_eq!(left, "password");
+    assert_eq!(op, ">=");
+    assert_eq!(right.to_sql(), "123qwe");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.gte("123qwe".to_string());
+    assert_eq!(left, "password");
+    assert_eq!(op, ">=");
+    assert_eq!(right.to_sql(), "123qwe");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.gte(Some("123qwe".to_string()));
+    assert_eq!(left, "password");
+    assert_eq!(op, ">=");
+    assert_eq!(right.to_sql(), "123qwe");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.gte(None);
+    assert_eq!(left, "password");
+    assert_eq!(op, ">=");
+    assert_eq!(right.to_sql(), "NULL");
+}
+
+#[test]
+pub fn test_column_lt() {
+    #[table(name = "users")]
+    pub struct User {
+        id: usize,
+        username: String,
+        password: Option<String>,
+        age: u8,
+    }
+    let Expr::Binary { left, op, right } = User::COLUMNS.username.lt("lucy");
+    assert_eq!(left, "username");
+    assert_eq!(op, "<");
+    assert_eq!(right.to_sql(), "lucy");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.age.lt(20);
+    assert_eq!(left, "age");
+    assert_eq!(op, "<");
+    assert_eq!(right.to_sql(), "20");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.lt("123qwe");
+    assert_eq!(left, "password");
+    assert_eq!(op, "<");
+    assert_eq!(right.to_sql(), "123qwe");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.lt("123qwe".to_string());
+    assert_eq!(left, "password");
+    assert_eq!(op, "<");
+    assert_eq!(right.to_sql(), "123qwe");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.lt(Some("123qwe".to_string()));
+    assert_eq!(left, "password");
+    assert_eq!(op, "<");
+    assert_eq!(right.to_sql(), "123qwe");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.lt(None);
+    assert_eq!(left, "password");
+    assert_eq!(op, "<");
+    assert_eq!(right.to_sql(), "NULL");
+}
+
+#[test]
+pub fn test_column_lte() {
+    #[table(name = "users")]
+    pub struct User {
+        id: usize,
+        username: String,
+        password: Option<String>,
+        age: u8,
+    }
+    let Expr::Binary { left, op, right } = User::COLUMNS.username.lte("lucy");
+    assert_eq!(left, "username");
+    assert_eq!(op, "<=");
+    assert_eq!(right.to_sql(), "lucy");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.age.lte(20);
+    assert_eq!(left, "age");
+    assert_eq!(op, "<=");
+    assert_eq!(right.to_sql(), "20");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.lte("123qwe");
+    assert_eq!(left, "password");
+    assert_eq!(op, "<=");
+    assert_eq!(right.to_sql(), "123qwe");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.lte("123qwe".to_string());
+    assert_eq!(left, "password");
+    assert_eq!(op, "<=");
+    assert_eq!(right.to_sql(), "123qwe");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.lte(Some("123qwe".to_string()));
+    assert_eq!(left, "password");
+    assert_eq!(op, "<=");
+    assert_eq!(right.to_sql(), "123qwe");
+
+    let Expr::Binary { left, op, right } = User::COLUMNS.password.lte(None);
+    assert_eq!(left, "password");
+    assert_eq!(op, "<=");
+    assert_eq!(right.to_sql(), "NULL");
+}

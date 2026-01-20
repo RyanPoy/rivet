@@ -58,6 +58,38 @@ impl<T> Column<T> {
             right: Box::new(v),
         }
     }
+
+    pub fn gt<V: SqlValue<T> + 'static>(&self, v: V) -> Expr {
+        Expr::Binary {
+            left: self.name,
+            op: ">",
+            right: Box::new(v),
+        }
+    }
+
+    pub fn gte<V: SqlValue<T> + 'static>(&self, v: V) -> Expr {
+        Expr::Binary {
+            left: self.name,
+            op: ">=",
+            right: Box::new(v),
+        }
+    }
+
+    pub fn lt<V: SqlValue<T> + 'static>(&self, v: V) -> Expr {
+        Expr::Binary {
+            left: self.name,
+            op: "<",
+            right: Box::new(v),
+        }
+    }
+
+    pub fn lte<V: SqlValue<T> + 'static>(&self, v: V) -> Expr {
+        Expr::Binary {
+            left: self.name,
+            op: "<=",
+            right: Box::new(v),
+        }
+    }
 }
 
 /// 测试模块。
