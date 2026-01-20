@@ -14,16 +14,14 @@ struct ColumnMeta {
 
 #[proc_macro_attribute]
 pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
-    // 1. 解析被修饰的 struct 整体
-    // 注意：这里的 struct_input 包含了字段上的 #[col] 属性
-    let struct_input = &mut parse_macro_input!(item as ItemStruct);
-    let struct_name = &struct_input.ident;
-    let table_name = parse_table_name(&struct_name, table_args);
+    let struct_input = &mut parse_macro_input!(item as ItemStruct); // struct_input 包含了字段上的 #[col] 属性
+    let table_name = parse_table_name(&struct_input.ident, table_args);
 
     // 只处理带名字的struct，例如: struct User{}
     // 其他的不处理，例如：struct Color(i32, i32, i32) 或者 struct Empty
-    let column_metas: Vec<ColumnMeta> = if let Fields::Named(ref mut fields) = struct_input.fields {
-        fields
+    let mut column_metas: Vec<ColumnMeta> = vec![];
+    if let Fields::Named(ref mut fields) = struct_input.fields {
+        column_metas = fields
             .named
             .iter_mut()
             .filter_map(|field| {
@@ -47,9 +45,7 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
                 })
             })
             .collect()
-    } else {
-        vec![]
-    };
+    }
 
     let metadata_gen = expand_columns_metadata(struct_input, column_metas, &table_name);
 
@@ -68,18 +64,17 @@ fn expand_columns_metadata(
     metas: Vec<ColumnMeta>,
     table_name: &str,
 ) -> TokenStream2 {
-    let column_idents: Vec<_> = metas.iter().map(|m| &m.ident).collect();
-    let column_names: Vec<_> = metas.iter().map(|m| &m.name).collect();
-    let column_types: Vec<_> = metas.iter().map(|m| &m.tp).collect();
+    let idents: Vec<_> = metas.iter().map(|m| &m.ident).collect();
+    let names: Vec<_> = metas.iter().map(|m| &m.name).collect();
+    let types: Vec<_> = metas.iter().map(|m| &m.tp).collect();
 
-    let visibility = &struct_input.vis;
     let struct_name = &struct_input.ident;
     let columns_struct_name = quote::format_ident!("{}ColumnsInternal", struct_name);
 
     quote! {
         #[allow(non_camel_case_types, non_upper_case_globals)]
-        #visibility struct #columns_struct_name {
-            #( pub #column_idents: ::rivet::orm::Column<#column_types>, )*
+        struct #columns_struct_name {
+            #( #idents: ::rivet::orm::Column<#types>, )*
         }
 
         impl #struct_name {
@@ -87,7 +82,7 @@ fn expand_columns_metadata(
 
             #[allow(non_upper_case_globals)]
             pub const COLUMNS: #columns_struct_name = #columns_struct_name {
-                #( #column_idents: ::rivet::orm::Column::new(#column_names), )*
+                #( #idents: ::rivet::orm::Column::new(#names), )*
             };
         }
     }
@@ -115,13 +110,13 @@ fn find_arg(token: &mut Field, attr_name: &str, take: bool) -> Option<TokenStrea
 }
 
 fn parse_table_name(struct_name: &Ident, table_args: TokenStream) -> String {
-    // 2. 解析表名：直接解析宏函数的第一个参数 table_args
-    let table_name = if table_args.is_empty() {
+    // 解析表名：直接解析宏函数的第一个参数 table_args
+    if table_args.is_empty() {
         None
     } else {
         parse_arg_value_from(table_args.into(), "name")
-    };
-    table_name.unwrap_or_else(|| inflection::table_name_of(&struct_name.to_string()))
+    }
+    .unwrap_or_else(|| inflection::table_name_of(&struct_name.to_string()))
 }
 
 fn parse_arg_value_from(args: TokenStream2, arg_name: &str) -> Option<String> {
