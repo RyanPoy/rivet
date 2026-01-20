@@ -21,11 +21,11 @@ impl<T> Column<T> {
     ///
     /// # 参数
     /// * `name` - 列的名称。
-    ///   * `name` - The name of the column.
+    /// * `name` - The name of the column.
     ///
     /// # 返回值
     /// * 新的 `Column` 实例。
-    ///   * A new `Column` instance.
+    /// * A new `Column` instance.
     pub const fn new(name: &'static str) -> Self {
         Self {
             name,
@@ -38,11 +38,11 @@ impl<T> Column<T> {
     ///
     /// # 参数
     /// * `v` - 要比较的值。
-    ///   * `v` - The value to compare with.
+    /// * `v` - The value to compare with.
     ///
     /// # 返回值
     /// * 表示列等于给定值的表达式。
-    ///   * An expression representing the column being equal to the given value.
+    /// * An expression representing the column being equal to the given value.
     pub fn eq<V: SqlValue<T> + 'static>(&self, v: V) -> Expr {
         Expr::Binary {
             left: self.name,
