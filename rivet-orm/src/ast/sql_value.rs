@@ -60,33 +60,11 @@ macro_rules! impl_SqlValue {
                 where
                     Self: Sized + 'static,
                 {
-                    let new_op = match op {
-                        Op::Eq => {
-                            match self {
-                                Some(_) => Op::Eq,
-                                None => Op::Is,
-                            }
-                        },
-                        Op::Neq => {
-                            match self {
-                                Some(_) => Op::Neq,
-                                None => Op::IsNot,
-                            }
-                        },
-                        operator => {
-                            match self {
-                                Some(_) => operator,
-                                None => Op::Empty
-                            }
-                        },
-                    };
-                    match new_op {
-                        Op::Empty => Expr::Empty,
-                        _ => Expr:: Binary {
-                            left: col_name,
-                            op: new_op,
-                            right: Box::new(self),
-                        },
+                    match (self.is_some(), op) {
+                        (true,  o)       => Expr::Binary { left: col_name, op: o, right: Box::new(self), }, // 有值：原样保留操作符
+                        (false, Op::Eq)  => Expr::Binary { left: col_name, op: Op::Is, right: Box::new(self), }, // 无值且是 Eq：转为 IS NULL
+                        (false, Op::Neq) => Expr::Binary { left: col_name, op: Op::IsNot, right: Box::new(self), }, // 无值且是 Neq：转为 IS NOT NULL
+                        (false, _)       => Expr::Empty,     // 无值且是范围查询：抹除
                     }
                 }
             }
