@@ -1,7 +1,7 @@
 extern crate proc_macro;
 
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
+use proc_macro2::{Ident, TokenStream as TokenStream2};
 use quote::quote;
 use rivet_utils::inflection;
 use syn::{Fields, ItemStruct, Meta, parse_macro_input};
@@ -14,14 +14,7 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
     let struct_name = &struct_input.ident;
     let vis = &struct_input.vis; // 保持可见性一致
 
-    // 2. 解析表名：直接解析宏函数的第一个参数 table_args
-    let table_name = if table_args.is_empty() {
-        None
-    } else {
-        parse_arg_from(table_args.into(), "name")
-    };
-    let table_name =
-        table_name.unwrap_or_else(|| inflection::table_name_of(&struct_name.to_string()));
+    let table_name = parse_table_name(&struct_name, table_args);
 
     // 3. 提取字段元数据
     let mut column_idents = Vec::new(); // 用于 Columns 结构体的字段名
@@ -92,6 +85,16 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
         }
     };
     expanded.into()
+}
+
+fn parse_table_name(struct_name: &Ident, table_args: TokenStream) -> String {
+    // 2. 解析表名：直接解析宏函数的第一个参数 table_args
+    let table_name = if table_args.is_empty() {
+        None
+    } else {
+        parse_arg_from(table_args.into(), "name")
+    };
+    table_name.unwrap_or_else(|| inflection::table_name_of(&struct_name.to_string()))
 }
 
 fn parse_arg_from(args: TokenStream2, key: &str) -> Option<String> {

@@ -174,27 +174,27 @@ pub fn pascal_case_of(name: &str) -> String {
     let name = snake_case_of(name);
     let pos = name.chars().position(|ch| is_letter(ch)).unwrap_or(0);
 
-    let mut java_name = Vec::new();
+    let mut pascal_name = Vec::new();
     let mut upper_flag = true;
 
     for ch in name.chars().skip(pos) {
         if upper_flag {
-            java_name.push(ch.to_ascii_uppercase());
+            pascal_name.push(ch.to_ascii_uppercase());
             upper_flag = false;
         } else if is_char(ch) {
-            java_name.push(ch);
+            pascal_name.push(ch);
         } else {
             upper_flag = true;
         }
     }
 
-    java_name.iter().collect()
+    pascal_name.iter().collect()
 }
 
 /// 将名称转换为snake_case格式。
 /// Converts a name to snake_case format.
 pub fn snake_case_of(name: &str) -> String {
-    let mut python_name = Vec::new();
+    let mut snake_name = Vec::new();
     let mut last_uppercase_idx: i32 = -1;
     for (i, ch) in name.chars().enumerate() {
         let i = i as i32;
@@ -203,28 +203,28 @@ pub fn snake_case_of(name: &str) -> String {
             if ch.is_uppercase() {
                 last_uppercase_idx = i;
             }
-            python_name.push(ch.to_ascii_lowercase());
+            snake_name.push(ch.to_ascii_lowercase());
         } else if ch.is_uppercase() {
             // 如果是大写字母，在前面添加下划线（如果不是最后一个字符是下划线）
-            if !python_name.is_empty()
-                && *python_name.last().unwrap() != '_'
+            if !snake_name.is_empty()
+                && *snake_name.last().unwrap() != '_'
                 && last_uppercase_idx + 1 != i
             {
-                python_name.push('_');
+                snake_name.push('_');
             }
-            python_name.push(ch.to_ascii_lowercase());
+            snake_name.push(ch.to_ascii_lowercase());
             last_uppercase_idx = i;
         } else if ch == '_' {
             // 如果是下划线，确保不会重复添加
-            if !python_name.is_empty() && *python_name.last().unwrap() != '_' {
-                python_name.push('_');
+            if !snake_name.is_empty() && *snake_name.last().unwrap() != '_' {
+                snake_name.push('_');
             }
         } else {
-            python_name.push(ch.to_ascii_lowercase());
+            snake_name.push(ch.to_ascii_lowercase());
         }
     }
 
-    python_name.iter().collect()
+    snake_name.iter().collect()
 }
 
 /// 生成表名。
