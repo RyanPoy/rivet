@@ -4,7 +4,7 @@ use std::sync::LazyLock;
 
 /// 不可数名词列表。
 /// List of uncountable words.
-pub const UNCOUNTABLE_WORDS: &[&str] = &[
+static UNCOUNTABLE_WORDS: &[&str] = &[
     "equipment",
     "information",
     "rice",
@@ -16,24 +16,23 @@ pub const UNCOUNTABLE_WORDS: &[&str] = &[
     "sms",
 ];
 
-/// 不规则复数词列表。
-/// List of irregular plural words.
-pub const PLURALIZE_IRREGULAR_WORDS: &[(&str, &str)] = &[
+static IRREGULAR_WORDS: &[(&str, &str)] = &[
     ("person", "people"),
     ("man", "men"),
     ("child", "children"),
     ("sex", "sexes"),
     ("move", "moves"),
 ];
+
+/// 不规则复数词列表。
+/// List of irregular plural words.
+static PLURALIZE_IRREGULAR_WORDS: LazyLock<Vec<(&str, &str)>> =
+    LazyLock::new(|| IRREGULAR_WORDS.iter().map(|&(a, b)| (a, b)).collect());
+
 /// 不规则单数词列表。
 /// List of irregular singular words.
-pub const SINGULARIZE_IRREGULAR_WORDS: &[(&str, &str)] = &[
-    ("people", "person"),
-    ("men", "man"),
-    ("children", "child"),
-    ("sexes", "sex"),
-    ("moves", "move"),
-];
+static SINGULARIZE_IRREGULAR_WORDS: LazyLock<Vec<(&str, &str)>> =
+    LazyLock::new(|| IRREGULAR_WORDS.iter().map(|&(a, b)| (b, a)).collect());
 
 /// 复数化规则列表。
 /// List of pluralization rules.
@@ -153,13 +152,13 @@ pub fn core_deal(word: &str, rules: &[(Regex, &str)]) -> String {
 /// 将单词转换为单数形式。
 /// Converts a word to its singular form.
 pub fn singularize(word: &str) -> String {
-    singularize_or_pluralize(word, &SINGULARIZE_RULES, SINGULARIZE_IRREGULAR_WORDS)
+    singularize_or_pluralize(word, &SINGULARIZE_RULES, &SINGULARIZE_IRREGULAR_WORDS)
 }
 
 /// 将单词转换为复数形式。
 /// Converts a word to its plural form.
 pub fn pluralize(word: &str) -> String {
-    singularize_or_pluralize(word, &PLURALIZE_RULES, PLURALIZE_IRREGULAR_WORDS)
+    singularize_or_pluralize(word, &PLURALIZE_RULES, &PLURALIZE_IRREGULAR_WORDS)
 }
 
 /// 根据规则和不规则词列表将单词转换为单数或复数形式。

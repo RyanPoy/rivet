@@ -1,7 +1,7 @@
 use super::*;
 
 #[cfg(test)]
-const CASES: [(&str, &str); 75] = [
+static CASES: [(&str, &str); 75] = [
     ("search", "searches"),
     ("switch", "switches"),
     ("fix", "fixes"),
@@ -156,19 +156,19 @@ fn test_is_uncountable() {
 #[test]
 fn test_irregular() {
     assert_eq!(
-        irregular("person", PLURALIZE_IRREGULAR_WORDS),
+        irregular("person", &PLURALIZE_IRREGULAR_WORDS),
         Some("people".to_string())
     );
     assert_eq!(
-        irregular("man", PLURALIZE_IRREGULAR_WORDS),
+        irregular("man", &PLURALIZE_IRREGULAR_WORDS),
         Some("men".to_string())
     );
     assert_eq!(
-        irregular("child", PLURALIZE_IRREGULAR_WORDS),
+        irregular("child", &PLURALIZE_IRREGULAR_WORDS),
         Some("children".to_string())
     );
-    assert_eq!(irregular("cat", PLURALIZE_IRREGULAR_WORDS), None);
-    assert_eq!(irregular("dog", SINGULARIZE_IRREGULAR_WORDS), None);
+    assert_eq!(irregular("cat", &PLURALIZE_IRREGULAR_WORDS), None);
+    assert_eq!(irregular("dog", &SINGULARIZE_IRREGULAR_WORDS), None);
 }
 
 #[test]
