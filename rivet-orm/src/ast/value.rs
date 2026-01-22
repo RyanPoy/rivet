@@ -12,6 +12,7 @@ pub enum Value {
     U64(Option<u64>),
     U128(Option<u128>),
     String(Option<String>),
+    Bool(Option<bool>),
 }
 
 pub trait ToValue<T> {
@@ -53,7 +54,8 @@ impl_to_value!(
     u16 => U16,
     u32 => U32,
     u64 => U64,
-    u128 => U128
+    u128 => U128,
+    bool => Bool
 );
 
 impl ToValue<String> for String {
