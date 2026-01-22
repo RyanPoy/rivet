@@ -1,10 +1,9 @@
-use crate::ast::sql_value::ToSql;
+use crate::ast::value::Value;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Op {
-    Empty,
     Eq,
-    Neq,
+    Ne,
     Is,
     IsNot,
     Gt,
@@ -12,15 +11,15 @@ pub enum Op {
     Lt,
     Lte,
 }
+
 /// 表达式枚举，用于表示SQL语句中的表达式。
 /// An enum for representing expressions in SQL statements.
 ///
 /// # 变体
 /// * `Binary` - 二元运算符表达式，由操作符和两个操作数组成。
 /// * `Binary` - A binary operator expression, consisting of an operator and two operands.
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Expr {
-    Empty,
     /// 代表二元运算的表达式。
     /// Represents a binary operation expression.
     ///
@@ -36,18 +35,12 @@ pub enum Expr {
     Binary {
         left: &'static str,
         op: Op,
-        right: Box<dyn ToSql>,
+        right: Value,
     },
 }
-impl Expr {
-    pub fn is_empty(&self) -> bool {
-        match self {
-            Expr::Empty => true,
-            _ => false,
-        }
-    }
-}
 
+/// 测试模块。
+/// Test module.
 #[cfg(test)]
-#[path = "expression_test.rs"]
+#[path = "expr_test.rs"]
 mod tests;
