@@ -100,6 +100,45 @@ impl<T> Column<T> {
         }
     }
 }
+impl Column<String> {
+    pub fn like<V: ToValue<String>>(&self, v: V) -> Expr {
+        Expr::Binary {
+            left: self.name,
+            op: Op::Like,
+            right: v.to_value(),
+        }
+    }
+}
+
+impl Column<Option<String>> {
+    pub fn like<V: ToValue<Option<String>>>(&self, v: V) -> Expr {
+        Expr::Binary {
+            left: self.name,
+            op: Op::Like,
+            right: v.to_value(),
+        }
+    }
+}
+
+impl Column<&str> {
+    pub fn like<V: ToValue<&'static str>>(&self, v: V) -> Expr {
+        Expr::Binary {
+            left: self.name,
+            op: Op::Like,
+            right: v.to_value(),
+        }
+    }
+}
+
+impl Column<Option<&str>> {
+    pub fn like<V: ToValue<Option<&'static str>>>(&self, v: V) -> Expr {
+        Expr::Binary {
+            left: self.name,
+            op: Op::Like,
+            right: v.to_value(),
+        }
+    }
+}
 
 /// 测试模块。
 /// Test module.

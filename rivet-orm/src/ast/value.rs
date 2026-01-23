@@ -99,3 +99,49 @@ impl ToValue<Option<String>> for Option<&str> {
         }
     }
 }
+
+//////////
+
+impl ToValue<&str> for &str {
+    fn to_value(&self) -> Value {
+        Value::String(Some(self.to_string()))
+    }
+}
+
+impl ToValue<Option<&str>> for &str {
+    fn to_value(&self) -> Value {
+        Value::String(Some(self.to_string()))
+    }
+}
+
+impl ToValue<Option<&str>> for Option<&str> {
+    fn to_value(&self) -> Value {
+        match self {
+            Some(v) => Value::String(Some(v.to_string())),
+            None => Value::Null,
+        }
+    }
+}
+
+/////////////
+
+impl ToValue<&str> for String {
+    fn to_value(&self) -> Value {
+        Value::String(Some(self.into()))
+    }
+}
+
+impl ToValue<Option<&str>> for String {
+    fn to_value(&self) -> Value {
+        Value::String(Some(self.into()))
+    }
+}
+
+impl ToValue<Option<&str>> for Option<String> {
+    fn to_value(&self) -> Value {
+        match self {
+            Some(v) => Value::String(Some(v.into())),
+            None => Value::Null,
+        }
+    }
+}

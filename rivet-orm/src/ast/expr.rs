@@ -10,6 +10,10 @@ pub enum Op {
     Gte,
     Lt,
     Lte,
+    Like,
+    NotLike,
+    In,
+    NotIn,
 }
 
 /// 表达式枚举，用于表示SQL语句中的表达式。

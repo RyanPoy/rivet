@@ -672,3 +672,60 @@ pub fn test_lte_str_ref() {
         }
     );
 }
+
+/////////////////
+#[test]
+pub fn test_like_string() {
+    assert_eq!(
+        Column::<String>::new("username").like("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Like,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<String>>::new("username").like("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Like,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<String>>::new("username").like(None::<String>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Like,
+            right: Value::Null,
+        }
+    );
+}
+
+#[test]
+pub fn test_like_str_ref() {
+    assert_eq!(
+        Column::<&str>::new("username").like("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Like,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").like("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Like,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").like(None::<&str>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Like,
+            right: Value::Null,
+        }
+    );
+}
