@@ -100,7 +100,27 @@ impl<T> Column<T> {
         }
     }
 }
+//
+// trait StringType {}
+// impl StringType for String{};
+// impl StringType for &str{};
 impl Column<String> {
+    pub fn like<V: ToValue<String>>(&self, v: V) -> Expr {
+        Expr::Binary {
+            left: self.name,
+            op: Op::Like,
+            right: v.to_value(),
+        }
+    }
+    pub fn not_like<V: ToValue<String>>(&self, v: V) -> Expr {
+        Expr::Binary {
+            left: self.name,
+            op: Op::NotLike,
+            right: v.to_value(),
+        }
+    }
+}
+impl Column<&str> {
     pub fn like<V: ToValue<String>>(&self, v: V) -> Expr {
         Expr::Binary {
             left: self.name,
@@ -135,32 +155,15 @@ impl Column<Option<String>> {
     }
 }
 
-impl Column<&str> {
-    pub fn like<V: ToValue<&'static str>>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: Op::Like,
-            right: v.to_value(),
-        }
-    }
-    pub fn not_like<V: ToValue<&'static str>>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: Op::NotLike,
-            right: v.to_value(),
-        }
-    }
-}
-
 impl Column<Option<&str>> {
-    pub fn like<V: ToValue<Option<&'static str>>>(&self, v: V) -> Expr {
+    pub fn like<V: ToValue<Option<String>>>(&self, v: V) -> Expr {
         Expr::Binary {
             left: self.name,
             op: Op::Like,
             right: v.to_value(),
         }
     }
-    pub fn not_like<V: ToValue<Option<&'static str>>>(&self, v: V) -> Expr {
+    pub fn not_like<V: ToValue<Option<String>>>(&self, v: V) -> Expr {
         Expr::Binary {
             left: self.name,
             op: Op::NotLike,

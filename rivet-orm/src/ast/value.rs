@@ -18,7 +18,7 @@ pub enum Value {
 pub trait ToValue<T> {
     fn to_value(&self) -> Value;
 }
-macro_rules! impl_to_value {
+macro_rules! impl_to_value_for_numeric {
     ($($t:ty => $variant:ident), *) => {
         $(
             impl ToValue<$t> for $t {
@@ -44,7 +44,7 @@ macro_rules! impl_to_value {
         )*
     };
 }
-impl_to_value!(
+impl_to_value_for_numeric!(
     i8 => I8,
     i16 => I16,
     i32 => I32,
@@ -58,90 +58,54 @@ impl_to_value!(
     bool => Bool
 );
 
-impl ToValue<String> for String {
-    fn to_value(&self) -> Value {
-        Value::String(Some(self.into()))
-    }
+macro_rules! impl_to_value_for_string {
+    ($($t:ty), *) => {
+        $(
+            impl ToValue<$t> for String {
+                fn to_value(&self) -> Value {
+                    Value::String(Some(self.into()))
+                }
+            }
+            impl ToValue<Option<$t>> for String {
+                fn to_value(&self) -> Value {
+                    Value::String(Some(self.into()))
+                }
+            }
+            impl ToValue<Option<$t>> for Option<String> {
+                fn to_value(&self) -> Value {
+                    match self {
+                        Some(v) => Value::String(Some(v.into())),
+                        None => Value::Null,
+                    }
+                }
+            }
+        )*
+    };
 }
-impl ToValue<Option<String>> for String {
-    fn to_value(&self) -> Value {
-        Value::String(Some(self.into()))
-    }
+impl_to_value_for_string!(String, &str);
+
+macro_rules! impl_to_value_for_str_ref {
+    ($($t:ty), *) => {
+        $(
+            impl ToValue<$t> for &str {
+                fn to_value(&self) -> Value {
+                    Value::String(Some(self.to_string()))
+                }
+            }
+            impl ToValue<Option<$t>> for &str {
+                fn to_value(&self) -> Value {
+                    Value::String(Some(self.to_string()))
+                }
+            }
+            impl ToValue<Option<$t>> for Option<&str> {
+                fn to_value(&self) -> Value {
+                    match self {
+                        Some(v) => Value::String(Some(v.to_string())),
+                        None => Value::Null,
+                    }
+                }
+            }
+        )*
+    };
 }
-
-impl ToValue<Option<String>> for Option<String> {
-    fn to_value(&self) -> Value {
-        match self {
-            Some(v) => Value::String(Some(v.into())),
-            None => Value::Null,
-        }
-    }
-}
-
-//////////////////
-
-impl ToValue<String> for &str {
-    fn to_value(&self) -> Value {
-        Value::String(Some(self.to_string()))
-    }
-}
-impl ToValue<Option<String>> for &str {
-    fn to_value(&self) -> Value {
-        Value::String(Some(self.to_string()))
-    }
-}
-
-impl ToValue<Option<String>> for Option<&str> {
-    fn to_value(&self) -> Value {
-        match self {
-            Some(v) => Value::String(Some(v.to_string())),
-            None => Value::Null,
-        }
-    }
-}
-
-//////////
-
-impl ToValue<&str> for &str {
-    fn to_value(&self) -> Value {
-        Value::String(Some(self.to_string()))
-    }
-}
-
-impl ToValue<Option<&str>> for &str {
-    fn to_value(&self) -> Value {
-        Value::String(Some(self.to_string()))
-    }
-}
-
-impl ToValue<Option<&str>> for Option<&str> {
-    fn to_value(&self) -> Value {
-        match self {
-            Some(v) => Value::String(Some(v.to_string())),
-            None => Value::Null,
-        }
-    }
-}
-
-/////////////
-
-impl ToValue<&str> for String {
-    fn to_value(&self) -> Value {
-        Value::String(Some(self.into()))
-    }
-}
-
-impl ToValue<Option<&str>> for String {
-    fn to_value(&self) -> Value {
-        Value::String(Some(self.into()))
-    }
-}
-
-impl ToValue<Option<&str>> for Option<String> {
-    fn to_value(&self) -> Value {
-        match self {
-            Some(v) => Value::String(Some(v.into())),
-            None => Value::Null,
-        }
-    }
-}
+impl_to_value_for_str_ref!(String, &str);
