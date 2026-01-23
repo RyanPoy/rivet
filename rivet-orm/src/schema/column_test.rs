@@ -225,18 +225,119 @@ pub fn test_ne_str_ref() {
     );
 }
 
-// #[test]
-// pub fn test_gt() {
-//     assert_eq!(
-//         Column::<i32>::new("age").gt(20),
-//         Expr::Binary {
-//             left: "age",
-//             op: Op::Gt,
-//             right: Value::I32(Some(20)),
-//         }
-//     );
-// }
-//
+
+#[test]
+pub fn test_gt_number() {
+    assert_eq!(
+        Column::<i32>::new("age").gt(20),
+        Expr::Binary {
+            left: "age",
+            op: Op::Gt,
+            right: Value::I32(Some(20)),
+        }
+    );
+
+    assert_eq!(
+        Column::<Option<i32>>::new("age").gt(20),
+        Expr::Binary {
+            left: "age",
+            op: Op::Gt,
+            right: Value::I32(Some(20)),
+        }
+    );
+
+    assert_eq!(
+        Column::<Option<i32>>::new("age").gt(None),
+        Expr::Binary {
+            left: "age",
+            op: Op::Gt,
+            right: Value::Null,
+        }
+    );
+}
+#[test]
+pub fn test_gt_bool() {
+    assert_eq!(
+        Column::<bool>::new("has_children").gt(true),
+        Expr::Binary {
+            left: "has_children",
+            op: Op::Gt,
+            right: Value::Bool(Some(true)),
+        }
+    );
+    assert_eq!(
+        Column::<Option<bool>>::new("has_children").gt(true),
+        Expr::Binary {
+            left: "has_children",
+            op: Op::Gt,
+            right: Value::Bool(Some(true)),
+        }
+    );
+    assert_eq!(
+        Column::<Option<bool>>::new("has_children").gt(None),
+        Expr::Binary {
+            left: "has_children",
+            op: Op::Gt,
+            right: Value::Null,
+        }
+    );
+}
+#[test]
+pub fn test_gt_string() {
+    assert_eq!(
+        Column::<String>::new("username").gt("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gt,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<String>>::new("username").gt("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gt,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<String>>::new("username").gt(None::<String>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gt,
+            right: Value::Null,
+        }
+    );
+}
+#[test]
+pub fn test_gt_str_ref() {
+    assert_eq!(
+        Column::<String>::new("username").gt("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gt,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+
+    assert_eq!(
+        Column::<Option<String>>::new("username").gt("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gt,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<String>>::new("username").gt(None::<&str>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gt,
+            right: Value::Null,
+        }
+    );
+}
+
 // #[test]
 // pub fn test_gte() {
 //     assert_eq!(
