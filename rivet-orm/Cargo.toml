@@ -1,0 +1,9 @@
+[package]
+name = "rivet-orm"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+thiserror = "2.0.17"
+rivet-utils = { path = "../rivet-utils" }
+rivet-orm-macros = { path = "../rivet-orm-macros" }

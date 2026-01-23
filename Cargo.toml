@@ -1,0 +1,10 @@
+[workspace]
+members = [
+    "rivet",
+    "rivet-utils",
+    "rivet-orm",
+    "rivet-orm-macros",
+    "rivet-view",
+    "rivet-web"
+]
+resolver = "2"
