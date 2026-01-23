@@ -1,5 +1,5 @@
 use crate::ast::expr::{Expr, Op};
-use crate::ast::value::ToValue;
+use crate::ast::value::{ToValue, Value};
 use std::marker::PhantomData;
 
 /// 表示SQL表中的列。
@@ -44,18 +44,28 @@ impl<T> Column<T> {
     /// * 表示列等于给定值的表达式。
     /// * An expression representing the column being equal to the given value.
     pub fn eq<V: ToValue<T>>(&self, v: V) -> Expr {
+        let right = v.to_value();
+        let op = match right {
+            Value::Null => Op::Is,
+            _ => Op::Eq,
+        };
         Expr::Binary {
             left: self.name,
-            op: Op::Eq,
-            right: v.to_value(),
+            op,
+            right,
         }
     }
 
     pub fn ne<V: ToValue<T>>(&self, v: V) -> Expr {
+        let right = v.to_value();
+        let op = match right {
+            Value::Null => Op::IsNot,
+            _ => Op::Ne,
+        };
         Expr::Binary {
             left: self.name,
-            op: Op::Ne,
-            right: v.to_value(),
+            op,
+            right,
         }
     }
 

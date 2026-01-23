@@ -25,7 +25,7 @@ pub fn test_eq_number() {
         Column::<Option<i32>>::new("age").eq(None),
         Expr::Binary {
             left: "age",
-            op: Op::Eq,
+            op: Op::Is,
             right: Value::Null,
         }
     );
@@ -52,7 +52,7 @@ pub fn test_eq_bool() {
         Column::<Option<bool>>::new("has_children").eq(None),
         Expr::Binary {
             left: "has_children",
-            op: Op::Eq,
+            op: Op::Is,
             right: Value::Null,
         }
     );
@@ -79,7 +79,7 @@ pub fn test_eq_string() {
         Column::<Option<String>>::new("username").eq(None::<String>),
         Expr::Binary {
             left: "username",
-            op: Op::Eq,
+            op: Op::Is,
             right: Value::Null,
         }
     );
@@ -107,7 +107,7 @@ pub fn test_eq_str_ref() {
         Column::<Option<String>>::new("username").eq(None::<&str>),
         Expr::Binary {
             left: "username",
-            op: Op::Eq,
+            op: Op::Is,
             right: Value::Null,
         }
     );
@@ -137,7 +137,7 @@ pub fn test_ne_number() {
         Column::<Option<i32>>::new("age").ne(None),
         Expr::Binary {
             left: "age",
-            op: Op::Ne,
+            op: Op::IsNot,
             right: Value::Null,
         }
     );
@@ -164,7 +164,7 @@ pub fn test_ne_bool() {
         Column::<Option<bool>>::new("has_children").ne(None),
         Expr::Binary {
             left: "has_children",
-            op: Op::Ne,
+            op: Op::IsNot,
             right: Value::Null,
         }
     );
@@ -191,7 +191,7 @@ pub fn test_ne_string() {
         Column::<Option<String>>::new("username").ne(None::<String>),
         Expr::Binary {
             left: "username",
-            op: Op::Ne,
+            op: Op::IsNot,
             right: Value::Null,
         }
     );
@@ -219,7 +219,7 @@ pub fn test_ne_str_ref() {
         Column::<Option<String>>::new("username").ne(None::<&str>),
         Expr::Binary {
             left: "username",
-            op: Op::Ne,
+            op: Op::IsNot,
             right: Value::Null,
         }
     );
