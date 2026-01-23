@@ -68,6 +68,14 @@ pub fn test_eq_string() {
         }
     );
     assert_eq!(
+        Column::<&str>::new("username").eq("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Eq,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
         Column::<Option<String>>::new("username").eq("Lucy".to_string()),
         Expr::Binary {
             left: "username",
@@ -76,7 +84,23 @@ pub fn test_eq_string() {
         }
     );
     assert_eq!(
+        Column::<Option<&str>>::new("username").eq("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Eq,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
         Column::<Option<String>>::new("username").eq(None::<String>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Is,
+            right: Value::Null,
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").eq(None::<String>),
         Expr::Binary {
             left: "username",
             op: Op::Is,
@@ -94,9 +118,24 @@ pub fn test_eq_str_ref() {
             right: Value::String(Some("Lucy".to_string())),
         }
     );
-
+    assert_eq!(
+        Column::<&str>::new("username").eq("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Eq,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
     assert_eq!(
         Column::<Option<String>>::new("username").eq("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Eq,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").eq("Lucy"),
         Expr::Binary {
             left: "username",
             op: Op::Eq,
@@ -111,8 +150,15 @@ pub fn test_eq_str_ref() {
             right: Value::Null,
         }
     );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").eq(None::<&str>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Is,
+            right: Value::Null,
+        }
+    );
 }
-
 #[test]
 pub fn test_ne_number() {
     assert_eq!(
@@ -180,6 +226,14 @@ pub fn test_ne_string() {
         }
     );
     assert_eq!(
+        Column::<&str>::new("username").ne("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Ne,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
         Column::<Option<String>>::new("username").ne("Lucy".to_string()),
         Expr::Binary {
             left: "username",
@@ -188,7 +242,23 @@ pub fn test_ne_string() {
         }
     );
     assert_eq!(
+        Column::<Option<&str>>::new("username").ne("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Ne,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
         Column::<Option<String>>::new("username").ne(None::<String>),
+        Expr::Binary {
+            left: "username",
+            op: Op::IsNot,
+            right: Value::Null,
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").ne(None::<String>),
         Expr::Binary {
             left: "username",
             op: Op::IsNot,
@@ -206,6 +276,14 @@ pub fn test_ne_str_ref() {
             right: Value::String(Some("Lucy".to_string())),
         }
     );
+    assert_eq!(
+        Column::<&str>::new("username").ne("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Ne,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
 
     assert_eq!(
         Column::<Option<String>>::new("username").ne("Lucy"),
@@ -216,6 +294,15 @@ pub fn test_ne_str_ref() {
         }
     );
     assert_eq!(
+        Column::<Option<&str>>::new("username").ne("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Ne,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+
+    assert_eq!(
         Column::<Option<String>>::new("username").ne(None::<&str>),
         Expr::Binary {
             left: "username",
@@ -223,8 +310,15 @@ pub fn test_ne_str_ref() {
             right: Value::Null,
         }
     );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").ne(None::<&str>),
+        Expr::Binary {
+            left: "username",
+            op: Op::IsNot,
+            right: Value::Null,
+        }
+    );
 }
-
 #[test]
 pub fn test_gt_number() {
     assert_eq!(
@@ -292,6 +386,14 @@ pub fn test_gt_string() {
         }
     );
     assert_eq!(
+        Column::<&str>::new("username").gt("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gt,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
         Column::<Option<String>>::new("username").gt("Lucy".to_string()),
         Expr::Binary {
             left: "username",
@@ -300,7 +402,23 @@ pub fn test_gt_string() {
         }
     );
     assert_eq!(
+        Column::<Option<&str>>::new("username").gt("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gt,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
         Column::<Option<String>>::new("username").gt(None::<String>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gt,
+            right: Value::Null,
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").gt(None::<String>),
         Expr::Binary {
             left: "username",
             op: Op::Gt,
@@ -318,9 +436,24 @@ pub fn test_gt_str_ref() {
             right: Value::String(Some("Lucy".to_string())),
         }
     );
-
+    assert_eq!(
+        Column::<&str>::new("username").gt("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gt,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
     assert_eq!(
         Column::<Option<String>>::new("username").gt("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gt,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").gt("Lucy"),
         Expr::Binary {
             left: "username",
             op: Op::Gt,
@@ -335,8 +468,15 @@ pub fn test_gt_str_ref() {
             right: Value::Null,
         }
     );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").gt(None::<&str>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gt,
+            right: Value::Null,
+        }
+    );
 }
-
 #[test]
 pub fn test_lt_number() {
     assert_eq!(
@@ -404,6 +544,14 @@ pub fn test_lt_string() {
         }
     );
     assert_eq!(
+        Column::<&str>::new("username").lt("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Lt,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
         Column::<Option<String>>::new("username").lt("Lucy".to_string()),
         Expr::Binary {
             left: "username",
@@ -412,7 +560,23 @@ pub fn test_lt_string() {
         }
     );
     assert_eq!(
+        Column::<Option<&str>>::new("username").lt("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Lt,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
         Column::<Option<String>>::new("username").lt(None::<String>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Lt,
+            right: Value::Null,
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").lt(None::<String>),
         Expr::Binary {
             left: "username",
             op: Op::Lt,
@@ -430,9 +594,24 @@ pub fn test_lt_str_ref() {
             right: Value::String(Some("Lucy".to_string())),
         }
     );
-
+    assert_eq!(
+        Column::<&str>::new("username").lt("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Lt,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
     assert_eq!(
         Column::<Option<String>>::new("username").lt("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Lt,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").lt("Lucy"),
         Expr::Binary {
             left: "username",
             op: Op::Lt,
@@ -447,8 +626,15 @@ pub fn test_lt_str_ref() {
             right: Value::Null,
         }
     );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").lt(None::<&str>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Lt,
+            right: Value::Null,
+        }
+    );
 }
-
 #[test]
 pub fn test_gte_number() {
     assert_eq!(
@@ -516,6 +702,14 @@ pub fn test_gte_string() {
         }
     );
     assert_eq!(
+        Column::<&str>::new("username").gte("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gte,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
         Column::<Option<String>>::new("username").gte("Lucy".to_string()),
         Expr::Binary {
             left: "username",
@@ -524,7 +718,23 @@ pub fn test_gte_string() {
         }
     );
     assert_eq!(
+        Column::<Option<&str>>::new("username").gte("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gte,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
         Column::<Option<String>>::new("username").gte(None::<String>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gte,
+            right: Value::Null,
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").gte(None::<String>),
         Expr::Binary {
             left: "username",
             op: Op::Gte,
@@ -542,7 +752,14 @@ pub fn test_gte_str_ref() {
             right: Value::String(Some("Lucy".to_string())),
         }
     );
-
+    assert_eq!(
+        Column::<&str>::new("username").gte("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gte,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
     assert_eq!(
         Column::<Option<String>>::new("username").gte("Lucy"),
         Expr::Binary {
@@ -552,7 +769,23 @@ pub fn test_gte_str_ref() {
         }
     );
     assert_eq!(
+        Column::<Option<&str>>::new("username").gte("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gte,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
         Column::<Option<String>>::new("username").gte(None::<&str>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Gte,
+            right: Value::Null,
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").gte(None::<&str>),
         Expr::Binary {
             left: "username",
             op: Op::Gte,
@@ -628,6 +861,14 @@ pub fn test_lte_string() {
         }
     );
     assert_eq!(
+        Column::<&str>::new("username").lte("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Lte,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
         Column::<Option<String>>::new("username").lte("Lucy".to_string()),
         Expr::Binary {
             left: "username",
@@ -636,7 +877,23 @@ pub fn test_lte_string() {
         }
     );
     assert_eq!(
+        Column::<Option<&str>>::new("username").lte("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Lte,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
         Column::<Option<String>>::new("username").lte(None::<String>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Lte,
+            right: Value::Null,
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").lte(None::<String>),
         Expr::Binary {
             left: "username",
             op: Op::Lte,
@@ -654,9 +911,24 @@ pub fn test_lte_str_ref() {
             right: Value::String(Some("Lucy".to_string())),
         }
     );
-
+    assert_eq!(
+        Column::<&str>::new("username").lte("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Lte,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
     assert_eq!(
         Column::<Option<String>>::new("username").lte("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Lte,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").lte("Lucy"),
         Expr::Binary {
             left: "username",
             op: Op::Lte,
@@ -671,13 +943,27 @@ pub fn test_lte_str_ref() {
             right: Value::Null,
         }
     );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").lte(None::<&str>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Lte,
+            right: Value::Null,
+        }
+    );
 }
-
-/////////////////
 #[test]
 pub fn test_like_string() {
     assert_eq!(
         Column::<String>::new("username").like("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Like,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<&str>::new("username").like("Lucy".to_string()),
         Expr::Binary {
             left: "username",
             op: Op::Like,
@@ -693,6 +979,14 @@ pub fn test_like_string() {
         }
     );
     assert_eq!(
+        Column::<Option<&str>>::new("username").like("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Like,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
         Column::<Option<String>>::new("username").like(None::<String>),
         Expr::Binary {
             left: "username",
@@ -700,12 +994,35 @@ pub fn test_like_string() {
             right: Value::Null,
         }
     );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").like(None::<String>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Like,
+            right: Value::Null,
+        }
+    );
 }
-
 #[test]
 pub fn test_like_str_ref() {
     assert_eq!(
+        Column::<String>::new("username").like("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Like,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
         Column::<&str>::new("username").like("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Like,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<String>>::new("username").like("Lucy"),
         Expr::Binary {
             left: "username",
             op: Op::Like,
@@ -721,10 +1038,120 @@ pub fn test_like_str_ref() {
         }
     );
     assert_eq!(
+        Column::<Option<String>>::new("username").like(None::<&str>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Like,
+            right: Value::Null,
+        }
+    );
+    assert_eq!(
         Column::<Option<&str>>::new("username").like(None::<&str>),
         Expr::Binary {
             left: "username",
             op: Op::Like,
+            right: Value::Null,
+        }
+    );
+}
+#[test]
+pub fn test_not_like_string() {
+    assert_eq!(
+        Column::<String>::new("username").not_like("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::NotLike,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<&str>::new("username").not_like("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::NotLike,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<String>>::new("username").not_like("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::NotLike,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").not_like("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::NotLike,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<String>>::new("username").not_like(None::<String>),
+        Expr::Binary {
+            left: "username",
+            op: Op::NotLike,
+            right: Value::Null,
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").not_like(None::<String>),
+        Expr::Binary {
+            left: "username",
+            op: Op::NotLike,
+            right: Value::Null,
+        }
+    );
+}
+#[test]
+pub fn test_not_like_str_ref() {
+    assert_eq!(
+        Column::<String>::new("username").not_like("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::NotLike,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<&str>::new("username").not_like("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::NotLike,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<String>>::new("username").not_like("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::NotLike,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").not_like("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::NotLike,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<String>>::new("username").not_like(None::<&str>),
+        Expr::Binary {
+            left: "username",
+            op: Op::NotLike,
+            right: Value::Null,
+        }
+    );
+    assert_eq!(
+        Column::<Option<&str>>::new("username").not_like(None::<&str>),
+        Expr::Binary {
+            left: "username",
+            op: Op::NotLike,
             right: Value::Null,
         }
     );
