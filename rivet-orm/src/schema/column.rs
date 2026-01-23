@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 /// 表示SQL表中的列。
 /// Represents a column in an SQL table.
 #[derive(Debug)]
-pub struct Column<T> {
+pub struct Column<T: ?Sized> {
     /// 列名。
     /// The name of the column.
     pub name: &'static str,
@@ -100,70 +100,24 @@ impl<T> Column<T> {
         }
     }
 }
-//
-// trait StringType {}
-// impl StringType for String{};
-// impl StringType for &str{};
-impl Column<String> {
-    pub fn like<V: ToValue<String>>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: Op::Like,
-            right: v.to_value(),
-        }
-    }
-    pub fn not_like<V: ToValue<String>>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: Op::NotLike,
-            right: v.to_value(),
-        }
-    }
-}
-impl Column<&str> {
-    pub fn like<V: ToValue<String>>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: Op::Like,
-            right: v.to_value(),
-        }
-    }
-    pub fn not_like<V: ToValue<String>>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: Op::NotLike,
-            right: v.to_value(),
-        }
-    }
-}
 
-impl Column<Option<String>> {
-    pub fn like<V: ToValue<Option<String>>>(&self, v: V) -> Expr {
+
+trait StringType {}
+impl StringType for String{}
+impl StringType for &str{}
+impl StringType for Option<String>{}
+impl StringType for Option<&str>{}
+
+#[allow(private_bounds)]
+impl <T: StringType> Column<T> {
+    pub fn like<V: ToValue<T>>(&self, v: V) -> Expr {
         Expr::Binary {
             left: self.name,
             op: Op::Like,
             right: v.to_value(),
         }
     }
-
-    pub fn not_like<V: ToValue<Option<String>>>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: Op::NotLike,
-            right: v.to_value(),
-        }
-    }
-}
-
-impl Column<Option<&str>> {
-    pub fn like<V: ToValue<Option<String>>>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: Op::Like,
-            right: v.to_value(),
-        }
-    }
-    pub fn not_like<V: ToValue<Option<String>>>(&self, v: V) -> Expr {
+    pub fn not_like<V: ToValue<T>>(&self, v: V) -> Expr {
         Expr::Binary {
             left: self.name,
             op: Op::NotLike,
