@@ -1,10 +1,11 @@
+use std::fmt;
 use crate::ast::expr::{Expr, Op};
 use crate::ast::value::{ToValue, Value};
 use std::marker::PhantomData;
 
 /// 表示SQL表中的列。
 /// Represents a column in an SQL table.
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Column<T: ?Sized> {
     /// 列名。
     /// The name of the column.

@@ -56,26 +56,22 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 fn expand_columns_metadata(struct_input: &ItemStruct, metas: Vec<ColumnMeta>, table_name: &str) -> TokenStream2 {
-    let idents: Vec<_> = metas.iter().map(|m| &m.ident).collect();
-    let names: Vec<_> = metas.iter().map(|m| &m.name).collect();
-    let types: Vec<_> = metas.iter().map(|m| &m.tp).collect();
+    let column_consts = metas.iter().map(|m| {
+        let field_ident = &m.ident;
+        let column_name = &m.name;
+        let column_type = &m.tp;
+
+        quote! {
+            pub const #field_ident: ::rivet::orm::Column<#column_type> = ::rivet::orm::Column::new(#column_name);
+        }
+    });
 
     let struct_name = &struct_input.ident;
-    let columns_struct_name = quote::format_ident!("{}ColumnsInternal", struct_name);
-
     quote! {
-        #[allow(non_camel_case_types, non_upper_case_globals)]
-        struct #columns_struct_name {
-            #( #idents: ::rivet::orm::Column<#types>, )*
-        }
-
+        #[allow(non_upper_case_globals)]
         impl #struct_name {
             pub const TABLE_NAME: &'static str = #table_name;
-
-            #[allow(non_upper_case_globals)]
-            pub const COLUMNS: #columns_struct_name = #columns_struct_name {
-                #( #idents: ::rivet::orm::Column::new(#names), )*
-            };
+            #( #column_consts )*
         }
     }
 }

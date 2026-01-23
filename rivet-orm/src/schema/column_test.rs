@@ -1,5 +1,7 @@
 use super::*;
 use crate::ast::value::Value;
+use crate::schema::column::Column;
+use rivet_orm_macros::table;
 
 #[test]
 pub fn test_eq_number() {
@@ -615,4 +617,31 @@ pub fn test_not_like_str_ref() {
         Column::<Option<&str>>::new("username").not_like(None::<&str>),
         Expr::Binary { left: "username", op: Op::NotLike, right: Value::Null }
     );
+}
+
+#[test]
+fn test_column_define() {
+    #[table]
+    struct User {
+        id: i32,
+
+        #[col(username)]
+        name: String,
+
+        age: u32,
+        nick_name: Option<String>,
+        checked: bool,
+
+        #[no_col]
+        temp: String,
+    };
+
+    let user = User { id: 1, name: "Luly".to_string(), age: 30, nick_name: None, checked: true, temp: "fuck".to_string() };
+    assert_eq!(User::id, Column::<i32>::new("id"));
+    assert_eq!(User::name, Column::<String>::new("username"));
+    assert_eq!(User::age, Column::<u32>::new("age"));
+    assert_eq!(User::nick_name, Column::<Option<String>>::new("nick_name"));
+    assert_eq!(User::checked, Column::<bool>::new("checked"));
+
+    assert_eq!(user.id, 1);
 }
