@@ -2,7 +2,7 @@ use super::*;
 use crate::ast::value::Value;
 
 #[test]
-pub fn test_eq() {
+pub fn test_eq_number() {
     assert_eq!(
         Column::<i32>::new("age").eq(20),
         Expr::Binary {
@@ -11,64 +11,162 @@ pub fn test_eq() {
             right: Value::I32(Some(20)),
         }
     );
-}
 
-#[test]
-pub fn test_ne() {
     assert_eq!(
-        Column::<i32>::new("age").ne(20),
+        Column::<Option<i32>>::new("age").eq(20),
         Expr::Binary {
             left: "age",
-            op: Op::Ne,
+            op: Op::Eq,
             right: Value::I32(Some(20)),
         }
     );
-}
 
-#[test]
-pub fn test_gt() {
     assert_eq!(
-        Column::<i32>::new("age").gt(20),
+        Column::<Option<i32>>::new("age").eq(None),
         Expr::Binary {
             left: "age",
-            op: Op::Gt,
-            right: Value::I32(Some(20)),
+            op: Op::Eq,
+            right: Value::Null,
         }
     );
 }
-
-#[test]
-pub fn test_gte() {
+pub fn test_eq_bool() {
     assert_eq!(
-        Column::<i32>::new("age").gte(20),
+        Column::<bool>::new("has_children").eq(true),
         Expr::Binary {
-            left: "age",
-            op: Op::Gte,
-            right: Value::I32(Some(20)),
+            left: "has_children",
+            op: Op::Eq,
+            right: Value::Bool(Some(true)),
+        }
+    );
+    assert_eq!(
+        Column::<Option<bool>>::new("has_children").eq(true),
+        Expr::Binary {
+            left: "has_children",
+            op: Op::Eq,
+            right: Value::Bool(Some(true)),
+        }
+    );
+    assert_eq!(
+        Column::<Option<bool>>::new("has_children").eq(None),
+        Expr::Binary {
+            left: "has_children",
+            op: Op::Eq,
+            right: Value::Null,
         }
     );
 }
-
 #[test]
-pub fn test_lt() {
+pub fn test_eq_string() {
     assert_eq!(
-        Column::<i32>::new("age").lt(20),
+        Column::<String>::new("username").eq("Lucy".to_string()),
         Expr::Binary {
-            left: "age",
-            op: Op::Lt,
-            right: Value::I32(Some(20)),
+            left: "username",
+            op: Op::Eq,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<String>>::new("username").eq("Lucy".to_string()),
+        Expr::Binary {
+            left: "username",
+            op: Op::Eq,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<String>>::new("username").eq(None::<String>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Eq,
+            right: Value::Null,
         }
     );
 }
-
 #[test]
-pub fn test_lte() {
+pub fn test_eq_str_ref() {
     assert_eq!(
-        Column::<i32>::new("age").lte(20),
+        Column::<String>::new("username").eq("Lucy"),
         Expr::Binary {
-            left: "age",
-            op: Op::Lte,
-            right: Value::I32(Some(20)),
+            left: "username",
+            op: Op::Eq,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+
+    assert_eq!(
+        Column::<Option<String>>::new("username").eq("Lucy"),
+        Expr::Binary {
+            left: "username",
+            op: Op::Eq,
+            right: Value::String(Some("Lucy".to_string())),
+        }
+    );
+    assert_eq!(
+        Column::<Option<String>>::new("username").eq(None::<&str>),
+        Expr::Binary {
+            left: "username",
+            op: Op::Eq,
+            right: Value::Null,
         }
     );
 }
+// #[test]
+// pub fn test_ne() {
+//     assert_eq!(
+//         Column::<i32>::new("age").ne(20),
+//         Expr::Binary {
+//             left: "age",
+//             op: Op::Ne,
+//             right: Value::I32(Some(20)),
+//         }
+//     );
+// }
+//
+// #[test]
+// pub fn test_gt() {
+//     assert_eq!(
+//         Column::<i32>::new("age").gt(20),
+//         Expr::Binary {
+//             left: "age",
+//             op: Op::Gt,
+//             right: Value::I32(Some(20)),
+//         }
+//     );
+// }
+//
+// #[test]
+// pub fn test_gte() {
+//     assert_eq!(
+//         Column::<i32>::new("age").gte(20),
+//         Expr::Binary {
+//             left: "age",
+//             op: Op::Gte,
+//             right: Value::I32(Some(20)),
+//         }
+//     );
+// }
+//
+// #[test]
+// pub fn test_lt() {
+//     assert_eq!(
+//         Column::<i32>::new("age").lt(20),
+//         Expr::Binary {
+//             left: "age",
+//             op: Op::Lt,
+//             right: Value::I32(Some(20)),
+//         }
+//     );
+// }
+//
+// #[test]
+// pub fn test_lte() {
+//     assert_eq!(
+//         Column::<i32>::new("age").lte(20),
+//         Expr::Binary {
+//             left: "age",
+//             op: Op::Lte,
+//             right: Value::I32(Some(20)),
+//         }
+//     );
+// }

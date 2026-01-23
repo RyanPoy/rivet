@@ -1,17 +1,6 @@
 use crate::ast::expr::{Expr, Op};
 use crate::ast::value::ToValue;
 use std::marker::PhantomData;
-// pub trait Scalar {}
-// macro_rules! register_scalar {
-//     ($($t:ty), *) => {
-//         $(
-//             impl Scalar for $t{}
-//         )*
-//     };
-// }
-// register_scalar!(
-//     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
-// );
 
 /// 表示SQL表中的列。
 /// Represents a column in an SQL table.
