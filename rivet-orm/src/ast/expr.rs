@@ -36,11 +36,7 @@ pub enum Expr {
     ///
     /// * `right` - 右操作数，实现了 `ToSql` trait 的任意类型。
     /// * `right` - The right operand, any type that implements the `ToSql` trait.
-    Binary {
-        left: &'static str,
-        op: Op,
-        right: Value,
-    },
+    Binary { left: &'static str, op: Op, right: Value },
 }
 
 /// 测试模块。

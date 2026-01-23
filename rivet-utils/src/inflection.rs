@@ -4,25 +4,11 @@ use std::sync::LazyLock;
 
 /// 不可数名词列表。
 /// List of uncountable words.
-static UNCOUNTABLE_WORDS: &[&str] = &[
-    "equipment",
-    "information",
-    "rice",
-    "money",
-    "species",
-    "series",
-    "fish",
-    "sheep",
-    "sms",
-];
+static UNCOUNTABLE_WORDS: &[&str] =
+    &["equipment", "information", "rice", "money", "species", "series", "fish", "sheep", "sms"];
 
-static IRREGULAR_WORDS: &[(&str, &str)] = &[
-    ("person", "people"),
-    ("man", "men"),
-    ("child", "children"),
-    ("sex", "sexes"),
-    ("move", "moves"),
-];
+static IRREGULAR_WORDS: &[(&str, &str)] =
+    &[("person", "people"), ("man", "men"), ("child", "children"), ("sex", "sexes"), ("move", "moves")];
 
 /// 不规则复数词列表。
 /// List of irregular plural words.
@@ -59,10 +45,7 @@ static PLURALIZE_RULES: LazyLock<Vec<(Regex, &str)>> = LazyLock::new(|| {
     ]
     .into_iter()
     .map(|(pattern, replacement)| {
-        (
-            Regex::new(pattern).expect(&format!("Static regex patter invalid: {}", pattern)),
-            replacement,
-        )
+        (Regex::new(pattern).expect(&format!("Static regex patter invalid: {}", pattern)), replacement)
     })
     .collect()
 });
@@ -92,20 +75,14 @@ static SINGULARIZE_RULES: LazyLock<Vec<(Regex, &str)>> = LazyLock::new(|| {
         (r"(?i)(hive)s$", r"${1}"),
         (r"(?i)([^f])ves$", r"${1}fe"),
         (r"(?i)(^analy)ses$", r"${1}sis"),
-        (
-            r"(?i)((a)naly|(b)a|(d)iagno|(p)arenthe|(p)rogno|(s)ynop|(t)he)ses$",
-            r"${1}${2}sis",
-        ),
+        (r"(?i)((a)naly|(b)a|(d)iagno|(p)arenthe|(p)rogno|(s)ynop|(t)he)ses$", r"${1}${2}sis"),
         (r"(?i)([ti])a$", r"${1}um"),
         (r"(?i)(n)ews$", r"${1}ews"),
         (r"(?i)s$", ""),
     ]
     .into_iter()
     .map(|(pattern, replacement)| {
-        (
-            Regex::new(pattern).expect(&format!("Static regex pattern is invalid: {}", pattern)),
-            replacement,
-        )
+        (Regex::new(pattern).expect(&format!("Static regex pattern is invalid: {}", pattern)), replacement)
     })
     .collect()
 });
@@ -113,9 +90,7 @@ static SINGULARIZE_RULES: LazyLock<Vec<(Regex, &str)>> = LazyLock::new(|| {
 /// 判断单词是否为不可数名词。
 /// Determines if the word is an uncountable noun.
 pub fn is_uncountable(word: &str) -> bool {
-    UNCOUNTABLE_WORDS
-        .iter()
-        .any(|&u| word.len() >= u.len() && word[word.len() - u.len()..].eq_ignore_ascii_case(u))
+    UNCOUNTABLE_WORDS.iter().any(|&u| word.len() >= u.len() && word[word.len() - u.len()..].eq_ignore_ascii_case(u))
 }
 
 /// 处理不规则词。
@@ -152,11 +127,7 @@ pub fn pluralize(word: &str) -> String {
 
 /// 根据规则和不规则词列表将单词转换为单数或复数形式。
 /// Converts a word to its singular or plural form based on the rules and irregular words list.
-fn singularize_or_pluralize(
-    word: &str,
-    rules: &[(Regex, &str)],
-    irregular_words: &[(&str, &str)],
-) -> String {
+fn singularize_or_pluralize(word: &str, rules: &[(Regex, &str)], irregular_words: &[(&str, &str)]) -> String {
     if is_uncountable(word) {
         return word.to_string();
     }

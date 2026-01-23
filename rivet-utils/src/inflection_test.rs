@@ -104,44 +104,20 @@ fn test_singularize() {
 #[test]
 fn test_pascal_case() {
     assert_eq!(String::from("User"), pascal_case_of("User"));
-    assert_eq!(
-        pascal_case_of("TestModelForTableName"),
-        String::from("TestModelForTableName")
-    );
-    assert_eq!(
-        pascal_case_of("Test_model_for_Table_Name"),
-        String::from("TestModelForTableName")
-    );
-    assert_eq!(
-        pascal_case_of("Test_model_forTableName"),
-        String::from("TestModelForTableName")
-    );
-    assert_eq!(
-        pascal_case_of("_Test_model_forTableName"),
-        String::from("TestModelForTableName")
-    );
-    assert_eq!(
-        pascal_case_of("1002_test_model_forTableName"),
-        String::from("TestModelForTableName")
-    );
+    assert_eq!(pascal_case_of("TestModelForTableName"), String::from("TestModelForTableName"));
+    assert_eq!(pascal_case_of("Test_model_for_Table_Name"), String::from("TestModelForTableName"));
+    assert_eq!(pascal_case_of("Test_model_forTableName"), String::from("TestModelForTableName"));
+    assert_eq!(pascal_case_of("_Test_model_forTableName"), String::from("TestModelForTableName"));
+    assert_eq!(pascal_case_of("1002_test_model_forTableName"), String::from("TestModelForTableName"));
 }
 
 #[test]
 fn test_snake_case() {
     assert_eq!(snake_case_of("USER"), String::from("user"));
     assert_eq!(snake_case_of("User"), String::from("user"));
-    assert_eq!(
-        snake_case_of("TestModelForTableName"),
-        String::from("test_model_for_table_name")
-    );
-    assert_eq!(
-        snake_case_of("Test_model_for_Table_Name"),
-        String::from("test_model_for_table_name")
-    );
-    assert_eq!(
-        snake_case_of("Test_model_forTableName"),
-        String::from("test_model_for_table_name")
-    );
+    assert_eq!(snake_case_of("TestModelForTableName"), String::from("test_model_for_table_name"));
+    assert_eq!(snake_case_of("Test_model_for_Table_Name"), String::from("test_model_for_table_name"));
+    assert_eq!(snake_case_of("Test_model_forTableName"), String::from("test_model_for_table_name"));
     assert_eq!(snake_case_of("CreateUser"), String::from("create_user"));
 }
 
@@ -163,18 +139,9 @@ fn test_is_uncountable() {
 
 #[test]
 fn test_irregular() {
-    assert_eq!(
-        irregular("person", &PLURALIZE_IRREGULAR_WORDS),
-        Some("people".to_string())
-    );
-    assert_eq!(
-        irregular("man", &PLURALIZE_IRREGULAR_WORDS),
-        Some("men".to_string())
-    );
-    assert_eq!(
-        irregular("child", &PLURALIZE_IRREGULAR_WORDS),
-        Some("children".to_string())
-    );
+    assert_eq!(irregular("person", &PLURALIZE_IRREGULAR_WORDS), Some("people".to_string()));
+    assert_eq!(irregular("man", &PLURALIZE_IRREGULAR_WORDS), Some("men".to_string()));
+    assert_eq!(irregular("child", &PLURALIZE_IRREGULAR_WORDS), Some("children".to_string()));
     assert_eq!(irregular("cat", &PLURALIZE_IRREGULAR_WORDS), None);
     assert_eq!(irregular("dog", &SINGULARIZE_IRREGULAR_WORDS), None);
 }

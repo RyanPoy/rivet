@@ -27,10 +27,7 @@ impl<T> Column<T> {
     /// * 新的 `Column` 实例。
     /// * A new `Column` instance.
     pub const fn new(name: &'static str) -> Self {
-        Self {
-            name,
-            _marker: PhantomData,
-        }
+        Self { name, _marker: PhantomData }
     }
 
     /// 生成一个表示列等于给定值的表达式。
@@ -49,11 +46,7 @@ impl<T> Column<T> {
             Value::Null => Op::Is,
             _ => Op::Eq,
         };
-        Expr::Binary {
-            left: self.name,
-            op,
-            right,
-        }
+        Expr::Binary { left: self.name, op, right }
     }
 
     pub fn ne<V: ToValue<T>>(&self, v: V) -> Expr {
@@ -62,67 +55,38 @@ impl<T> Column<T> {
             Value::Null => Op::IsNot,
             _ => Op::Ne,
         };
-        Expr::Binary {
-            left: self.name,
-            op,
-            right,
-        }
+        Expr::Binary { left: self.name, op, right }
     }
 
     pub fn gt<V: ToValue<T>>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: Op::Gt,
-            right: v.to_value(),
-        }
+        Expr::Binary { left: self.name, op: Op::Gt, right: v.to_value() }
     }
     pub fn gte<V: ToValue<T>>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: Op::Gte,
-            right: v.to_value(),
-        }
+        Expr::Binary { left: self.name, op: Op::Gte, right: v.to_value() }
     }
 
     pub fn lt<V: ToValue<T>>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: Op::Lt,
-            right: v.to_value(),
-        }
+        Expr::Binary { left: self.name, op: Op::Lt, right: v.to_value() }
     }
 
     pub fn lte<V: ToValue<T>>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: Op::Lte,
-            right: v.to_value(),
-        }
+        Expr::Binary { left: self.name, op: Op::Lte, right: v.to_value() }
     }
 }
 
-
 trait StringType {}
-impl StringType for String{}
-impl StringType for &str{}
-impl StringType for Option<String>{}
-impl StringType for Option<&str>{}
+impl StringType for String {}
+impl StringType for &str {}
+impl StringType for Option<String> {}
+impl StringType for Option<&str> {}
 
 #[allow(private_bounds)]
-impl <T: StringType> Column<T> {
+impl<T: StringType> Column<T> {
     pub fn like<V: ToValue<T>>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: Op::Like,
-            right: v.to_value(),
-        }
+        Expr::Binary { left: self.name, op: Op::Like, right: v.to_value() }
     }
     pub fn not_like<V: ToValue<T>>(&self, v: V) -> Expr {
-        Expr::Binary {
-            left: self.name,
-            op: Op::NotLike,
-            right: v.to_value(),
-        }
+        Expr::Binary { left: self.name, op: Op::NotLike, right: v.to_value() }
     }
 }
 

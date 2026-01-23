@@ -38,11 +38,7 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
                     .unwrap_or_else(|| inflection::snake_case_of(&field_ident.to_string()));
 
                 // 关键点：这里我们要保留原始的字段标识符（或处理后的标识符）用于结构体成员
-                Some(ColumnMeta {
-                    ident: field_ident,
-                    name: col_name,
-                    tp: field.ty.clone(),
-                })
+                Some(ColumnMeta { ident: field_ident, name: col_name, tp: field.ty.clone() })
             })
             .collect()
     }
@@ -59,11 +55,7 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
     expanded.into()
 }
 
-fn expand_columns_metadata(
-    struct_input: &ItemStruct,
-    metas: Vec<ColumnMeta>,
-    table_name: &str,
-) -> TokenStream2 {
+fn expand_columns_metadata(struct_input: &ItemStruct, metas: Vec<ColumnMeta>, table_name: &str) -> TokenStream2 {
     let idents: Vec<_> = metas.iter().map(|m| &m.ident).collect();
     let names: Vec<_> = metas.iter().map(|m| &m.name).collect();
     let types: Vec<_> = metas.iter().map(|m| &m.tp).collect();
@@ -90,10 +82,7 @@ fn expand_columns_metadata(
 
 fn find_arg(token: &mut Field, attr_name: &str, take: bool) -> Option<TokenStream2> {
     // 寻找属性位置
-    let pos = token
-        .attrs
-        .iter()
-        .position(|a| a.path().is_ident(attr_name))?;
+    let pos = token.attrs.iter().position(|a| a.path().is_ident(attr_name))?;
 
     let attr = if take {
         token.attrs.remove(pos) // 将属性从列表中移除
@@ -103,20 +92,16 @@ fn find_arg(token: &mut Field, attr_name: &str, take: bool) -> Option<TokenStrea
 
     // 转换并返回其内部 Tokens
     match attr.meta {
-        Meta::List(l) => Some(l.tokens), // 匹配 #[col(name = "id")]
+        Meta::List(l) => Some(l.tokens),            // 匹配 #[col(name = "id")]
         Meta::Path(_) => Some(TokenStream2::new()), // 匹配 #[col] 或 #[no_col]
-        Meta::NameValue(nv) => Some(quote!(#nv)), // 兼容 #[col = "id"]
+        Meta::NameValue(nv) => Some(quote!(#nv)),   // 兼容 #[col = "id"]
     }
 }
 
 fn parse_table_name(struct_name: &Ident, table_args: TokenStream) -> String {
     // 解析表名：直接解析宏函数的第一个参数 table_args
-    if table_args.is_empty() {
-        None
-    } else {
-        parse_arg_value_from(table_args.into(), "name")
-    }
-    .unwrap_or_else(|| inflection::table_name_of(&struct_name.to_string()))
+    if table_args.is_empty() { None } else { parse_arg_value_from(table_args.into(), "name") }
+        .unwrap_or_else(|| inflection::table_name_of(&struct_name.to_string()))
 }
 
 fn parse_arg_value_from(args: TokenStream2, arg_name: &str) -> Option<String> {
