@@ -18,6 +18,7 @@ use_small_heuristics = "Max"
 reorder_imports = true
 
 # 如果 struct 字段较少，尝试放在一行。
+unstable_features = true
 struct_field_align_threshold = 40
 
 # 去掉多余的空行。
