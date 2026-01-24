@@ -3,6 +3,8 @@ use crate::ast::expr::{Expr, Op};
 use crate::ast::value::{ToValue, Value};
 use std::marker::PhantomData;
 
+trait ColumnType{}
+
 /// 表示SQL表中的列。
 /// Represents a column in an SQL table.
 #[derive(Debug, Eq, PartialEq)]

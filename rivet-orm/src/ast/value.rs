@@ -1,18 +1,18 @@
 #[derive(Debug, PartialEq, Eq)]
 pub enum Value {
     Null,
-    I8(Option<i8>),
-    I16(Option<i16>),
-    I32(Option<i32>),
-    I64(Option<i64>),
-    I128(Option<i128>),
-    U8(Option<u8>),
-    U16(Option<u16>),
-    U32(Option<u32>),
-    U64(Option<u64>),
-    U128(Option<u128>),
-    String(Option<String>),
-    Bool(Option<bool>),
+    I8(i8),
+    I16(i16),
+    I32(i32),
+    I64(i64),
+    I128(i128),
+    U8(u8),
+    U16(u16),
+    U32(u32),
+    U64(u64),
+    U128(u128),
+    Bool(bool),
+    String(String),
 }
 
 pub trait ToValue<T> {
@@ -23,20 +23,13 @@ macro_rules! impl_to_value_for_numeric {
         $(
             impl ToValue<$t> for $t {
                 fn to_value(&self) -> Value {
-                    Value::$variant(Some(*self))
+                    Value::$variant(*self)
                 }
             }
-
-            impl ToValue<Option<$t>> for $t {
-                fn to_value(&self) -> Value {
-                    Value::$variant(Some(*self))
-                }
-            }
-
-            impl ToValue<Option<$t>> for Option<$t> {
+            impl ToValue<$t> for Option<$t> {
                 fn to_value(&self) -> Value {
                     match self {
-                        Some(v) => Value::$variant(Some(*v)),
+                        Some(v) => Value::$variant(*v),
                         None => Value::Null,
                     }
                 }
@@ -63,18 +56,13 @@ macro_rules! impl_to_value_for_string {
         $(
             impl ToValue<$t> for String {
                 fn to_value(&self) -> Value {
-                    Value::String(Some(self.into()))
+                    Value::String(self.into())
                 }
             }
-            impl ToValue<Option<$t>> for String {
-                fn to_value(&self) -> Value {
-                    Value::String(Some(self.into()))
-                }
-            }
-            impl ToValue<Option<$t>> for Option<String> {
+            impl ToValue<$t> for Option<String> {
                 fn to_value(&self) -> Value {
                     match self {
-                        Some(v) => Value::String(Some(v.into())),
+                        Some(v) => Value::String(v.into()),
                         None => Value::Null,
                     }
                 }
@@ -89,18 +77,13 @@ macro_rules! impl_to_value_for_str_ref {
         $(
             impl ToValue<$t> for &str {
                 fn to_value(&self) -> Value {
-                    Value::String(Some(self.to_string()))
+                    Value::String(self.to_string())
                 }
             }
-            impl ToValue<Option<$t>> for &str {
-                fn to_value(&self) -> Value {
-                    Value::String(Some(self.to_string()))
-                }
-            }
-            impl ToValue<Option<$t>> for Option<&str> {
+            impl ToValue<$t> for Option<&str> {
                 fn to_value(&self) -> Value {
                     match self {
-                        Some(v) => Value::String(Some(v.to_string())),
+                        Some(v) => Value::String(v.to_string()),
                         None => Value::Null,
                     }
                 }

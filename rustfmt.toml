@@ -2,7 +2,7 @@
 
 # 每行最大宽度。默认 100。
 # 如果你觉得嵌套比较深（比如大量的 match 语句），可以调大到 120。
-max_width = 120
+#max_width = 160
 
 # 合并派生宏。
 # 将 #[derive(Debug)] 和 #[derive(PartialEq)] 合并为 #[derive(Debug, PartialEq)]。
