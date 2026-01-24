@@ -318,10 +318,7 @@ pub fn test_lt_str_ref() {
 #[test]
 pub fn test_gte_number() {
     assert_eq!(Column::<i32>::new("age").gte(20), binary("age", Op::Gte, Value::I32(20)));
-    assert_eq!(
-        Column::<i32>::new("age").gte(Some(20)),
-        binary("age", Op::Gte, Value::I32(20))
-    );
+    assert_eq!(Column::<i32>::new("age").gte(Some(20)), binary("age", Op::Gte, Value::I32(20)));
     assert_eq!(Column::<i32>::new("age").gte(None), binary("age", Op::Gte, Value::Null));
 }
 #[test]
@@ -397,10 +394,7 @@ pub fn test_gte_str_ref() {
 #[test]
 pub fn test_lte_number() {
     assert_eq!(Column::<i32>::new("age").lte(20), binary("age", Op::Lte, Value::I32(20)));
-    assert_eq!(
-        Column::<i32>::new("age").lte(Some(20)),
-        binary("age", Op::Lte, Value::I32(20))
-    );
+    assert_eq!(Column::<i32>::new("age").lte(Some(20)), binary("age", Op::Lte, Value::I32(20)));
     assert_eq!(Column::<i32>::new("age").lte(None), binary("age", Op::Lte, Value::Null));
 }
 
@@ -581,37 +575,37 @@ pub fn test_not_like_str_ref() {
         Expr::Binary { left: "username", op: Op::NotLike, right: Value::Null }
     );
 }
-//
-// #[test]
-// fn test_column_define() {
-//     #[table]
-//     struct User {
-//         id: i32,
-//
-//         #[col(username)]
-//         name: String,
-//
-//         age: u32,
-//         nick_name: Option<String>,
-//         checked: bool,
-//
-//         #[no_col]
-//         temp: String,
-//     };
-//
-//     let user = User {
-//         id: 1,
-//         name: "Luly".to_string(),
-//         age: 30,
-//         nick_name: None,
-//         checked: true,
-//         temp: "fuck".to_string(),
-//     };
-//     assert_eq!(User::id, Column::<i32>::new("id"));
-//     assert_eq!(User::name, Column::<String>::new("username"));
-//     assert_eq!(User::age, Column::<u32>::new("age"));
-//     // assert_eq!(User::nick_name, Column::<Option<String>>::new("nick_name"));
-//     assert_eq!(User::checked, Column::<bool>::new("checked"));
-//
-//     assert_eq!(user.id, 1);
-// }
+
+#[test]
+fn test_column_define() {
+    #[table]
+    struct User {
+        id: i32,
+
+        #[col(username)]
+        name: String,
+
+        age: u32,
+        nick_name: Option<String>,
+        checked: bool,
+
+        #[no_col]
+        temp: String,
+    };
+
+    let user = User {
+        id: 1,
+        name: "Luly".to_string(),
+        age: 30,
+        nick_name: None,
+        checked: true,
+        temp: "fuck".to_string(),
+    };
+    assert_eq!(User::id, Column::<i32>::new("id"));
+    assert_eq!(User::name, Column::<String>::new("username"));
+    assert_eq!(User::age, Column::<u32>::new("age"));
+    assert_eq!(User::nick_name, Column::<String>::new("nick_name"));
+    assert_eq!(User::checked, Column::<bool>::new("checked"));
+
+    assert_eq!(user.id, 1);
+}
