@@ -67,14 +67,6 @@ macro_rules! impl_to_value_for_string {
                     }
                 }
             }
-        )*
-    };
-}
-impl_to_value_for_string!(String, &str);
-
-macro_rules! impl_to_value_for_str_ref {
-    ($($t:ty), *) => {
-        $(
             impl ToValue<$t> for &str {
                 fn to_value(&self) -> Value {
                     Value::String(self.to_string())
@@ -91,4 +83,4 @@ macro_rules! impl_to_value_for_str_ref {
         )*
     };
 }
-impl_to_value_for_str_ref!(String, &str);
+impl_to_value_for_string!(String, &str);
