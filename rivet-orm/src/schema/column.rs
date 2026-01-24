@@ -5,38 +5,19 @@ use std::marker::PhantomData;
 
 mod private {
     pub trait Sealed {}
-    impl Sealed for i8 {}
-    impl Sealed for i16 {}
-    impl Sealed for i32 {}
-    impl Sealed for i64 {}
-    impl Sealed for i128 {}
-    impl Sealed for isize {}
-    impl Sealed for u8 {}
-    impl Sealed for u16 {}
-    impl Sealed for u32 {}
-    impl Sealed for u64 {}
-    impl Sealed for u128 {}
-    impl Sealed for usize {}
-    impl Sealed for bool {}
-    impl Sealed for String {}
-    impl Sealed for &str {}
 }
 pub trait ColumnType: private::Sealed {}
-impl ColumnType for i8 {}
-impl ColumnType for i16 {}
-impl ColumnType for i32 {}
-impl ColumnType for i64 {}
-impl ColumnType for i128 {}
-impl ColumnType for isize {}
-impl ColumnType for u8 {}
-impl ColumnType for u16 {}
-impl ColumnType for u32 {}
-impl ColumnType for u64 {}
-impl ColumnType for u128 {}
-impl ColumnType for usize {}
-impl ColumnType for bool {}
-impl ColumnType for String {}
-impl ColumnType for &str {}
+macro_rules! register_column_types {
+    ($($t:ty),*) => {
+        $(
+            impl private::Sealed for $t {}
+            impl ColumnType for $t {}
+        )*
+    };
+}
+register_column_types!(
+    i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, bool, String, &str
+);
 
 /// 表示SQL表中的列。
 /// Represents a column in an SQL table.
