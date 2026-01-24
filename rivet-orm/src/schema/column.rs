@@ -1,14 +1,47 @@
-use std::fmt;
 use crate::ast::expr::{Expr, Op};
 use crate::ast::value::{ToValue, Value};
+use std::fmt;
 use std::marker::PhantomData;
 
-trait ColumnType{}
+mod private {
+    pub trait Sealed {}
+    impl Sealed for i8 {}
+    impl Sealed for i16 {}
+    impl Sealed for i32 {}
+    impl Sealed for i64 {}
+    impl Sealed for i128 {}
+    impl Sealed for isize {}
+    impl Sealed for u8 {}
+    impl Sealed for u16 {}
+    impl Sealed for u32 {}
+    impl Sealed for u64 {}
+    impl Sealed for u128 {}
+    impl Sealed for usize {}
+    impl Sealed for bool {}
+    impl Sealed for String {}
+    impl Sealed for &str {}
+}
+pub trait ColumnType: private::Sealed {}
+impl ColumnType for i8 {}
+impl ColumnType for i16 {}
+impl ColumnType for i32 {}
+impl ColumnType for i64 {}
+impl ColumnType for i128 {}
+impl ColumnType for isize {}
+impl ColumnType for u8 {}
+impl ColumnType for u16 {}
+impl ColumnType for u32 {}
+impl ColumnType for u64 {}
+impl ColumnType for u128 {}
+impl ColumnType for usize {}
+impl ColumnType for bool {}
+impl ColumnType for String {}
+impl ColumnType for &str {}
 
 /// 表示SQL表中的列。
 /// Represents a column in an SQL table.
 #[derive(Debug, Eq, PartialEq)]
-pub struct Column<T: ?Sized> {
+pub struct Column<T: ColumnType> {
     /// 列名。
     /// The name of the column.
     pub name: &'static str,
@@ -18,7 +51,7 @@ pub struct Column<T: ?Sized> {
     _marker: PhantomData<T>,
 }
 
-impl<T> Column<T> {
+impl<T: ColumnType> Column<T> {
     /// 创建一个新的 `Column` 实例。
     /// Creates a new `Column` instance.
     ///
@@ -77,11 +110,9 @@ impl<T> Column<T> {
     }
 }
 
-trait StringType {}
+trait StringType: ColumnType {}
 impl StringType for String {}
 impl StringType for &str {}
-impl StringType for Option<String> {}
-impl StringType for Option<&str> {}
 
 #[allow(private_bounds)]
 impl<T: StringType> Column<T> {
