@@ -51,6 +51,8 @@ impl_to_value_for_numeric!(
     bool => Bool
 );
 
+/// `&str` only exists as a convenience input,
+/// `Value` always owns `String`.
 impl ToValue<String> for String {
     fn to_value(&self) -> Value {
         Value::String(self.into())

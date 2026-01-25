@@ -39,6 +39,17 @@ pub enum Expr {
     Binary { left: &'static str, op: Op, right: Value },
 }
 
+impl Expr {
+    pub fn new_binary(left: &'static str, op: Op, right: Value) -> Expr {
+        let op = match (&op, &right) {
+            (Op::Eq, Value::Null) => Op::Is,
+            (Op::Ne, Value::Null) => Op::IsNot,
+            _ => op,
+        };
+        Expr::Binary { left, op, right }
+    }
+}
+
 /// 测试模块。
 /// Test module.
 #[cfg(test)]

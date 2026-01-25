@@ -18,9 +18,6 @@ macro_rules! register_column_types {
 }
 register_column_types!(i8, i16, i32, i64, i128, u8, u16, u32, u64, u128, bool, String);
 
-pub trait StringType: ColumnType {}
-impl StringType for String {}
-
 /// 表示SQL表中的列。
 /// Represents a column in an SQL table.
 #[derive(Debug, Eq, PartialEq)]
@@ -49,15 +46,6 @@ impl<T: ColumnType> Column<T> {
         Self { name, _marker: PhantomData }
     }
 
-    fn build_binary_expr(&self, op: Op, v: Value) -> Expr {
-        let op = match (&op, &v) {
-            (Op::Eq, Value::Null) => Op::Is,
-            (Op::Ne, Value::Null) => Op::IsNot,
-            _ => op,
-        };
-        Expr::Binary { left: self.name, op, right: v }
-    }
-
     /// 生成一个表示列等于给定值的表达式。
     /// Generates an expression representing the column being equal to the given value.
     ///
@@ -69,36 +57,36 @@ impl<T: ColumnType> Column<T> {
     /// * 表示列等于给定值的表达式。
     /// * An expression representing the column being equal to the given value.
     pub fn eq<V: ToValue<T>>(&self, v: V) -> Expr {
-        self.build_binary_expr(Op::Eq, v.to_value())
+        Expr::new_binary(self.name, Op::Eq, v.to_value())
     }
 
     pub fn ne<V: ToValue<T>>(&self, v: V) -> Expr {
-        self.build_binary_expr(Op::Ne, v.to_value())
+        Expr::new_binary(self.name, Op::Ne, v.to_value())
     }
 
     pub fn gt<V: ToValue<T>>(&self, v: V) -> Expr {
-        self.build_binary_expr(Op::Gt, v.to_value())
+        Expr::new_binary(self.name, Op::Gt, v.to_value())
     }
     pub fn gte<V: ToValue<T>>(&self, v: V) -> Expr {
-        self.build_binary_expr(Op::Gte, v.to_value())
+        Expr::new_binary(self.name, Op::Gte, v.to_value())
     }
 
     pub fn lt<V: ToValue<T>>(&self, v: V) -> Expr {
-        self.build_binary_expr(Op::Lt, v.to_value())
+        Expr::new_binary(self.name, Op::Lt, v.to_value())
     }
 
     pub fn lte<V: ToValue<T>>(&self, v: V) -> Expr {
-        self.build_binary_expr(Op::Lte, v.to_value())
+        Expr::new_binary(self.name, Op::Lte, v.to_value())
     }
 }
 
 #[allow(private_bounds)]
-impl<T: StringType> Column<T> {
-    pub fn like<V: ToValue<T>>(&self, v: V) -> Expr {
-        self.build_binary_expr(Op::Like, v.to_value())
+impl Column<String> {
+    pub fn like<V: ToValue<String>>(&self, v: V) -> Expr {
+        Expr::new_binary(self.name, Op::Like, v.to_value())
     }
-    pub fn not_like<V: ToValue<T>>(&self, v: V) -> Expr {
-        self.build_binary_expr(Op::NotLike, v.to_value())
+    pub fn not_like<V: ToValue<String>>(&self, v: V) -> Expr {
+        Expr::new_binary(self.name, Op::NotLike, v.to_value())
     }
 }
 
