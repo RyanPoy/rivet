@@ -40,291 +40,252 @@ fn test_column_define() {
     assert_eq!(user.id, 1);
 }
 
-pub fn binary(left: &'static str, op: Op, right: Value) -> Expr {
-    Expr::Binary { left, op, right }
+macro_rules! assert_exprs_eq {
+    ($($expr:expr => {$left:expr, $op:path, $right:expr}),* $(,)?) => {
+        $(
+            assert_eq!(
+                $expr,
+                Expr::Binary { left: $left, op: $op, right: $right, }
+            );
+        )*
+    };
+}
+#[test]
+pub fn test_eq() {
+    // for number
+    let age = Column::<i32>::new("age");
+    assert_exprs_eq!(
+        age.eq(20) => {"age", Op::Eq, Value::I32(20)},
+        age.eq(Some(20)) => {"age", Op::Eq, Value::I32(20)},
+        age.eq(None) => {"age", Op::Is, Value::Null},
+    );
+
+    // for bool
+    let has_children = Column::<bool>::new("has_children");
+    assert_exprs_eq!(
+        has_children.eq(true) => {"has_children", Op::Eq, Value::Bool(true)},
+        has_children.eq(Some(true)) => {"has_children", Op::Eq, Value::Bool(true)},
+        has_children.eq(None) => {"has_children", Op::Is, Value::Null},
+    );
+
+    // for String
+    let username = Column::<String>::new("username");
+    assert_exprs_eq!(
+        username.eq("Lucy".to_string()) => {"username", Op::Eq, Value::String("Lucy".to_string())},
+        username.eq(Some("Lucy".to_string())) => {"username", Op::Eq, Value::String("Lucy".to_string())},
+        username.eq(None::<String>) => {"username", Op::Is, Value::Null},
+    );
+
+    // for &str
+    let username = Column::<String>::new("username");
+    assert_exprs_eq!(
+        username.eq("Lucy") => {"username", Op::Eq, Value::String("Lucy".to_string())},
+        username.eq(Some("Lucy")) => {"username", Op::Eq, Value::String("Lucy".to_string())},
+        username.eq(None::<&str>) => {"username", Op::Is, Value::Null},
+    );
+}
+#[test]
+pub fn test_ne() {
+    // for number
+    let age = Column::<i32>::new("age");
+    assert_exprs_eq!(
+        age.ne(20) => {"age", Op::Ne, Value::I32(20)},
+        age.ne(Some(20)) => {"age", Op::Ne, Value::I32(20)},
+        age.ne(None) => {"age", Op::IsNot, Value::Null},
+    );
+
+    // for bool
+    let has_children = Column::<bool>::new("has_children");
+    assert_exprs_eq!(
+        has_children.ne(true) => {"has_children", Op::Ne, Value::Bool(true)},
+        has_children.ne(Some(true)) => {"has_children", Op::Ne, Value::Bool(true)},
+        has_children.ne(None) => {"has_children", Op::IsNot, Value::Null},
+    );
+
+    // for String
+    let username = Column::<String>::new("username");
+    assert_exprs_eq!(
+        username.ne("Lucy".to_string()) => {"username", Op::Ne, Value::String("Lucy".to_string())},
+        username.ne(Some("Lucy".to_string())) => {"username", Op::Ne, Value::String("Lucy".to_string())},
+        username.ne(None::<String>) => {"username", Op::IsNot, Value::Null},
+    );
+
+    // for &str
+    let username = Column::<String>::new("username");
+    assert_exprs_eq!(
+        username.ne("Lucy") => {"username", Op::Ne, Value::String("Lucy".to_string())},
+        username.ne(Some("Lucy")) => {"username", Op::Ne, Value::String("Lucy".to_string())},
+        username.ne(None::<&str>) => {"username", Op::IsNot, Value::Null},
+    );
+}
+#[test]
+pub fn test_gt() {
+    // for number
+    let age = Column::<i32>::new("age");
+    assert_exprs_eq!(
+        age.gt(20) => {"age", Op::Gt, Value::I32(20)},
+        age.gt(Some(20)) => {"age", Op::Gt, Value::I32(20)},
+        age.gt(None) => {"age", Op::Gt, Value::Null},
+    );
+
+    // for bool
+    let has_children = Column::<bool>::new("has_children");
+    assert_exprs_eq!(
+        has_children.gt(true) => {"has_children", Op::Gt, Value::Bool(true)},
+        has_children.gt(Some(true)) => {"has_children", Op::Gt, Value::Bool(true)},
+        has_children.gt(None) => {"has_children", Op::Gt, Value::Null},
+    );
+
+    // for String
+    let username = Column::<String>::new("username");
+    assert_exprs_eq!(
+        username.gt("Lucy".to_string()) => {"username", Op::Gt, Value::String("Lucy".to_string())},
+        username.gt(Some("Lucy".to_string())) => {"username", Op::Gt, Value::String("Lucy".to_string())},
+        username.gt(None::<String>) => {"username", Op::Gt, Value::Null},
+    );
+
+    // for &str
+    let username = Column::<String>::new("username");
+    assert_exprs_eq!(
+        username.gt("Lucy") => {"username", Op::Gt, Value::String("Lucy".to_string())},
+        username.gt(Some("Lucy")) => {"username", Op::Gt, Value::String("Lucy".to_string())},
+        username.gt(None::<&str>) => {"username", Op::Gt, Value::Null},
+    );
+}
+#[test]
+pub fn test_lt() {
+    // for number
+    let age = Column::<i32>::new("age");
+    assert_exprs_eq!(
+        age.lt(20) => {"age", Op::Lt, Value::I32(20)},
+        age.lt(Some(20)) => {"age", Op::Lt, Value::I32(20)},
+        age.lt(None) => {"age", Op::Lt, Value::Null},
+    );
+
+    // for bool
+    let has_children = Column::<bool>::new("has_children");
+    assert_exprs_eq!(
+        has_children.lt(true) => {"has_children", Op::Lt, Value::Bool(true)},
+        has_children.lt(Some(true)) => {"has_children", Op::Lt, Value::Bool(true)},
+        has_children.lt(None) => {"has_children", Op::Lt, Value::Null},
+    );
+
+    // for String
+    let username = Column::<String>::new("username");
+    assert_exprs_eq!(
+        username.lt("Lucy".to_string()) => {"username", Op::Lt, Value::String("Lucy".to_string())},
+        username.lt(Some("Lucy".to_string())) => {"username", Op::Lt, Value::String("Lucy".to_string())},
+        username.lt(None::<String>) => {"username", Op::Lt, Value::Null},
+    );
+
+    // for &str
+    let username = Column::<String>::new("username");
+    assert_exprs_eq!(
+        username.lt("Lucy") => {"username", Op::Lt, Value::String("Lucy".to_string())},
+        username.lt(Some("Lucy")) => {"username", Op::Lt, Value::String("Lucy".to_string())},
+        username.lt(None::<&str>) => {"username", Op::Lt, Value::Null},
+    );
+}
+#[test]
+pub fn test_gte() {
+    // for number
+    let age = Column::<i32>::new("age");
+    assert_exprs_eq!(
+        age.gte(20) => {"age", Op::Gte, Value::I32(20)},
+        age.gte(Some(20)) => {"age", Op::Gte, Value::I32(20)},
+        age.gte(None) => {"age", Op::Gte, Value::Null},
+    );
+
+    // for bool
+    let has_children = Column::<bool>::new("has_children");
+    assert_exprs_eq!(
+        has_children.gte(true) => {"has_children", Op::Gte, Value::Bool(true)},
+        has_children.gte(Some(true)) => {"has_children", Op::Gte, Value::Bool(true)},
+        has_children.gte(None) => {"has_children", Op::Gte, Value::Null},
+    );
+
+    // for String
+    let username = Column::<String>::new("username");
+    assert_exprs_eq!(
+        username.gte("Lucy".to_string()) => {"username", Op::Gte, Value::String("Lucy".to_string())},
+        username.gte(Some("Lucy".to_string())) => {"username", Op::Gte, Value::String("Lucy".to_string())},
+        username.gte(None::<String>) => {"username", Op::Gte, Value::Null},
+    );
+
+    // for &str
+    let username = Column::<String>::new("username");
+    assert_exprs_eq!(
+        username.gte("Lucy") => {"username", Op::Gte, Value::String("Lucy".to_string())},
+        username.gte(Some("Lucy")) => {"username", Op::Gte, Value::String("Lucy".to_string())},
+        username.gte(None::<&str>) => {"username", Op::Gte, Value::Null},
+    );
 }
 
 #[test]
-pub fn test_eq_number() {
+pub fn test_lte() {
+    // for number
     let age = Column::<i32>::new("age");
-    assert_eq!(age.eq(20), binary("age", Op::Eq, Value::I32(20)));
-    assert_eq!(age.eq(Some(20)), binary("age", Op::Eq, Value::I32(20)));
-    assert_eq!(age.eq(None), binary("age", Op::Is, Value::Null));
-}
-#[test]
-pub fn test_eq_bool() {
-    let has_children = Column::<bool>::new("has_children");
-    assert_eq!(has_children.eq(true), binary("has_children", Op::Eq, Value::Bool(true)));
-    assert_eq!(has_children.eq(Some(true)), binary("has_children", Op::Eq, Value::Bool(true)));
-    assert_eq!(has_children.eq(None), binary("has_children", Op::Is, Value::Null));
-}
-#[test]
-pub fn test_eq_string() {
-    let username = Column::<String>::new("username");
-    assert_eq!(
-        username.eq("Lucy".to_string()),
-        binary("username", Op::Eq, Value::String("Lucy".to_string()))
+    assert_exprs_eq!(
+        age.lte(20) => {"age", Op::Lte, Value::I32(20)},
+        age.lte(Some(20)) => {"age", Op::Lte, Value::I32(20)},
+        age.lte(None) => {"age", Op::Lte, Value::Null},
     );
-    assert_eq!(
-        username.eq(Some("Lucy".to_string())),
-        binary("username", Op::Eq, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(username.eq(None::<String>), binary("username", Op::Is, Value::Null));
-}
-#[test]
-pub fn test_eq_str_ref() {
-    let username = Column::<String>::new("username");
-    assert_eq!(username.eq("Lucy"), binary("username", Op::Eq, Value::String("Lucy".to_string())));
-    assert_eq!(
-        username.eq(Some("Lucy")),
-        binary("username", Op::Eq, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(username.eq(None::<String>), binary("username", Op::Is, Value::Null));
-}
-#[test]
-pub fn test_ne_number() {
-    let age = Column::<i32>::new("age");
-    assert_eq!(age.ne(20), binary("age", Op::Ne, Value::I32(20)));
-    assert_eq!(age.ne(20), binary("age", Op::Ne, Value::I32(20)));
-    assert_eq!(age.ne(None), binary("age", Op::IsNot, Value::Null));
-}
-#[test]
-pub fn test_ne_bool() {
-    let has_children = Column::<bool>::new("has_children");
 
-    assert_eq!(has_children.ne(true), binary("has_children", Op::Ne, Value::Bool(true)));
-    assert_eq!(has_children.ne(Some(true)), binary("has_children", Op::Ne, Value::Bool(true)));
-    assert_eq!(has_children.ne(None), binary("has_children", Op::IsNot, Value::Null));
-}
-#[test]
-pub fn test_ne_string() {
-    let username = Column::<String>::new("username");
-    assert_eq!(
-        username.ne("Lucy".to_string()),
-        binary("username", Op::Ne, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        username.ne(Some("Lucy".to_string())),
-        binary("username", Op::Ne, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(username.ne(None::<String>), binary("username", Op::IsNot, Value::Null));
-}
-#[test]
-pub fn test_ne_str_ref() {
-    let username = Column::<String>::new("username");
-    assert_eq!(username.ne("Lucy"), binary("username", Op::Ne, Value::String("Lucy".to_string())));
-    assert_eq!(
-        username.ne(Some("Lucy")),
-        binary("username", Op::Ne, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(username.ne(None::<&str>), binary("username", Op::IsNot, Value::Null));
-}
-#[test]
-pub fn test_gt_number() {
-    let age = Column::<i32>::new("age");
-    assert_eq!(age.gt(20), binary("age", Op::Gt, Value::I32(20)));
-    assert_eq!(age.gt(Some(20)), binary("age", Op::Gt, Value::I32(20)));
-    assert_eq!(age.gt(None), binary("age", Op::Gt, Value::Null));
-}
-#[test]
-pub fn test_gt_bool() {
+    // for bool
     let has_children = Column::<bool>::new("has_children");
-    assert_eq!(has_children.gt(true), binary("has_children", Op::Gt, Value::Bool(true)));
-    assert_eq!(has_children.gt(true), binary("has_children", Op::Gt, Value::Bool(true)));
-    assert_eq!(has_children.gt(None), binary("has_children", Op::Gt, Value::Null))
-}
-#[test]
-pub fn test_gt_string() {
-    let username = Column::<String>::new("username");
-    assert_eq!(
-        username.gt("Lucy".to_string()),
-        binary("username", Op::Gt, Value::String("Lucy".to_string()))
+    assert_exprs_eq!(
+        has_children.lte(true) => {"has_children", Op::Lte, Value::Bool(true)},
+        has_children.lte(Some(true)) => {"has_children", Op::Lte, Value::Bool(true)},
+        has_children.lte(None) => {"has_children", Op::Lte, Value::Null},
     );
-    assert_eq!(
-        username.gt("Lucy".to_string()),
-        binary("username", Op::Gt, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(username.gt(None::<String>), binary("username", Op::Gt, Value::Null));
-}
-#[test]
-pub fn test_gt_str_ref() {
-    let username = Column::<String>::new("username");
-    assert_eq!(username.gt("Lucy"), binary("username", Op::Gt, Value::String("Lucy".to_string())));
-    assert_eq!(username.gt("Lucy"), binary("username", Op::Gt, Value::String("Lucy".to_string())));
-    assert_eq!(username.gt(None::<String>), binary("username", Op::Gt, Value::Null));
-}
-#[test]
-pub fn test_lt_number() {
-    let age = Column::<i32>::new("age");
-    assert_eq!(age.lt(20), binary("age", Op::Lt, Value::I32(20)));
-    assert_eq!(age.lt(Some(20)), binary("age", Op::Lt, Value::I32(20)));
-    assert_eq!(age.lt(None), binary("age", Op::Lt, Value::Null));
-}
-#[test]
-pub fn test_lt_bool() {
-    let has_children = Column::<bool>::new("has_children");
-    assert_eq!(has_children.lt(true), binary("has_children", Op::Lt, Value::Bool(true)));
-    assert_eq!(has_children.lt(Some(true)), binary("has_children", Op::Lt, Value::Bool(true)));
-    assert_eq!(has_children.lt(None), binary("has_children", Op::Lt, Value::Null));
-}
-#[test]
-pub fn test_lt_string() {
-    let username = Column::<String>::new("username");
-    assert_eq!(
-        username.lt("Lucy".to_string()),
-        binary("username", Op::Lt, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        username.lt(Some("Lucy".to_string())),
-        binary("username", Op::Lt, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(username.lt(None::<String>), binary("username", Op::Lt, Value::Null));
-}
-#[test]
-pub fn test_lt_str_ref() {
-    let username = Column::<String>::new("username");
-    assert_eq!(username.lt("Lucy"), binary("username", Op::Lt, Value::String("Lucy".to_string())));
-    assert_eq!(
-        username.lt(Some("Lucy")),
-        binary("username", Op::Lt, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(username.lt(None::<String>), binary("username", Op::Lt, Value::Null));
-}
-#[test]
-pub fn test_gte_number() {
-    let age = Column::<i32>::new("age");
-    assert_eq!(age.gte(20), binary("age", Op::Gte, Value::I32(20)));
-    assert_eq!(age.gte(Some(20)), binary("age", Op::Gte, Value::I32(20)));
-    assert_eq!(age.gte(None), binary("age", Op::Gte, Value::Null));
-}
-#[test]
-pub fn test_gte_bool() {
-    let has_children = Column::<bool>::new("has_children");
-    assert_eq!(has_children.gte(true), binary("has_children", Op::Gte, Value::Bool(true)));
-    assert_eq!(has_children.gte(Some(true)), binary("has_children", Op::Gte, Value::Bool(true)));
-    assert_eq!(has_children.gte(None), binary("has_children", Op::Gte, Value::Null));
-}
-#[test]
-pub fn test_gte_string() {
-    let username = Column::<String>::new("username");
-    assert_eq!(
-        username.gte("Lucy".to_string()),
-        binary("username", Op::Gte, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        username.gte(Some("Lucy".to_string())),
-        binary("username", Op::Gte, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(username.gte(None::<String>), binary("username", Op::Gte, Value::Null));
-}
-#[test]
-pub fn test_gte_str_ref() {
-    let username = Column::<String>::new("username");
-    assert_eq!(
-        username.gte("Lucy"),
-        binary("username", Op::Gte, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        username.gte(Some("Lucy")),
-        binary("username", Op::Gte, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(username.gte(None::<&str>), binary("username", Op::Gte, Value::Null));
-}
 
-#[test]
-pub fn test_lte_number() {
-    let age = Column::<i32>::new("age");
-    assert_eq!(age.lte(20), binary("age", Op::Lte, Value::I32(20)));
-    assert_eq!(age.lte(Some(20)), binary("age", Op::Lte, Value::I32(20)));
-    assert_eq!(age.lte(None), binary("age", Op::Lte, Value::Null));
-}
+    // for String
+    let username = Column::<String>::new("username");
+    assert_exprs_eq!(
+        username.lte("Lucy".to_string()) => {"username", Op::Lte, Value::String("Lucy".to_string())},
+        username.lte(Some("Lucy".to_string())) => {"username", Op::Lte, Value::String("Lucy".to_string())},
+        username.lte(None::<String>) => {"username", Op::Lte, Value::Null},
+    );
 
-#[test]
-pub fn test_lte_bool() {
-    let has_children = Column::<bool>::new("has_children");
-    assert_eq!(has_children.lte(true), binary("has_children", Op::Lte, Value::Bool(true)));
-    assert_eq!(has_children.lte(Some(true)), binary("has_children", Op::Lte, Value::Bool(true)));
-    assert_eq!(has_children.lte(None), binary("has_children", Op::Lte, Value::Null));
+    // for &str
+    let username = Column::<String>::new("username");
+    assert_exprs_eq!(
+        username.lte("Lucy") => {"username", Op::Lte, Value::String("Lucy".to_string())},
+        username.lte(Some("Lucy")) => {"username", Op::Lte, Value::String("Lucy".to_string())},
+        username.lte(None::<&str>) => {"username", Op::Lte, Value::Null},
+    );
 }
 #[test]
-pub fn test_lte_string() {
+pub fn test_like() {
+    // for String
     let username = Column::<String>::new("username");
-    assert_eq!(
-        username.lte("Lucy".to_string()),
-        binary("username", Op::Lte, Value::String("Lucy".to_string()))
+    assert_exprs_eq!(
+        username.like("Lucy".to_string()) => {"username", Op::Like, Value::String("Lucy".to_string())},
+        username.like(Some("Lucy".to_string())) => {"username", Op::Like, Value::String("Lucy".to_string())},
+        username.like(None::<String>) => {"username", Op::Like, Value::Null},
     );
-    assert_eq!(
-        username.lte(Some("Lucy".to_string())),
-        binary("username", Op::Lte, Value::String("Lucy".to_string()))
+    // for &str
+    let username = Column::<String>::new("username");
+    assert_exprs_eq!(
+        username.like("Lucy") => {"username", Op::Like, Value::String("Lucy".to_string())},
+        username.like(Some("Lucy")) => {"username", Op::Like, Value::String("Lucy".to_string())},
+        username.like(None::<&str>) => {"username", Op::Like, Value::Null},
     );
-    assert_eq!(username.lte(None::<String>), binary("username", Op::Lte, Value::Null));
 }
 #[test]
-pub fn test_lte_str_ref() {
+pub fn test_not_like() {
+    // for String
     let username = Column::<String>::new("username");
-    assert_eq!(
-        username.lte("Lucy"),
-        binary("username", Op::Lte, Value::String("Lucy".to_string()))
+    assert_exprs_eq!(
+        username.not_like("Lucy".to_string()) => {"username", Op::NotLike, Value::String("Lucy".to_string())},
+        username.not_like(Some("Lucy".to_string())) => {"username", Op::NotLike, Value::String("Lucy".to_string())},
+        username.not_like(None::<String>) => {"username", Op::NotLike, Value::Null},
     );
-    assert_eq!(
-        username.lte(Some("Lucy")),
-        binary("username", Op::Lte, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(username.lte(None::<&str>), binary("username", Op::Lte, Value::Null));
-}
-#[test]
-pub fn test_like_string() {
+    // for &str
     let username = Column::<String>::new("username");
-    assert_eq!(
-        username.like("Lucy".to_string()),
-        binary("username", Op::Like, Value::String("Lucy".to_string()))
+    assert_exprs_eq!(
+        username.not_like("Lucy") => {"username", Op::NotLike, Value::String("Lucy".to_string())},
+        username.not_like(Some("Lucy")) => {"username", Op::NotLike, Value::String("Lucy".to_string())},
+        username.not_like(None::<&str>) => {"username", Op::NotLike, Value::Null},
     );
-    assert_eq!(
-        username.like(Some("Lucy".to_string())),
-        binary("username", Op::Like, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(username.like(None::<String>), binary("username", Op::Like, Value::Null));
-}
-#[test]
-pub fn test_like_str_ref() {
-    let username = Column::<String>::new("username");
-    assert_eq!(
-        username.like("Lucy"),
-        binary("username", Op::Like, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        username.like(Some("Lucy")),
-        binary("username", Op::Like, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(username.like(None::<&str>), binary("username", Op::Like, Value::Null));
-}
-#[test]
-pub fn test_not_like_string() {
-    let username = Column::<String>::new("username");
-    assert_eq!(
-        username.not_like("Lucy".to_string()),
-        binary("username", Op::NotLike, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        username.not_like(Some("Lucy".to_string())),
-        binary("username", Op::NotLike, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(username.not_like(None::<String>), binary("username", Op::NotLike, Value::Null));
-}
-#[test]
-pub fn test_not_like_str_ref() {
-    let username = Column::<String>::new("username");
-    assert_eq!(
-        username.not_like("Lucy"),
-        binary("username", Op::NotLike, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        username.not_like(Some("Lucy")),
-        binary("username", Op::NotLike, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        username.not_like(None::<&str>),
-        Expr::Binary { left: "username", op: Op::NotLike, right: Value::Null }
-    );
-    assert_eq!(true, true);
 }
