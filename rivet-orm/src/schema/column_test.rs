@@ -77,7 +77,6 @@ pub fn test_eq() {
     );
 
     // for &str
-    let username = Column::<String>::new("username");
     assert_exprs_eq!(
         username.eq("Lucy") => {"username", Op::Eq, Value::String("Lucy".to_string())},
         username.eq(Some("Lucy")) => {"username", Op::Eq, Value::String("Lucy".to_string())},
@@ -111,7 +110,6 @@ pub fn test_ne() {
     );
 
     // for &str
-    let username = Column::<String>::new("username");
     assert_exprs_eq!(
         username.ne("Lucy") => {"username", Op::Ne, Value::String("Lucy".to_string())},
         username.ne(Some("Lucy")) => {"username", Op::Ne, Value::String("Lucy".to_string())},
@@ -145,7 +143,6 @@ pub fn test_gt() {
     );
 
     // for &str
-    let username = Column::<String>::new("username");
     assert_exprs_eq!(
         username.gt("Lucy") => {"username", Op::Gt, Value::String("Lucy".to_string())},
         username.gt(Some("Lucy")) => {"username", Op::Gt, Value::String("Lucy".to_string())},
@@ -178,8 +175,7 @@ pub fn test_lt() {
         username.lt(None::<String>) => {"username", Op::Lt, Value::Null},
     );
 
-    // for &str
-    let username = Column::<String>::new("username");
+    // for &str\
     assert_exprs_eq!(
         username.lt("Lucy") => {"username", Op::Lt, Value::String("Lucy".to_string())},
         username.lt(Some("Lucy")) => {"username", Op::Lt, Value::String("Lucy".to_string())},
@@ -213,7 +209,6 @@ pub fn test_gte() {
     );
 
     // for &str
-    let username = Column::<String>::new("username");
     assert_exprs_eq!(
         username.gte("Lucy") => {"username", Op::Gte, Value::String("Lucy".to_string())},
         username.gte(Some("Lucy")) => {"username", Op::Gte, Value::String("Lucy".to_string())},
@@ -248,7 +243,6 @@ pub fn test_lte() {
     );
 
     // for &str
-    let username = Column::<String>::new("username");
     assert_exprs_eq!(
         username.lte("Lucy") => {"username", Op::Lte, Value::String("Lucy".to_string())},
         username.lte(Some("Lucy")) => {"username", Op::Lte, Value::String("Lucy".to_string())},
@@ -265,7 +259,6 @@ pub fn test_like() {
         username.like(None::<String>) => {"username", Op::Like, Value::Null},
     );
     // for &str
-    let username = Column::<String>::new("username");
     assert_exprs_eq!(
         username.like("Lucy") => {"username", Op::Like, Value::String("Lucy".to_string())},
         username.like(Some("Lucy")) => {"username", Op::Like, Value::String("Lucy".to_string())},
@@ -282,7 +275,6 @@ pub fn test_not_like() {
         username.not_like(None::<String>) => {"username", Op::NotLike, Value::Null},
     );
     // for &str
-    let username = Column::<String>::new("username");
     assert_exprs_eq!(
         username.not_like("Lucy") => {"username", Op::NotLike, Value::String("Lucy".to_string())},
         username.not_like(Some("Lucy")) => {"username", Op::NotLike, Value::String("Lucy".to_string())},
