@@ -66,6 +66,19 @@ impl IntoValue<String> for Option<String> {
         }
     }
 }
+impl IntoValue<String> for &String {
+    fn into_value(self) -> Value {
+        Value::String(self.clone())
+    }
+}
+impl IntoValue<String> for Option<&String> {
+    fn into_value(self) -> Value {
+        match self {
+            Some(v) => v.into_value(),
+            None => Value::Null,
+        }
+    }
+}
 impl IntoValue<String> for &str {
     fn into_value(self) -> Value {
         Value::String(self.to_string())
@@ -79,3 +92,8 @@ impl IntoValue<String> for Option<&str> {
         }
     }
 }
+
+
+#[cfg(test)]
+#[path = "value_test.rs"]
+mod tests;
