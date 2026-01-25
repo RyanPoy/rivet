@@ -42,18 +42,6 @@ pub fn test_eq_string() {
         Column::<String>::new("username").eq(None::<String>),
         binary("username", Op::Is, Value::Null)
     );
-    assert_eq!(
-        Column::<&str>::new("username").eq("Lucy".to_string()),
-        binary("username", Op::Eq, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").eq(Some("Lucy".to_string())),
-        binary("username", Op::Eq, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").eq(None::<String>),
-        binary("username", Op::Is, Value::Null)
-    );
 }
 #[test]
 pub fn test_eq_str_ref() {
@@ -67,19 +55,6 @@ pub fn test_eq_str_ref() {
     );
     assert_eq!(
         Column::<String>::new("username").eq(None::<String>),
-        binary("username", Op::Is, Value::Null)
-    );
-    assert_eq!(
-        Column::<&str>::new("username").eq("Lucy"),
-        binary("username", Op::Eq, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").eq(Some("Lucy")),
-        binary("username", Op::Eq, Value::String("Lucy".to_string()))
-    );
-
-    assert_eq!(
-        Column::<&str>::new("username").eq(None::<&str>),
         binary("username", Op::Is, Value::Null)
     );
 }
@@ -118,18 +93,6 @@ pub fn test_ne_string() {
         Column::<String>::new("username").ne(None::<String>),
         binary("username", Op::IsNot, Value::Null)
     );
-    assert_eq!(
-        Column::<&str>::new("username").ne("Lucy".to_string()),
-        binary("username", Op::Ne, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").ne(Some("Lucy".to_string())),
-        binary("username", Op::Ne, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").ne(None::<String>),
-        binary("username", Op::IsNot, Value::Null)
-    );
 }
 #[test]
 pub fn test_ne_str_ref() {
@@ -143,18 +106,6 @@ pub fn test_ne_str_ref() {
     );
     assert_eq!(
         Column::<String>::new("username").ne(None::<&str>),
-        binary("username", Op::IsNot, Value::Null)
-    );
-    assert_eq!(
-        Column::<&str>::new("username").ne("Lucy"),
-        binary("username", Op::Ne, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").ne(Some("Lucy")),
-        binary("username", Op::Ne, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").ne(None::<&str>),
         binary("username", Op::IsNot, Value::Null)
     );
 }
@@ -193,21 +144,6 @@ pub fn test_gt_string() {
         Column::<String>::new("username").gt(None::<String>),
         binary("username", Op::Gt, Value::Null)
     );
-
-    assert_eq!(
-        Column::<&str>::new("username").gt("Lucy".to_string()),
-        binary("username", Op::Gt, Value::String("Lucy".to_string()))
-    );
-
-    assert_eq!(
-        Column::<&str>::new("username").gt(Some("Lucy".to_string())),
-        binary("username", Op::Gt, Value::String("Lucy".to_string()))
-    );
-
-    assert_eq!(
-        Column::<&str>::new("username").gt(None::<String>),
-        binary("username", Op::Gt, Value::Null)
-    );
 }
 #[test]
 pub fn test_gt_str_ref() {
@@ -221,21 +157,6 @@ pub fn test_gt_str_ref() {
     );
     assert_eq!(
         Column::<String>::new("username").gt(None::<String>),
-        binary("username", Op::Gt, Value::Null)
-    );
-
-    assert_eq!(
-        Column::<&str>::new("username").gt("Lucy"),
-        binary("username", Op::Gt, Value::String("Lucy".to_string()))
-    );
-
-    assert_eq!(
-        Column::<&str>::new("username").gt(Some("Lucy")),
-        binary("username", Op::Gt, Value::String("Lucy".to_string()))
-    );
-
-    assert_eq!(
-        Column::<&str>::new("username").gt(None::<String>),
         binary("username", Op::Gt, Value::Null)
     );
 }
@@ -274,19 +195,6 @@ pub fn test_lt_string() {
         Column::<String>::new("username").lt(None::<String>),
         binary("username", Op::Lt, Value::Null)
     );
-    assert_eq!(
-        Column::<&str>::new("username").lt("Lucy".to_string()),
-        binary("username", Op::Lt, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").lt(Some("Lucy".to_string())),
-        binary("username", Op::Lt, Value::String("Lucy".to_string()))
-    );
-
-    assert_eq!(
-        Column::<&str>::new("username").lt(None::<String>),
-        binary("username", Op::Lt, Value::Null)
-    );
 }
 #[test]
 pub fn test_lt_str_ref() {
@@ -300,18 +208,6 @@ pub fn test_lt_str_ref() {
     );
     assert_eq!(
         Column::<String>::new("username").lt(None::<String>),
-        binary("username", Op::Lt, Value::Null)
-    );
-    assert_eq!(
-        Column::<&str>::new("username").lt("Lucy"),
-        binary("username", Op::Lt, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").lt(Some("Lucy")),
-        binary("username", Op::Lt, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").lt(None::<&str>),
         binary("username", Op::Lt, Value::Null)
     );
 }
@@ -350,18 +246,6 @@ pub fn test_gte_string() {
         Column::<String>::new("username").gte(None::<String>),
         binary("username", Op::Gte, Value::Null)
     );
-    assert_eq!(
-        Column::<&str>::new("username").gte("Lucy".to_string()),
-        binary("username", Op::Gte, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").gte(Some("Lucy".to_string())),
-        binary("username", Op::Gte, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").gte(None::<String>),
-        binary("username", Op::Gte, Value::Null)
-    );
 }
 #[test]
 pub fn test_gte_str_ref() {
@@ -375,18 +259,6 @@ pub fn test_gte_str_ref() {
     );
     assert_eq!(
         Column::<String>::new("username").gte(None::<&str>),
-        binary("username", Op::Gte, Value::Null)
-    );
-    assert_eq!(
-        Column::<&str>::new("username").gte("Lucy"),
-        binary("username", Op::Gte, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").gte(Some("Lucy")),
-        binary("username", Op::Gte, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").gte(None::<&str>),
         binary("username", Op::Gte, Value::Null)
     );
 }
@@ -427,18 +299,6 @@ pub fn test_lte_string() {
         Column::<String>::new("username").lte(None::<String>),
         binary("username", Op::Lte, Value::Null)
     );
-    assert_eq!(
-        Column::<&str>::new("username").lte("Lucy".to_string()),
-        binary("username", Op::Lte, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").lte(Some("Lucy".to_string())),
-        binary("username", Op::Lte, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").lte(None::<String>),
-        binary("username", Op::Lte, Value::Null)
-    );
 }
 #[test]
 pub fn test_lte_str_ref() {
@@ -452,18 +312,6 @@ pub fn test_lte_str_ref() {
     );
     assert_eq!(
         Column::<String>::new("username").lte(None::<&str>),
-        binary("username", Op::Lte, Value::Null)
-    );
-    assert_eq!(
-        Column::<&str>::new("username").lte("Lucy"),
-        binary("username", Op::Lte, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").lte(Some("Lucy")),
-        binary("username", Op::Lte, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").lte(None::<&str>),
         binary("username", Op::Lte, Value::Null)
     );
 }
@@ -481,18 +329,6 @@ pub fn test_like_string() {
         Column::<String>::new("username").like(None::<String>),
         binary("username", Op::Like, Value::Null)
     );
-    assert_eq!(
-        Column::<&str>::new("username").like("Lucy".to_string()),
-        binary("username", Op::Like, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").like(Some("Lucy".to_string())),
-        binary("username", Op::Like, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").like(None::<String>),
-        binary("username", Op::Like, Value::Null)
-    );
 }
 #[test]
 pub fn test_like_str_ref() {
@@ -506,18 +342,6 @@ pub fn test_like_str_ref() {
     );
     assert_eq!(
         Column::<String>::new("username").like(None::<&str>),
-        binary("username", Op::Like, Value::Null)
-    );
-    assert_eq!(
-        Column::<&str>::new("username").like("Lucy"),
-        binary("username", Op::Like, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").like(Some("Lucy")),
-        binary("username", Op::Like, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").like(None::<&str>),
         binary("username", Op::Like, Value::Null)
     );
 }
@@ -535,18 +359,6 @@ pub fn test_not_like_string() {
         Column::<String>::new("username").not_like(None::<String>),
         binary("username", Op::NotLike, Value::Null)
     );
-    assert_eq!(
-        Column::<&str>::new("username").not_like("Lucy".to_string()),
-        binary("username", Op::NotLike, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").not_like(Some("Lucy".to_string())),
-        binary("username", Op::NotLike, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").not_like(None::<String>),
-        binary("username", Op::NotLike, Value::Null)
-    );
 }
 #[test]
 pub fn test_not_like_str_ref() {
@@ -560,18 +372,6 @@ pub fn test_not_like_str_ref() {
     );
     assert_eq!(
         Column::<String>::new("username").not_like(None::<&str>),
-        Expr::Binary { left: "username", op: Op::NotLike, right: Value::Null }
-    );
-    assert_eq!(
-        Column::<&str>::new("username").not_like("Lucy"),
-        binary("username", Op::NotLike, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").not_like(Some("Lucy")),
-        binary("username", Op::NotLike, Value::String("Lucy".to_string()))
-    );
-    assert_eq!(
-        Column::<&str>::new("username").not_like(None::<&str>),
         Expr::Binary { left: "username", op: Op::NotLike, right: Value::Null }
     );
 }
@@ -589,6 +389,8 @@ fn test_column_define() {
         nick_name: Option<String>,
         checked: bool,
 
+        gender: &'static str,
+
         #[no_col]
         temp: String,
     };
@@ -598,6 +400,7 @@ fn test_column_define() {
         name: "Luly".to_string(),
         age: 30,
         nick_name: None,
+        gender: "male",
         checked: true,
         temp: "fuck".to_string(),
     };
@@ -606,6 +409,6 @@ fn test_column_define() {
     assert_eq!(User::age, Column::<u32>::new("age"));
     assert_eq!(User::nick_name, Column::<String>::new("nick_name"));
     assert_eq!(User::checked, Column::<bool>::new("checked"));
-
+    assert_eq!(User::gender, Column::<String>::new("gender"));
     assert_eq!(user.id, 1);
 }

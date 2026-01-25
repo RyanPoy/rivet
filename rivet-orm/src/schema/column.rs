@@ -16,7 +16,7 @@ macro_rules! register_column_types {
     };
 }
 register_column_types!(
-    i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, bool, String, &str
+    i8, i16, i32, i64, i128, u8, u16, u32, u64, u128, bool, String
 );
 
 /// 表示SQL表中的列。
@@ -93,7 +93,6 @@ impl<T: ColumnType> Column<T> {
 
 trait StringType: ColumnType {}
 impl StringType for String {}
-impl StringType for &str {}
 
 #[allow(private_bounds)]
 impl<T: StringType> Column<T> {

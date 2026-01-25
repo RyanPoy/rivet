@@ -51,36 +51,29 @@ impl_to_value_for_numeric!(
     bool => Bool
 );
 
-macro_rules! impl_to_value_for_string {
-    ($($t:ty), *) => {
-        $(
-            impl ToValue<$t> for String {
-                fn to_value(&self) -> Value {
-                    Value::String(self.into())
-                }
-            }
-            impl ToValue<$t> for Option<String> {
-                fn to_value(&self) -> Value {
-                    match self {
-                        Some(v) => Value::String(v.into()),
-                        None => Value::Null,
-                    }
-                }
-            }
-            impl ToValue<$t> for &str {
-                fn to_value(&self) -> Value {
-                    Value::String(self.to_string())
-                }
-            }
-            impl ToValue<$t> for Option<&str> {
-                fn to_value(&self) -> Value {
-                    match self {
-                        Some(v) => Value::String(v.to_string()),
-                        None => Value::Null,
-                    }
-                }
-            }
-        )*
-    };
+impl ToValue<String> for String {
+    fn to_value(&self) -> Value {
+        Value::String(self.into())
+    }
 }
-impl_to_value_for_string!(String, &str);
+impl ToValue<String> for Option<String> {
+    fn to_value(&self) -> Value {
+        match self {
+            Some(v) => Value::String(v.into()),
+            None => Value::Null,
+        }
+    }
+}
+impl ToValue<String> for &str {
+    fn to_value(&self) -> Value {
+        Value::String(self.to_string())
+    }
+}
+impl ToValue<String> for Option<&str> {
+    fn to_value(&self) -> Value {
+        match self {
+            Some(v) => Value::String(v.to_string()),
+            None => Value::Null,
+        }
+    }
+}

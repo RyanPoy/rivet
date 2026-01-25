@@ -55,20 +55,70 @@ pub fn table(table_args: TokenStream, item: TokenStream) -> TokenStream {
     expanded.into()
 }
 
-fn get_column_type(ty: &Type) -> &Type {
-    if let Type::Path(tp) = ty {
-        let last_segment = tp.path.segments.last().unwrap();
-        // 检查是否是 Option
-        if last_segment.ident == "Option" {
-            if let syn::PathArguments::AngleBracketed(args) = &last_segment.arguments {
-                if let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first() {
-                    // 递归处理，防止 Option<Option<T>> 的情况
-                    return get_column_type(inner_ty);
+fn normalize_column_type(ty: &Type) -> TokenStream2 {
+    match ty {
+        // 1. 处理引用类型，如 &'a str 或 &str
+        Type::Reference(type_ref) => {
+            if let Type::Path(ref tp) = *type_ref.elem {
+                // 如果是 str，强制转为 String
+                if tp.path.is_ident("str") {
+                    return quote!(String);
                 }
             }
+            // 其他引用类型保持原样（交由编译器检查 ColumnType 实现）
+            quote!(#ty)
         }
+
+        // 2. 处理路径类型，如 String 或 Option<T>
+        Type::Path(tp) => {
+            let last_segment = tp.path.segments.last().unwrap();
+
+            // 如果是 Option<T>，递归处理内部的 T
+            if last_segment.ident == "Option" {
+                if let syn::PathArguments::AngleBracketed(args) = &last_segment.arguments {
+                    if let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first() {
+                        return normalize_column_type(inner_ty);
+                    }
+                }
+            }
+
+            // 如果已经是基础类型（如 i32, String），直接返回
+            quote!(#ty)
+        }
+
+        // 其他复杂类型（数组、切片等）直接返回，让编译器在 Column<T> 处报错
+        _ => quote!(#ty),
     }
-    ty
+}
+fn get_column_type(ty: &Type) -> Type {
+    match ty {
+        // 1. 处理引用类型: &'a str -> String
+        Type::Reference(type_ref) => {
+            if let syn::Type::Path(ref tp) = *type_ref.elem {
+                if tp.path.is_ident("str") {
+                    // 直接构造 String 的 TypePath，避免复杂的 parse_quote 引用问题
+                    return syn::parse_quote!(String);
+                }
+            }
+            // 如果是其他引用（如 &i32），递归处理其内部
+            get_column_type(&type_ref.elem)
+        }
+        // 2. 处理路径类型: Option<T> 或直接是 T
+        Type::Path(tp) => {
+            let last_segment = tp.path.segments.last().unwrap();
+            // 检查是否是 Option
+            if last_segment.ident == "Option" {
+                if let syn::PathArguments::AngleBracketed(args) = &last_segment.arguments {
+                    if let Some(syn::GenericArgument::Type(inner_ty)) = args.args.first() {
+                        // 递归处理，防止 Option<Option<T>> 的情况
+                        return get_column_type(inner_ty);
+                    }
+                }
+            }
+            ty.clone()
+        }
+        _ => ty.clone(),
+    }
 }
 fn expand_columns_metadata(
     struct_input: &ItemStruct,
