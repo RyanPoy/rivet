@@ -13,6 +13,7 @@ pub enum Value {
     U128(u128),
     Bool(bool),
     String(String),
+    List(Vec<Value>),
 }
 
 pub trait IntoValue<T> {
@@ -28,10 +29,7 @@ macro_rules! impl_to_value_for_numeric {
             }
             impl IntoValue<$t> for Option<$t> {
                 fn into_value(self) -> Value {
-                    match self {
-                        Some(v) => Value::$variant(v),
-                        None => Value::Null,
-                    }
+                    self.map(|v| v.into_value()).unwrap_or(Value::Null)
                 }
             }
         )*
@@ -48,24 +46,12 @@ impl_to_value_for_numeric!(
     u32 => U32,
     u64 => U64,
     u128 => U128,
-    bool => Bool
+    bool => Bool,
+    String => String
 );
 
 /// `&str` only exists as a convenience input,
 /// `Value` always owns `String`.
-impl IntoValue<String> for String {
-    fn into_value(self) -> Value {
-        Value::String(self)
-    }
-}
-impl IntoValue<String> for Option<String> {
-    fn into_value(self) -> Value {
-        match self {
-            Some(v) => v.into_value(),
-            None => Value::Null,
-        }
-    }
-}
 impl IntoValue<String> for &String {
     fn into_value(self) -> Value {
         Value::String(self.clone())
@@ -73,10 +59,7 @@ impl IntoValue<String> for &String {
 }
 impl IntoValue<String> for Option<&String> {
     fn into_value(self) -> Value {
-        match self {
-            Some(v) => v.into_value(),
-            None => Value::Null,
-        }
+        self.map(|s| s.into_value()).unwrap_or(Value::Null)
     }
 }
 impl IntoValue<String> for &str {
@@ -86,13 +69,9 @@ impl IntoValue<String> for &str {
 }
 impl IntoValue<String> for Option<&str> {
     fn into_value(self) -> Value {
-        match self {
-            Some(v) => v.into_value(),
-            None => Value::Null,
-        }
+        self.map(|s| s.into_value()).unwrap_or(Value::Null)
     }
 }
-
 
 #[cfg(test)]
 #[path = "value_test.rs"]
