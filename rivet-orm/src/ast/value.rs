@@ -16,20 +16,20 @@ pub enum Value {
 }
 
 pub trait ToValue<T> {
-    fn to_value(&self) -> Value;
+    fn to_value(self) -> Value;
 }
 macro_rules! impl_to_value_for_numeric {
     ($($t:ty => $variant:ident), *) => {
         $(
             impl ToValue<$t> for $t {
-                fn to_value(&self) -> Value {
-                    Value::$variant(*self)
+                fn to_value(self) -> Value {
+                    Value::$variant(self)
                 }
             }
             impl ToValue<$t> for Option<$t> {
-                fn to_value(&self) -> Value {
+                fn to_value(self) -> Value {
                     match self {
-                        Some(v) => Value::$variant(*v),
+                        Some(v) => Value::$variant(v),
                         None => Value::Null,
                     }
                 }
@@ -54,27 +54,27 @@ impl_to_value_for_numeric!(
 /// `&str` only exists as a convenience input,
 /// `Value` always owns `String`.
 impl ToValue<String> for String {
-    fn to_value(&self) -> Value {
-        Value::String(self.into())
+    fn to_value(self) -> Value {
+        Value::String(self)
     }
 }
 impl ToValue<String> for Option<String> {
-    fn to_value(&self) -> Value {
+    fn to_value(self) -> Value {
         match self {
-            Some(v) => Value::String(v.into()),
+            Some(v) => v.to_value(),
             None => Value::Null,
         }
     }
 }
 impl ToValue<String> for &str {
-    fn to_value(&self) -> Value {
+    fn to_value(self) -> Value {
         Value::String(self.to_string())
     }
 }
 impl ToValue<String> for Option<&str> {
-    fn to_value(&self) -> Value {
+    fn to_value(self) -> Value {
         match self {
-            Some(v) => Value::String(v.to_string()),
+            Some(v) => v.to_value(),
             None => Value::Null,
         }
     }

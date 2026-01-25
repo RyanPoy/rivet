@@ -1,61 +1,31 @@
 use crate::ast::expr::{Expr, Op};
-use crate::ast::value::{ToValue, Value};
-use std::fmt;
+use crate::ast::value::ToValue;
 use std::marker::PhantomData;
 
 mod private {
-    pub trait Sealed {}
+    pub trait ColumnType {}
 }
-pub trait ColumnType: private::Sealed {}
 
 macro_rules! register_column_types {
     ($($t:ty),*) => {
         $(
-            impl private::Sealed for $t {}
-            impl ColumnType for $t {}
+            impl private::ColumnType for $t {}
         )*
     };
 }
 register_column_types!(i8, i16, i32, i64, i128, u8, u16, u32, u64, u128, bool, String);
 
-/// 表示SQL表中的列。
-/// Represents a column in an SQL table.
 #[derive(Debug, Eq, PartialEq)]
-pub struct Column<T: ColumnType> {
-    /// 列名。
-    /// The name of the column.
+pub struct Column<T: private::ColumnType> {
     pub name: &'static str,
-
-    /// 类型标记，用于编译时类型检查。
-    /// A type marker for compile-time type checking.
     _marker: PhantomData<T>,
 }
 
-impl<T: ColumnType> Column<T> {
-    /// 创建一个新的 `Column` 实例。
-    /// Creates a new `Column` instance.
-    ///
-    /// # 参数
-    /// * `name` - 列的名称。
-    /// * `name` - The name of the column.
-    ///
-    /// # 返回值
-    /// * 新的 `Column` 实例。
-    /// * A new `Column` instance.
+impl<T: private::ColumnType> Column<T> {
     pub const fn new(name: &'static str) -> Self {
         Self { name, _marker: PhantomData }
     }
 
-    /// 生成一个表示列等于给定值的表达式。
-    /// Generates an expression representing the column being equal to the given value.
-    ///
-    /// # 参数
-    /// * `v` - 要比较的值。
-    /// * `v` - The value to compare with.
-    ///
-    /// # 返回值
-    /// * 表示列等于给定值的表达式。
-    /// * An expression representing the column being equal to the given value.
     pub fn eq<V: ToValue<T>>(&self, v: V) -> Expr {
         Expr::new_binary(self.name, Op::Eq, v.to_value())
     }
