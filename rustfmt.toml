@@ -2,7 +2,7 @@
 
 # 每行最大宽度。默认 100。
 # 如果你觉得嵌套比较深（比如大量的 match 语句），可以调大到 120。
-#max_width = 160
+max_width = 120
 
 # 合并派生宏。
 # 将 #[derive(Debug)] 和 #[derive(PartialEq)] 合并为 #[derive(Debug, PartialEq)]。
@@ -11,6 +11,7 @@ merge_derives = true
 # 使用小技巧来减少行数。
 # 设置为 "Max" 时，它会尝试将短的 block、impl 等放在一行。
 # 这对你那些简单的 eq, like 实现非常友好。
+fn_single_line = true
 use_small_heuristics = "Max"
 
 # 整理导入（import）的顺序。
@@ -23,3 +24,4 @@ struct_field_align_threshold = 40
 
 # 去掉多余的空行。
 remove_nested_parens = true
+
