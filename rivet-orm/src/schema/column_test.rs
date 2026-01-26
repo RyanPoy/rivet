@@ -270,3 +270,69 @@ pub fn test_not_like() {
         setup::username.not_like(None::<&str>) => {"username", Op::NotLike, Value::Null},
     );
 }
+
+#[test]
+pub fn test_in() {
+    // for number
+    assert_exprs_eq!(
+        setup::age.in_([20, 30]) => { "age", Op::In, Value::List(vec![Value::I32(20), Value::I32(30)]) },
+        setup::age.in_(vec![20, 30]) => { "age", Op::In, Value::List(vec![Value::I32(20), Value::I32(30)]) },
+        setup::age.in_([Some(20), Some(30)]) => { "age", Op::In, Value::List(vec![Value::I32(20), Value::I32(30)]) },
+        setup::age.in_(vec![Some(20), Some(30)]) => { "age", Op::In, Value::List(vec![Value::I32(20), Value::I32(30)]) },
+        setup::age.in_([None::<i32>, None::<i32>]) => { "age", Op::In, Value::List(vec![Value::Null, Value::Null]) },
+        setup::age.in_(vec![None::<i32>, None::<i32>]) => { "age", Op::In, Value::List(vec![Value::Null, Value::Null]) },
+    );
+
+    // for bool
+    assert_exprs_eq!(
+        setup::has_children.in_([true, false]) => { "has_children", Op::In, Value::List(vec![Value::Bool(true), Value::Bool(false)]) },
+        setup::has_children.in_(vec![true, false]) => { "has_children", Op::In, Value::List(vec![Value::Bool(true), Value::Bool(false)]) },
+        setup::has_children.in_([Some(true), Some(false)]) => { "has_children", Op::In, Value::List(vec![Value::Bool(true), Value::Bool(false)]) },
+        setup::has_children.in_(vec![Some(true), Some(false)]) => { "has_children", Op::In, Value::List(vec![Value::Bool(true), Value::Bool(false)]) },
+        setup::has_children.in_([None::<bool>, None::<bool>]) => { "has_children", Op::In, Value::List(vec![Value::Null, Value::Null]) },
+        setup::has_children.in_(vec![None::<bool>, None::<bool>]) => { "has_children", Op::In, Value::List(vec![Value::Null, Value::Null]) },
+    );
+
+    // for String
+    assert_exprs_eq!(
+        setup::username.in_(["Lucy", "Bob"]) => { "username", Op::In, Value::List(vec![Value::String("Lucy".to_string()),Value::String("Bob".to_string())])},
+        setup::username.in_(vec!["Lucy", "Bob"]) => { "username", Op::In, Value::List(vec![ Value::String("Lucy".to_string()), Value::String("Bob".to_string()) ]) },
+        setup::username.in_([Some("Lucy"), Some("Bob")]) => { "username", Op::In, Value::List(vec![Value::String("Lucy".to_string()),Value::String("Bob".to_string())])},
+        setup::username.in_(vec![Some("Lucy"), Some("Bob")]) => { "username", Op::In, Value::List(vec![ Value::String("Lucy".to_string()), Value::String("Bob".to_string()) ]) },
+        setup::username.in_([None::<&str>, None::<&str>]) => { "username", Op::In, Value::List(vec![Value::Null, Value::Null])},
+        setup::username.in_(vec![None::<&str>, None::<&str>]) => { "username", Op::In, Value::List(vec![ Value::Null, Value::Null]) },
+    );
+}
+
+#[test]
+pub fn test_not_in() {
+    // for number
+    assert_exprs_eq!(
+        setup::age.not_in([20, 30]) => { "age", Op::NotIn, Value::List(vec![Value::I32(20), Value::I32(30)]) },
+        setup::age.not_in(vec![20, 30]) => { "age", Op::NotIn, Value::List(vec![Value::I32(20), Value::I32(30)]) },
+        setup::age.not_in([Some(20), Some(30)]) => { "age", Op::NotIn, Value::List(vec![Value::I32(20), Value::I32(30)]) },
+        setup::age.not_in(vec![Some(20), Some(30)]) => { "age", Op::NotIn, Value::List(vec![Value::I32(20), Value::I32(30)]) },
+        setup::age.not_in([None::<i32>, None::<i32>]) => { "age", Op::NotIn, Value::List(vec![Value::Null, Value::Null]) },
+        setup::age.not_in(vec![None::<i32>, None::<i32>]) => { "age", Op::NotIn, Value::List(vec![Value::Null, Value::Null]) },
+    );
+
+    // for bool
+    assert_exprs_eq!(
+        setup::has_children.not_in([true, false]) => { "has_children", Op::NotIn, Value::List(vec![Value::Bool(true), Value::Bool(false)]) },
+        setup::has_children.not_in(vec![true, false]) => { "has_children", Op::NotIn, Value::List(vec![Value::Bool(true), Value::Bool(false)]) },
+        setup::has_children.not_in([Some(true), Some(false)]) => { "has_children", Op::NotIn, Value::List(vec![Value::Bool(true), Value::Bool(false)]) },
+        setup::has_children.not_in(vec![Some(true), Some(false)]) => { "has_children", Op::NotIn, Value::List(vec![Value::Bool(true), Value::Bool(false)]) },
+        setup::has_children.not_in([None::<bool>, None::<bool>]) => { "has_children", Op::NotIn, Value::List(vec![Value::Null, Value::Null]) },
+        setup::has_children.not_in(vec![None::<bool>, None::<bool>]) => { "has_children", Op::NotIn, Value::List(vec![Value::Null, Value::Null]) },
+    );
+
+    // for String
+    assert_exprs_eq!(
+        setup::username.not_in(["Lucy", "Bob"]) => { "username", Op::NotIn, Value::List(vec![Value::String("Lucy".to_string()),Value::String("Bob".to_string())])},
+        setup::username.not_in(vec!["Lucy", "Bob"]) => { "username", Op::NotIn, Value::List(vec![ Value::String("Lucy".to_string()), Value::String("Bob".to_string()) ]) },
+        setup::username.not_in([Some("Lucy"), Some("Bob")]) => { "username", Op::NotIn, Value::List(vec![Value::String("Lucy".to_string()),Value::String("Bob".to_string())])},
+        setup::username.not_in(vec![Some("Lucy"), Some("Bob")]) => { "username", Op::NotIn, Value::List(vec![ Value::String("Lucy".to_string()), Value::String("Bob".to_string()) ]) },
+        setup::username.not_in([None::<&str>, None::<&str>]) => { "username", Op::NotIn, Value::List(vec![Value::Null, Value::Null])},
+        setup::username.not_in(vec![None::<&str>, None::<&str>]) => { "username", Op::NotIn, Value::List(vec![ Value::Null, Value::Null]) },
+    );
+}

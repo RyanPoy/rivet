@@ -48,6 +48,14 @@ impl<T: private::ColumnType> Column<T> {
     pub fn lte<V: IntoValue<T>>(&self, v: V) -> Expr {
         Expr::new_binary(self.name, Op::Lte, v.into_value())
     }
+
+    pub fn in_<V: IntoValue<T>, I: IntoIterator<Item = V>>(&self, iter: I) -> Expr {
+        Expr::new_binary(self.name, Op::In, iter.into_value())
+    }
+
+    pub fn not_in<V: IntoValue<T>, I: IntoIterator<Item = V>>(&self, iter: I) -> Expr {
+        Expr::new_binary(self.name, Op::NotIn, iter.into_value())
+    }
 }
 
 #[allow(private_bounds)]

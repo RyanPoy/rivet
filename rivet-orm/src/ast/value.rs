@@ -72,6 +72,15 @@ impl IntoValue<String> for Option<&str> {
         self.map(|s| s.into_value()).unwrap_or(Value::Null)
     }
 }
+impl<T, I, V> IntoValue<Vec<T>> for I
+where
+    V: IntoValue<T>, // 约束 T 必须是合法的列类型
+    I: IntoIterator<Item = V>,
+{
+    fn into_value(self) -> Value {
+        Value::List(self.into_iter().map(|v| v.into_value()).collect())
+    }
+}
 
 #[cfg(test)]
 #[path = "value_test.rs"]
