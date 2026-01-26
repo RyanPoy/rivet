@@ -1,5 +1,5 @@
 use crate::ast::expr::{Expr, Op};
-use crate::ast::value::IntoValue;
+use crate::ast::value::{IntoOperand, IntoValue, Operand};
 use std::marker::PhantomData;
 
 mod private {
@@ -19,6 +19,11 @@ register_column_types!(i8, i16, i32, i64, i128, u8, u16, u32, u64, u128, bool, S
 pub struct Column<T: private::ColumnType> {
     pub name: &'static str,
     _marker: PhantomData<T>,
+}
+impl<T: private::ColumnType> IntoOperand<T> for Column<T> {
+    fn into_operand(self) -> Operand {
+        Operand::Column(self.name)
+    }
 }
 
 impl<T: private::ColumnType> Column<T> {
