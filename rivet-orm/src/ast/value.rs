@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Value {
     Null,
     I8(i8),
@@ -20,7 +20,7 @@ pub trait IntoValue<T> {
     fn into_value(self) -> Value;
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Operand {
     Column(&'static str),
     Value(Value),

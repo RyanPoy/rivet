@@ -1,6 +1,6 @@
 use crate::ast::value::{Operand, Value};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Op {
     Eq,
     Ne,
@@ -16,7 +16,7 @@ pub enum Op {
     NotIn,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Expr {
     Binary { left: Operand, op: Op, right: Operand },
     And { left: Box<Expr>, right: Box<Expr> },
