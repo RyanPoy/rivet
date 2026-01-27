@@ -19,6 +19,9 @@ pub enum Op {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Expr {
     Binary { left: Operand, op: Op, right: Operand },
+    And { left: Box<Expr>, right: Box<Expr> },
+    Or { left: Box<Expr>, right: Box<Expr> },
+    Not { expr: Box<Expr> },
 }
 
 impl Expr {
@@ -29,6 +32,18 @@ impl Expr {
             _ => op,
         };
         Expr::Binary { left: Operand::Column(left), op, right: Operand::Value(right) }
+    }
+
+    pub fn and(self, other: Expr) -> Expr {
+        Expr::And { left: Box::new(self), right: Box::new(other) }
+    }
+
+    pub fn or(self, other: Expr) -> Expr {
+        Expr::Or { left: Box::new(self), right: Box::new(other) }
+    }
+
+    pub fn not(self) -> Expr {
+        Expr::Not { expr: Box::new(self) }
     }
 }
 

@@ -336,3 +336,52 @@ pub fn test_not_in() {
         setup::username.not_in(vec![None::<&str>, None::<&str>]) => { "username", Op::NotIn, Value::List(vec![ Value::Null, Value::Null]) },
     );
 }
+
+#[test]
+fn test_logical_operators_chaining() {
+    let age = setup::age;
+    let name = setup::username;
+
+    // 1. 测试简单的 AND 组合
+    // 构建: age > 18 AND name = "Lucy"
+    let expr_and = age.gt(18).and(name.eq("Lucy"));
+
+    assert_eq!(expr_and, Expr::And { left: Box::new(age.gt(18)), right: Box::new(name.eq("Lucy")) });
+
+    // 2. 测试 OR 与嵌套
+    // 构建: (age > 18 AND name = "Lucy") OR age < 10
+    let expr_or = expr_and.or(age.lt(10));
+
+    if let Expr::Or { left, right } = expr_or {
+        assert!(matches!(*left, Expr::And { .. }));
+        assert_eq!(*right, age.lt(10));
+    } else {
+        panic!("Root should be OR");
+    }
+
+    // 3. 测试 NOT 运算符
+    // 构建: NOT (name = "Lucy")
+    let expr_not = name.eq("Lucy").not();
+
+    assert_eq!(expr_not, Expr::Not { expr: Box::new(name.eq("Lucy")) });
+}
+
+#[test]
+fn test_complex_mixed_logic() {
+    let age = setup::age;
+    let name = setup::username;
+    let has_child = setup::has_children;
+
+    // 构造一个复杂的业务逻辑场景：
+    // (年龄在 20~30 之间 且 名字是 Lucy) 或者 (没有孩子 且 名字不是 Bob)
+    let complex = (age.gte(20).and(age.lte(30)).and(name.eq("Lucy"))).or(has_child.eq(false).and(name.ne("Bob")));
+
+    // 这种测试主要验证链式调用的返回值依然是 Expr，且可以无限嵌套
+    match complex {
+        Expr::Or { left, right } => {
+            assert!(matches!(*left, Expr::And { .. }));
+            assert!(matches!(*right, Expr::And { .. }));
+        }
+        _ => panic!("Complex expression structure mismatch"),
+    }
+}
