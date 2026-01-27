@@ -4,7 +4,7 @@ use crate::ast::value::{Operand, Value};
 
 // 辅助函数：快速创建一个简单的 SelectStatement 骨架
 fn mock_select() -> SelectStatement {
-    SelectStatement { select: Some(vec![Operand::Column("id")]), from: None, _where: None }
+    SelectStatement { select: vec![Operand::Column("id")], from: None, _where: None }
 }
 
 #[test]
@@ -56,7 +56,7 @@ fn test_source_subquery_recursion() {
 
     if let Source::SubQuery { query, alias } = source {
         assert_eq!(alias, "sub");
-        assert_eq!(query.select.unwrap().len(), 1);
+        assert_eq!(query.select.len(), 1);
     } else {
         panic!("Expected Source::SubQuery");
     }
