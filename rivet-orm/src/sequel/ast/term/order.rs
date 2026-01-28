@@ -1,4 +1,4 @@
-use crate::ast::Operand;
+use crate::sequel::ast::Operand;
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Direction {
     Asc,

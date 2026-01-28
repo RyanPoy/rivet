@@ -1,9 +1,9 @@
 use super::*;
-use crate::ast::{Expr, Op, Value};
+use crate::sequel::ast::{Expr, Op, Value};
 
 #[allow(non_upper_case_globals)]
 mod setup {
-    use crate::ast::{Operand, SelectStatement};
+    use crate::sequel::ast::{Operand, SelectStatement};
     use std::sync::LazyLock;
 
     pub const select_statement: LazyLock<SelectStatement> =

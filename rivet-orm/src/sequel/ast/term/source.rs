@@ -1,5 +1,5 @@
-use crate::ast::SelectStatement;
-use crate::ast::Expr;
+use crate::sequel::ast::SelectStatement;
+use crate::sequel::ast::Expr;
 
 
 #[derive(Clone)]

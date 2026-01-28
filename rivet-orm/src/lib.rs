@@ -1,4 +1,4 @@
-pub mod ast;
+pub mod sequel;
 pub mod schema;
 
 #[cfg(test)]

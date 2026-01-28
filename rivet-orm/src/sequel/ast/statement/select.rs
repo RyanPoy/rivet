@@ -1,7 +1,7 @@
-use crate::ast::Expr;
-use crate::ast::Source;
-use crate::ast::{Direction, Order};
-use crate::ast::{Operand, Value};
+use crate::sequel::ast::Expr;
+use crate::sequel::ast::Source;
+use crate::sequel::ast::{Direction, Order};
+use crate::sequel::ast::{Operand, Value};
 
 #[derive(Clone)]
 pub struct SelectStatement {

@@ -1,5 +1,5 @@
 use super::*;
-use crate::ast::{Operand, Value};
+use crate::sequel::ast::{Operand, Value};
 
 /// 辅助函数：快速创建 Column 操作数
 fn col(name: &'static str) -> Operand {
