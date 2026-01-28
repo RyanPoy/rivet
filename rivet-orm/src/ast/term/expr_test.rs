@@ -1,5 +1,5 @@
 use super::*;
-use crate::ast::value::{Operand, Value};
+use crate::ast::{Operand, Value};
 
 /// 辅助函数：快速创建 Column 操作数
 fn col(name: &'static str) -> Operand {
@@ -19,17 +19,11 @@ fn test_new_binary_null_conversion() {
 
     // 测试 Ne + Null -> IsNot
     let expr_is_not = Expr::new_binary("age", Op::Ne, Value::Null);
-    assert_eq!(
-        expr_is_not,
-        Expr::Binary { left: col("age"), op: Op::IsNot, right: val(Value::Null) }
-    );
+    assert_eq!(expr_is_not, Expr::Binary { left: col("age"), op: Op::IsNot, right: val(Value::Null) });
 
     // 测试普通值不转换 Op
     let expr_normal = Expr::new_binary("age", Op::Eq, Value::I32(20));
-    assert_eq!(
-        expr_normal,
-        Expr::Binary { left: col("age"), op: Op::Eq, right: val(Value::I32(20)) }
-    );
+    assert_eq!(expr_normal, Expr::Binary { left: col("age"), op: Op::Eq, right: val(Value::I32(20)) });
 }
 
 #[test]
@@ -104,10 +98,11 @@ fn test_logical_not() {
 fn test_deep_nesting() {
     // 构造：NOT (age > 18 AND (name = "Luly" OR name = "Lucy"))
     let expr = Expr::new_binary("age", Op::Gt, Value::I32(18))
-        .and(
-            Expr::new_binary("name", Op::Eq, Value::String("Luly".into()))
-                .or(Expr::new_binary("name", Op::Eq,Value::String("Lucy".into())))
-        )
+        .and(Expr::new_binary("name", Op::Eq, Value::String("Luly".into())).or(Expr::new_binary(
+            "name",
+            Op::Eq,
+            Value::String("Lucy".into()),
+        )))
         .not();
 
     if let Expr::Not { expr: inner_not } = expr {

@@ -1,4 +1,4 @@
-use crate::ast::value::{Operand, Value};
+use crate::ast::{Operand, Value};
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Op {

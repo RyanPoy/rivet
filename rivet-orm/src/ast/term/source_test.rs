@@ -1,10 +1,13 @@
 use super::*;
-use crate::ast::expr::{Expr, Op};
-use crate::ast::value::{Operand, Value};
+use crate::ast::{Expr, Op, Value};
 
-// 辅助函数：快速创建一个简单的 SelectStatement 骨架
-fn mock_select() -> SelectStatement {
-    SelectStatement { select: vec![Operand::Column("id")], from: None, _where: None }
+#[allow(non_upper_case_globals)]
+mod setup {
+    use crate::ast::{Operand, SelectStatement};
+    use std::sync::LazyLock;
+
+    pub const select_statement: LazyLock<SelectStatement> =
+        LazyLock::new(|| SelectStatement::new().select(Operand::Column("id")));
 }
 
 #[test]
@@ -50,7 +53,7 @@ fn test_source_nested_join() {
 #[test]
 fn test_source_subquery_recursion() {
     // 测试循环引用：FROM (SELECT ...) AS sub
-    let inner_query = mock_select();
+    let inner_query = setup::select_statement.clone();
 
     let source = Source::SubQuery { query: Box::new(inner_query), alias: "sub" };
 

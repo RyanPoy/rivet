@@ -1,6 +1,8 @@
-use crate::ast::expr::Expr;
-use crate::ast::select_statement::SelectStatement;
+use crate::ast::SelectStatement;
+use crate::ast::Expr;
 
+
+#[derive(Clone)]
 pub enum Source {
     Table { name: &'static str, alias: Option<&'static str> },
     SubQuery { query: Box<SelectStatement>, alias: &'static str },
