@@ -1,5 +1,5 @@
 use super::*;
-use crate::ast::value::Value;
+use crate::ast::Value;
 use crate::schema::column::Column;
 use rivet_orm_macros::table;
 

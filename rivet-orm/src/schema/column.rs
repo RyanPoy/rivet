@@ -1,5 +1,4 @@
-use crate::ast::expr::{Expr, Op};
-use crate::ast::value::{IntoOperand, IntoValue, Operand};
+use crate::ast::{Expr, IntoOperand, IntoValue, Op, Operand};
 use std::marker::PhantomData;
 
 mod private {
