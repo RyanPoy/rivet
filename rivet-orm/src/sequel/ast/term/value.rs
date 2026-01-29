@@ -1,3 +1,5 @@
+use crate::sequel::build::Binder;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Value {
     Null,
@@ -16,6 +18,15 @@ pub enum Value {
     List(Vec<Value>),
 }
 
+impl Value {
+    pub fn build(&self, binder: &mut Binder) -> String {
+        match self {
+            Value::List(vs) => format!("({})", vs.iter().map(|v| v.build(binder)).collect::<Vec<String>>().join(",")),
+            _ => binder.bind(self.clone()),
+        }
+    }
+}
+
 pub trait IntoValue<T> {
     fn into_value(self) -> Value;
 }
@@ -26,6 +37,14 @@ pub enum Operand {
     Value(Value),
 }
 
+impl Operand {
+    pub fn build(&self, binder: &mut Binder) -> String {
+        match self {
+            Operand::Column(name) => name.to_string(),
+            Operand::Value(v) => v.build(binder),
+        }
+    }
+}
 pub trait IntoOperand<T> {
     fn into_operand(self) -> Operand;
 }

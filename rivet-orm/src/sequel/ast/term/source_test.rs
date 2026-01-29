@@ -55,10 +55,10 @@ fn test_source_subquery_recursion() {
     // 测试循环引用：FROM (SELECT ...) AS sub
     let inner_query = setup::select_statement.clone();
 
-    let source = Source::SubQuery { query: Box::new(inner_query), alias: "sub" };
+    let source = Source::SubQuery { query: Box::new(inner_query), alias: Some("sub") };
 
     if let Source::SubQuery { query, alias } = source {
-        assert_eq!(alias, "sub");
+        assert_eq!(alias, Some("sub"));
         assert_eq!(query.select.len(), 1);
     } else {
         panic!("Expected Source::SubQuery");

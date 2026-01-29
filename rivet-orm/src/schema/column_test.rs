@@ -28,7 +28,7 @@ fn test_column_define() {
 
         #[no_col]
         temp: String,
-    };
+    }
 
     let user = User {
         id: 1,

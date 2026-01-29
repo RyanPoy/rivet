@@ -2,6 +2,7 @@ use crate::sequel::ast::Expr;
 use crate::sequel::ast::Source;
 use crate::sequel::ast::{Direction, Order};
 use crate::sequel::ast::{Operand, Value};
+use crate::sequel::build::Binder;
 
 #[derive(Clone)]
 pub struct SelectStatement {
@@ -12,8 +13,8 @@ pub struct SelectStatement {
     pub group: Vec<Operand>,
     pub having: Option<Expr>,
     pub order: Vec<Order>,
-    pub limit: Option<usize>,
-    pub offset: Option<usize>,
+    pub limit: Option<u32>,
+    pub offset: Option<u32>,
 }
 
 impl SelectStatement {
@@ -40,13 +41,18 @@ impl SelectStatement {
         self.select.push(col);
         self
     }
-    pub fn limit(mut self, n: usize) -> Self {
+    pub fn limit(mut self, n: u32) -> Self {
         self.limit = Some(n);
         self
     }
 
-    pub fn offset(mut self, n: usize) -> Self {
+    pub fn offset(mut self, n: u32) -> Self {
         self.offset = Some(n);
+        self
+    }
+
+    pub fn from(mut self, source: Source) -> Self {
+        self.from = Some(source);
         self
     }
 
@@ -71,42 +77,77 @@ impl SelectStatement {
         self.group.push(column);
         self
     }
-    //
-    // pub fn to_sql(&self) -> (String, Vec<Value>) {
-    //     let mut params = vec![];
-    //     let mut parts = vec![];
-    //
-    //     // 1. SELECT
-    //     parts.push("SELECT ".to_string());
-    //     if self.select.is_empty() {
-    //         parts.push("* ".to_string());
-    //     } else {
-    //         for operand in self.select {
-    //             parts.push
-    //         }
-    //     }
-    //     for operand in self.select {
-    //         parts.push
-    //     }
-    //     let cols: Vec<String> = self.select.iter().map(|c| c.render_sql(&mut ctx)).collect();
-    //     select_sql.push_str(&cols.join(", "));
-    //     parts.push(select_sql);
-    //
-    //     // 2. FROM
-    //     if let Some(ref src) = self.from {
-    //         parts.push(format!("FROM {}", src.render_sql(&mut ctx)));
-    //     }
-    //
-    //     // 3. WHERE
-    //     if let Some(ref expr) = self._where {
-    //         parts.push(format!("WHERE {}", expr.render_sql(&mut ctx)));
-    //     }
-    //
-    //     // 4. LIMIT (Limit 的值也应该作为参数绑定)
-    //     if let Some(limit) = self.limit {
-    //         parts.push(format!("LIMIT {}", ctx.push_param(Value::USize(limit))));
-    //     }
-    //
-    //     (parts.join(" "), ctx.params)
-    // }
+
+    pub fn to_sql(&self, binder: &mut Binder) -> (String, Vec<Value>) {
+        let sql = self.build(binder);
+        (sql, binder.params())
+    }
+    pub fn build(&self, binder: &mut Binder) -> String {
+        let mut parts = Vec::new();
+
+        // 1. SELECT 子句
+        let mut select_clause = String::from("SELECT ");
+        if self.distinct {
+            select_clause.push_str("DISTINCT ");
+        }
+        if self.select.is_empty() {
+            select_clause.push_str("*");
+        } else {
+            let cols: Vec<String> = self.select.iter().map(|col| col.build(binder)).collect();
+            select_clause.push_str(&cols.join(", "));
+        }
+        parts.push(select_clause);
+
+        // 2. FROM 子句
+        if let Some(source) = &self.from {
+            parts.push(format!("FROM {}", source.build(binder)));
+        }
+
+        // 3. WHERE 子句
+        if let Some(expr) = &self._where {
+            parts.push(format!("WHERE {}", expr.build(binder)));
+        }
+
+        // 4. GROUP BY 子句
+        if !self.group.is_empty() {
+            let groups: Vec<String> = self.group.iter().map(|g| g.build(binder)).collect();
+            parts.push(format!("GROUP BY {}", groups.join(", ")));
+        }
+
+        // 5. HAVING 子句
+        if let Some(expr) = &self.having {
+            parts.push(format!("HAVING {}", expr.build(binder)));
+        }
+
+        // 6. ORDER BY 子句
+        if !self.order.is_empty() {
+            let orders: Vec<String> = self
+                .order
+                .iter()
+                .map(|o| o.build(binder)) // 假设 Order 实现了该方法
+                .collect();
+            parts.push(format!("ORDER BY {}", orders.join(", ")));
+        }
+
+        // 7. LIMIT 子句 (将数字也绑定为参数)
+        if let Some(limit) = self.limit {
+            let placeholder = binder.bind(Value::U32(limit));
+            parts.push(format!("LIMIT {}", placeholder));
+        }
+
+        // 8. OFFSET 子句
+        if let Some(offset) = self.offset {
+            let placeholder = binder.bind(Value::U32(offset));
+            parts.push(format!("OFFSET {}", placeholder));
+        }
+
+        // 合并所有部分并完成构建
+        let final_sql = parts.join(" ");
+        final_sql
+        // binder.finish(final_sql)
+    }
 }
+
+#[cfg(test)]
+#[path = "./select_test.rs"]
+mod tests;
