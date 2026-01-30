@@ -1,4 +1,4 @@
-use crate::sequel::ast::{Expr, IntoOperand, IntoValue, Op, Operand};
+use crate::sequel::ast::{Column, Expr, IntoOperand, IntoValue, Op, Operand};
 use std::marker::PhantomData;
 
 mod private {
@@ -21,7 +21,7 @@ pub struct Col<T: private::ColumnType> {
 }
 impl<T: private::ColumnType> IntoOperand<T> for Col<T> {
     fn into_operand(self) -> Operand {
-        Operand::Column { name: self.name, alias: None }
+        Operand::Column(Column::new(self.name))
     }
 }
 

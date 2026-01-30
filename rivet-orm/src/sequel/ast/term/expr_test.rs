@@ -1,9 +1,9 @@
 use super::*;
-use crate::sequel::ast::{Operand, Value};
+use crate::sequel::ast::{Column, Operand, Value};
 
 /// 辅助函数：快速创建 Column 操作数
 fn col(name: &'static str) -> Operand {
-    Operand::Column { name, alias: None }
+    Operand::Column(Column::new(name))
 }
 
 /// 辅助函数：快速创建 Value 操作数

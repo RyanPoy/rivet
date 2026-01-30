@@ -3,11 +3,11 @@ use crate::sequel::ast::{Expr, Op, Value};
 
 #[allow(non_upper_case_globals)]
 mod setup {
-    use crate::sequel::ast::{Operand, SelectStatement};
+    use crate::sequel::ast::{Column, Operand, SelectStatement};
     use std::sync::LazyLock;
 
     pub const select_statement: LazyLock<SelectStatement> =
-        LazyLock::new(|| SelectStatement::new().select(Operand::Column { name: "id", alias: None }));
+        LazyLock::new(|| SelectStatement::new().select(Operand::Column(Column::new("id"))));
 }
 
 #[test]

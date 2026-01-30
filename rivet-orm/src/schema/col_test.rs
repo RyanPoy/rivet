@@ -53,7 +53,7 @@ macro_rules! assert_exprs_eq {
         $(
             assert_eq!(
                 $expr,
-                Expr::Binary { left: Operand::Column{name: $left, alias: None}, op: $op, right: Operand::Value($right), }
+                Expr::Binary { left: Operand::Column(Column::new($left)), op: $op, right: Operand::Value($right), }
             );
         )*
     };

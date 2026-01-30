@@ -1,4 +1,4 @@
-use crate::sequel::ast::{Operand, SelectStatement, Source};
+use crate::sequel::ast::{Column, Operand, SelectStatement, Source};
 
 mod binder {
     use crate::sequel::build::{Binder, Dialect};
@@ -13,9 +13,6 @@ mod binder {
         Binder::new(Dialect::Sqlite)
     }
 }
-// fn column(name:&'static str) {
-//     Operand::Column {name}
-// }
 
 #[test]
 fn test_empty_query() {
@@ -54,7 +51,7 @@ fn test_table_schema() {
 fn test_select_distinct_single() {
     let stmt = SelectStatement::new()
         .from(Source::Table { schema: None, name: "abc", alias: None })
-        .select(Operand::Column { name: "foo", alias: None })
+        .select(Operand::Column(Column::new("foo")))
         .distinct();
     let (sql, params) = stmt.to_sql(&mut binder::mysql());
     assert_eq!(sql, "SELECT DISTINCT `foo` FROM `abc`".to_string());
@@ -73,8 +70,8 @@ fn test_select_distinct_single() {
 fn test_select_distinct_multi() {
     let stmt = SelectStatement::new()
         .from(Source::Table { schema: None, name: "abc", alias: None })
-        .select(Operand::Column { name: "foo", alias: None })
-        .select(Operand::Column { name: "bar", alias: None })
+        .select(Operand::Column(Column::new("foo")))
+        .select(Operand::Column(Column::new("bar")))
         .distinct();
     let (sql, params) = stmt.to_sql(&mut binder::mysql());
     assert_eq!(sql, "SELECT DISTINCT `foo`, `bar` FROM `abc`".to_string());
@@ -93,7 +90,7 @@ fn test_select_distinct_multi() {
 fn test_select_single_column() {
     let stmt = SelectStatement::new()
         .from(Source::Table { schema: None, name: "abc", alias: None })
-        .select(Operand::Column { name: "foo", alias: None });
+        .select(Operand::Column(Column::new("foo")));
     let (sql, params) = stmt.to_sql(&mut binder::mysql());
     assert_eq!(sql, "SELECT `foo` FROM `abc`".to_string());
     assert_eq!(params, vec![]);
@@ -111,7 +108,7 @@ fn test_select_single_column() {
 fn test_select_single_column_with_alias() {
     let stmt = SelectStatement::new()
         .from(Source::Table { schema: None, name: "abc", alias: None })
-        .select(Operand::Column { name: "foo", alias: Some("bar") });
+        .select(Operand::Column(Column::new("foo").alias("bar")));
     let (sql, params) = stmt.to_sql(&mut binder::mysql());
     assert_eq!(sql, "SELECT `foo` AS `bar` FROM `abc`".to_string());
     assert_eq!(params, vec![]);

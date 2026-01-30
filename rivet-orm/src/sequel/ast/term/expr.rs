@@ -1,4 +1,4 @@
-use crate::sequel::ast::{Operand, Value};
+use crate::sequel::ast::{Column, Operand, Value};
 use crate::sequel::build::Binder;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -50,7 +50,7 @@ impl Expr {
             (Op::Ne, Value::Null) => Op::IsNot,
             _ => op,
         };
-        Expr::Binary { left: Operand::Column { name: left, alias: None }, op, right: Operand::Value(right) }
+        Expr::Binary { left: Operand::Column(Column::new(left)), op, right: Operand::Value(right) }
     }
 
     pub fn and(self, other: Expr) -> Expr {

@@ -2,15 +2,31 @@ use crate::sequel::ast::{IntoValue, Value};
 use crate::sequel::build::Binder;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
+pub struct Column {
+    name: &'static str,
+    alias: Option<&'static str>,
+}
+impl Column {
+    pub fn new(name: &'static str) -> Self {
+        Self { name, alias: None }
+    }
+
+    pub fn alias(mut self, name: &'static str) -> Self {
+        self.alias = Some(name);
+        self
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Operand {
-    Column { name: &'static str, alias: Option<&'static str> },
+    Column(Column),
     Value(Value),
 }
 
 impl Operand {
     pub fn build(&self, binder: &mut Binder) -> String {
         match self {
-            Operand::Column { name, alias } => binder.with_alias(binder.quote(name), alias.as_deref()),
+            Operand::Column(Column { name, alias }) => binder.with_alias(binder.quote(name), alias.as_deref()),
             Operand::Value(v) => v.build(binder),
         }
     }
