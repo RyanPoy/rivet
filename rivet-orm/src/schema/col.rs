@@ -75,5 +75,5 @@ impl Column<String> {
 /// 测试模块。
 /// Test module.
 #[cfg(test)]
-#[path = "column_test.rs"]
+#[path = "./col_test.rs"]
 mod tests;
