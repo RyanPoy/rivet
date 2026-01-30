@@ -160,17 +160,27 @@ fn test_select_multiple_columns() {
     assert_eq!(params, vec![]);
 }
 
-// #[test]
-// fn test_select_multiple_tables(){
-//     stmt = (SelectStatement().from_(Name("abc")).select(Name("foo", schema_name=Name("abc").name))
-//             .from_(Name("efg")).select(Name("bar", schema_name=Name("efg").name)))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `abc`.`foo`, `efg`.`bar` FROM `abc`, `efg`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "abc"."foo", "efg"."bar" FROM "abc", "efg"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "abc"."foo", "efg"."bar" FROM "abc", "efg"'
-//
-//
-// # }
-//
+#[test]
+fn test_select_multiple_tables() {
+    let stmt = SelectStatement::new()
+        .from(Source::Table(Table::new("abc")))
+        .select(Operand::Column(Column::new("foo").schema("abc")))
+        .from(Source::Table(Table::new("efg")))
+        .select(Operand::Column(Column::new("bar").schema("efg")));
+
+    let (sql, params) = stmt.to_sql(&mut binder::mysql());
+    assert_eq!(sql, "SELECT `abc`.`foo`, `efg`.`bar` FROM `abc`, `efg`".to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::sqlite());
+    assert_eq!(sql, r#"SELECT "abc"."foo", "efg"."bar" FROM "abc", "efg""#.to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::pg());
+    assert_eq!(sql, r#"SELECT "abc"."foo", "efg"."bar" FROM "abc", "efg""#.to_string());
+    assert_eq!(params, vec![]);
+}
+
 // #[test]
 // fn test_select_subquery(){
 // #     sub = SelectStatement().from_(Name("abc"))

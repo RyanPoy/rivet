@@ -8,7 +8,7 @@ use crate::sequel::build::Binder;
 pub struct SelectStatement {
     pub distinct: bool,
     pub select: Vec<Operand>,
-    pub from: Option<Source>,
+    pub from: Vec<Source>,
     pub _where: Option<Expr>,
     pub group: Vec<Operand>,
     pub having: Option<Expr>,
@@ -22,7 +22,7 @@ impl SelectStatement {
         SelectStatement {
             distinct: false,
             select: vec![],
-            from: None,
+            from: vec![],
             _where: None,
             group: vec![],
             having: None,
@@ -52,7 +52,7 @@ impl SelectStatement {
     }
 
     pub fn from(mut self, source: Source) -> Self {
-        self.from = Some(source);
+        self.from.push(source);
         self
     }
 
@@ -99,8 +99,9 @@ impl SelectStatement {
         parts.push(select_clause);
 
         // 2. FROM 子句
-        if let Some(source) = &self.from {
-            parts.push(format!("FROM {}", source.build(binder)));
+        if !self.from.is_empty() {
+            let froms: Vec<String> = self.from.iter().map(|f| f.build(binder)).collect();
+            parts.push(format!("FROM {}", froms.join(", ")));
         }
 
         // 3. WHERE 子句
