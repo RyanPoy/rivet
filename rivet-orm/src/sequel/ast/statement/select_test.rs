@@ -1,4 +1,4 @@
-use crate::sequel::ast::{Column, Operand, SelectStatement, Source};
+use crate::sequel::ast::{Column, Operand, SelectStatement, Source, Table};
 
 mod binder {
     use crate::sequel::build::{Binder, Dialect};
@@ -16,7 +16,7 @@ mod binder {
 
 #[test]
 fn test_empty_query() {
-    let stmt = SelectStatement::new().from(Source::Table { schema: None, name: "abc", alias: None });
+    let stmt = SelectStatement::new().from(Source::Table(Table::new("abc")));
 
     let (sql, params) = stmt.to_sql(&mut binder::mysql());
     assert_eq!(sql, "SELECT * FROM `abc`".to_string());
@@ -33,7 +33,7 @@ fn test_empty_query() {
 
 #[test]
 fn test_table_schema() {
-    let stmt = SelectStatement::new().from(Source::Table { schema: Some("schema1"), name: "abc", alias: None });
+    let stmt = SelectStatement::new().from(Source::Table(Table::new("abc").schema("schema1")));
     let (sql, params) = stmt.to_sql(&mut binder::mysql());
     assert_eq!(sql, "SELECT * FROM `schema1`.`abc`".to_string());
     assert_eq!(params, vec![]);
@@ -50,7 +50,7 @@ fn test_table_schema() {
 #[test]
 fn test_select_distinct_single() {
     let stmt = SelectStatement::new()
-        .from(Source::Table { schema: None, name: "abc", alias: None })
+        .from(Source::Table(Table::new("abc")))
         .select(Operand::Column(Column::new("foo")))
         .distinct();
     let (sql, params) = stmt.to_sql(&mut binder::mysql());
@@ -69,7 +69,7 @@ fn test_select_distinct_single() {
 #[test]
 fn test_select_distinct_multi() {
     let stmt = SelectStatement::new()
-        .from(Source::Table { schema: None, name: "abc", alias: None })
+        .from(Source::Table(Table::new("abc")))
         .select(Operand::Column(Column::new("foo")))
         .select(Operand::Column(Column::new("bar")))
         .distinct();
@@ -88,9 +88,8 @@ fn test_select_distinct_multi() {
 
 #[test]
 fn test_select_single_column() {
-    let stmt = SelectStatement::new()
-        .from(Source::Table { schema: None, name: "abc", alias: None })
-        .select(Operand::Column(Column::new("foo")));
+    let stmt =
+        SelectStatement::new().from(Source::Table(Table::new("abc"))).select(Operand::Column(Column::new("foo")));
     let (sql, params) = stmt.to_sql(&mut binder::mysql());
     assert_eq!(sql, "SELECT `foo` FROM `abc`".to_string());
     assert_eq!(params, vec![]);
@@ -107,7 +106,7 @@ fn test_select_single_column() {
 #[test]
 fn test_select_single_column_with_alias() {
     let stmt = SelectStatement::new()
-        .from(Source::Table { schema: None, name: "abc", alias: None })
+        .from(Source::Table(Table::new("abc")))
         .select(Operand::Column(Column::new("foo").alias("bar")));
     let (sql, params) = stmt.to_sql(&mut binder::mysql());
     assert_eq!(sql, "SELECT `foo` AS `bar` FROM `abc`".to_string());
@@ -122,16 +121,25 @@ fn test_select_single_column_with_alias() {
     assert_eq!(params, vec![]);
 }
 
-// #[test]
-// fn test_select_single_column_and_table_alias_str(){
-//     stmt = SelectStatement().from_(Name("abc").as_("fizzbuzz")).select(Name("foo").as_("bar"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar` FROM `abc` AS `fizzbuzz`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc" AS "fizzbuzz"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc" AS "fizzbuzz"'
-//
-//
-// }
-//
+#[test]
+fn test_select_single_column_and_table_alias_str() {
+    let stmt = SelectStatement::new()
+        .from(Source::Table(Table::new("abc").alias("fizzbuzz")))
+        .select(Operand::Column(Column::new("foo").alias("bar")));
+
+    let (sql, params) = stmt.to_sql(&mut binder::mysql());
+    assert_eq!(sql, "SELECT `foo` AS `bar` FROM `abc` AS `fizzbuzz`".to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::sqlite());
+    assert_eq!(sql, r#"SELECT "foo" AS "bar" FROM "abc" AS "fizzbuzz""#.to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::pg());
+    assert_eq!(sql, r#"SELECT "foo" AS "bar" FROM "abc" AS "fizzbuzz""#.to_string());
+    assert_eq!(params, vec![]);
+}
+
 // #[test]
 // fn test_select_multiple_columns(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).select(Name("bar"))

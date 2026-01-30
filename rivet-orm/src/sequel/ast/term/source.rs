@@ -1,10 +1,29 @@
 use crate::sequel::ast::Expr;
 use crate::sequel::ast::SelectStatement;
 use crate::sequel::build::Binder;
+#[derive(Debug, PartialOrd, PartialEq, Eq, Copy, Clone)]
+pub struct Table {
+    schema: Option<&'static str>,
+    name: &'static str,
+    alias: Option<&'static str>,
+}
+impl Table {
+    pub fn new(name: &'static str) -> Self {
+        Self { schema: None, name: name, alias: None }
+    }
+    pub fn schema(mut self, name: &'static str) -> Self {
+        self.schema = Some(name);
+        self
+    }
+    pub fn alias(mut self, name: &'static str) -> Self {
+        self.alias = Some(name);
+        self
+    }
+}
 
 #[derive(Clone)]
 pub enum Source {
-    Table { schema: Option<&'static str>, name: &'static str, alias: Option<&'static str> },
+    Table(Table),
     SubQuery { query: Box<SelectStatement>, alias: Option<&'static str> },
     Join { left: Box<Source>, right: Box<Source>, tp: JoinType, on: Expr },
 }
@@ -50,7 +69,7 @@ impl Source {
     }
     pub fn build(&self, binder: &mut Binder) -> String {
         match self {
-            Source::Table { schema, name, alias } => {
+            Source::Table(Table { schema, name, alias }) => {
                 let sql = binder.quote_full(schema.as_deref(), name);
                 binder.with_alias(sql, alias.as_deref())
             }
