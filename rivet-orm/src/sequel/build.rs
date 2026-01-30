@@ -39,6 +39,12 @@ impl Binder {
         }
     }
 
+    pub fn with_alias(&self, sql: String, alias: Option<&str>) -> String {
+        match alias {
+            Some(alias) => format!("{} AS {}", sql, self.quote(alias)),
+            None => sql,
+        }
+    }
     pub fn params(&self) -> Vec<Value> {
         self.params.clone()
     }

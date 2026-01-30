@@ -33,16 +33,22 @@ pub trait IntoValue<T> {
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Operand {
-    Column(&'static str),
+    Column { name: &'static str, alias: Option<&'static str> },
     Value(Value),
 }
 
 impl Operand {
     pub fn build(&self, binder: &mut Binder) -> String {
         match self {
-            Operand::Column(name) => name.to_string(),
+            Operand::Column { name, alias } => binder.with_alias(binder.quote(name), alias.as_deref()),
             Operand::Value(v) => v.build(binder),
         }
+    }
+    pub fn alias(mut self, value: &'static str) -> Self {
+        if let Operand::Column { name: ref mut a, .. } = self {
+            *a = value;
+        }
+        self
     }
 }
 pub trait IntoOperand<T> {

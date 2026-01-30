@@ -21,7 +21,7 @@ pub struct Column<T: private::ColumnType> {
 }
 impl<T: private::ColumnType> IntoOperand<T> for Column<T> {
     fn into_operand(self) -> Operand {
-        Operand::Column(self.name)
+        Operand::Column { name: self.name, alias: None }
     }
 }
 

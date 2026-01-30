@@ -1,6 +1,6 @@
 use super::*;
-use crate::sequel::ast::Value;
 use crate::schema::column::Column;
+use crate::sequel::ast::Value;
 use rivet_orm_macros::table;
 
 #[allow(non_upper_case_globals)]
@@ -53,7 +53,7 @@ macro_rules! assert_exprs_eq {
         $(
             assert_eq!(
                 $expr,
-                Expr::Binary { left: Operand::Column($left), op: $op, right: Operand::Value($right), }
+                Expr::Binary { left: Operand::Column{name: $left, alias: None}, op: $op, right: Operand::Value($right), }
             );
         )*
     };

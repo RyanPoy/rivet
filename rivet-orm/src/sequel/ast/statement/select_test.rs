@@ -1,4 +1,4 @@
-use crate::sequel::ast::{SelectStatement, Source};
+use crate::sequel::ast::{Operand, SelectStatement, Source};
 
 mod binder {
     use crate::sequel::build::{Binder, Dialect};
@@ -13,10 +13,13 @@ mod binder {
         Binder::new(Dialect::Sqlite)
     }
 }
+// fn column(name:&'static str) {
+//     Operand::Column {name}
+// }
 
 #[test]
 fn test_empty_query() {
-    let stmt = SelectStatement::new().from(Source::Table { name: "abc", alias: None });
+    let stmt = SelectStatement::new().from(Source::Table { schema: None, name: "abc", alias: None });
 
     let (sql, params) = stmt.to_sql(&mut binder::mysql());
     assert_eq!(sql, "SELECT * FROM `abc`".to_string());
@@ -30,60 +33,100 @@ fn test_empty_query() {
     assert_eq!(sql, "SELECT * FROM \"abc\"".to_string());
     assert_eq!(params, vec![]);
 }
-// }
-//
+
+#[test]
+fn test_table_schema() {
+    let stmt = SelectStatement::new().from(Source::Table { schema: Some("schema1"), name: "abc", alias: None });
+    let (sql, params) = stmt.to_sql(&mut binder::mysql());
+    assert_eq!(sql, "SELECT * FROM `schema1`.`abc`".to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::sqlite());
+    assert_eq!(sql, "SELECT * FROM \"schema1\".\"abc\"".to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::pg());
+    assert_eq!(sql, "SELECT * FROM \"schema1\".\"abc\"".to_string());
+    assert_eq!(params, vec![]);
+}
+
+#[test]
+fn test_select_distinct_single() {
+    let stmt = SelectStatement::new()
+        .from(Source::Table { schema: None, name: "abc", alias: None })
+        .select(Operand::Column { name: "foo", alias: None })
+        .distinct();
+    let (sql, params) = stmt.to_sql(&mut binder::mysql());
+    assert_eq!(sql, "SELECT DISTINCT `foo` FROM `abc`".to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::sqlite());
+    assert_eq!(sql, "SELECT DISTINCT \"foo\" FROM \"abc\"".to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::pg());
+    assert_eq!(sql, "SELECT DISTINCT \"foo\" FROM \"abc\"".to_string());
+    assert_eq!(params, vec![]);
+}
+
+#[test]
+fn test_select_distinct_multi() {
+    let stmt = SelectStatement::new()
+        .from(Source::Table { schema: None, name: "abc", alias: None })
+        .select(Operand::Column { name: "foo", alias: None })
+        .select(Operand::Column { name: "bar", alias: None })
+        .distinct();
+    let (sql, params) = stmt.to_sql(&mut binder::mysql());
+    assert_eq!(sql, "SELECT DISTINCT `foo`, `bar` FROM `abc`".to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::sqlite());
+    assert_eq!(sql, "SELECT DISTINCT \"foo\", \"bar\" FROM \"abc\"".to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::pg());
+    assert_eq!(sql, "SELECT DISTINCT \"foo\", \"bar\" FROM \"abc\"".to_string());
+    assert_eq!(params, vec![]);
+}
+
+#[test]
+fn test_select_single_column() {
+    let stmt = SelectStatement::new()
+        .from(Source::Table { schema: None, name: "abc", alias: None })
+        .select(Operand::Column { name: "foo", alias: None });
+    let (sql, params) = stmt.to_sql(&mut binder::mysql());
+    assert_eq!(sql, "SELECT `foo` FROM `abc`".to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::sqlite());
+    assert_eq!(sql, "SELECT \"foo\" FROM \"abc\"".to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::pg());
+    assert_eq!(sql, "SELECT \"foo\" FROM \"abc\"".to_string());
+    assert_eq!(params, vec![]);
+}
+
+#[test]
+fn test_select_single_column_with_alias() {
+    let stmt = SelectStatement::new()
+        .from(Source::Table { schema: None, name: "abc", alias: None })
+        .select(Operand::Column { name: "foo", alias: Some("bar") });
+    let (sql, params) = stmt.to_sql(&mut binder::mysql());
+    assert_eq!(sql, "SELECT `foo` AS `bar` FROM `abc`".to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::sqlite());
+    assert_eq!(sql, "SELECT \"foo\" AS \"bar\" FROM \"abc\"".to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::pg());
+    assert_eq!(sql, "SELECT \"foo\" AS \"bar\" FROM \"abc\"".to_string());
+    assert_eq!(params, vec![]);
+}
+
 // #[test]
-// fn test_select__table_schema(visitors){
-//     stmt = SelectStatement().from_(Name("abc", schema_name="schema1"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `schema1`.`abc`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "schema1"."abc"'
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "schema1"."abc"'
-//
-//
-// }
-//
-// #[test]
-// fn test_select__distinct__single(visitors){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).distinct()
-//     assert visitors.mysql.sql(stmt) == 'SELECT DISTINCT `foo` FROM `abc`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT DISTINCT "foo" FROM "abc"'
-//     assert visitors.pg.sql(stmt) == 'SELECT DISTINCT "foo" FROM "abc"'
-//
-//
-// }
-//
-// #[test]
-// fn test_select__distinct__multi(visitors){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo"), Name("bar")).distinct()
-//     assert visitors.mysql.sql(stmt) == 'SELECT DISTINCT `foo`, `bar` FROM `abc`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT DISTINCT "foo", "bar" FROM "abc"'
-//     assert visitors.pg.sql(stmt) == 'SELECT DISTINCT "foo", "bar" FROM "abc"'
-//
-//
-// }
-//
-// #[test]
-// fn test_select_single_column(visitors){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc"'
-//
-//
-// }
-//
-// #[test]
-// fn test_select_single_column_with_alias(visitors){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo").as_("bar"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar` FROM `abc`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc"'
-//
-//
-// }
-//
-// #[test]
-// fn test_select_single_column_and_table_alias_str(visitors){
+// fn test_select_single_column_and_table_alias_str(){
 //     stmt = SelectStatement().from_(Name("abc").as_("fizzbuzz")).select(Name("foo").as_("bar"))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar` FROM `abc` AS `fizzbuzz`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc" AS "fizzbuzz"'
@@ -93,7 +136,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select_multiple_columns(visitors){
+// fn test_select_multiple_columns(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).select(Name("bar"))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, `bar` FROM `abc`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", "bar" FROM "abc"'
@@ -103,7 +146,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select_multiple_tables(visitors){
+// fn test_select_multiple_tables(){
 //     stmt = (SelectStatement().from_(Name("abc")).select(Name("foo", schema_name=Name("abc").name))
 //             .from_(Name("efg")).select(Name("bar", schema_name=Name("efg").name)))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `abc`.`foo`, `efg`.`bar` FROM `abc`, `efg`'
@@ -114,7 +157,7 @@ fn test_empty_query() {
 // # }
 //
 // #[test]
-// fn test_select_subquery(visitors){
+// fn test_select_subquery(){
 // #     sub = SelectStatement().from_(Name("abc"))
 // #     stmt = SelectStatement().from_(sub).select(Name("foo"), Name("bar"))
 // # visitors.mysql.sql(stmt) ==     self.assertEqual('SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0"'
@@ -124,7 +167,7 @@ fn test_empty_query() {
 // #     }
 //
 // #[test]
-// fn test_select__multiple_subqueries(visitors){
+// fn test_select__multiple_subqueries(){
 // #         subquery0 = SelectStatement().from_(Name("abc")).select(Name("foo"))
 // #         subquery1 = SelectStatement().from_(Name("efg")).select("bar")
 // #         stmt = SelectStatement().from_(subquery0).from_(subquery1).select(subquery0.foo, subquery1.bar)
@@ -137,7 +180,7 @@ fn test_empty_query() {
 // #     }
 //
 // #[test]
-// fn test_select__nested_subquery(visitors){
+// fn test_select__nested_subquery(){
 // #         subquery0 = SelectStatement().from_(Name("abc"))
 // #         subquery1 = SelectStatement().from_(subquery0).select(subquery0.foo, subquery0.bar)
 // #         subquery2 = SelectStatement().from_(subquery1).select(subquery1.foo)
@@ -155,7 +198,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select__no_table(visitors){
+// fn test_select__no_table(){
 //     stmt = SelectStatement().select(1, 2, 3)
 //     assert visitors.mysql.sql(stmt) == "SELECT 1, 2, 3"
 //     assert visitors.sqlite.sql(stmt) == "SELECT 1, 2, 3"
@@ -165,7 +208,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select_then_add_table(visitors){
+// fn test_select_then_add_table(){
 //     stmt = SelectStatement().select(1, 2, 3).from_(Name("abc")).select("foo").select(Name("bar"))
 //     assert visitors.mysql.sql(stmt) == 'SELECT 1, 2, 3, \'foo\', `bar` FROM `abc`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT 1, 2, 3, \'foo\', "bar" FROM "abc"'
@@ -175,7 +218,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select_with_limit(visitors){
+// fn test_select_with_limit(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).limit(10)
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` LIMIT 10'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" LIMIT 10'
@@ -185,7 +228,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select_with_limit_zero(visitors){
+// fn test_select_with_limit_zero(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).limit(0)
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc"'
@@ -195,7 +238,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select_with_offset(visitors){
+// fn test_select_with_offset(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).offset(10)
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` OFFSET 10'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" OFFSET 10'
@@ -205,7 +248,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select_with_limit_and_offset(visitors){
+// fn test_select_with_limit_and_offset(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).offset(10).limit(10)
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` LIMIT 10 OFFSET 10'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" LIMIT 10 OFFSET 10'
@@ -215,7 +258,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select_with_force_index(visitors){
+// fn test_select_with_force_index(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg"))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`)'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg")'
@@ -225,7 +268,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select_with_force_index_multiple_indexes(visitors){
+// fn test_select_with_force_index_multiple_indexes(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg"), Name("bacon"))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`, `bacon`)'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "bacon")'
@@ -235,7 +278,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select_with_force_index_multiple_calls(visitors){
+// fn test_select_with_force_index_multiple_calls(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg")).force_index(Name("spam"))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`, `spam`)'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "spam")'
@@ -245,7 +288,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select_with_use_index(visitors){
+// fn test_select_with_use_index(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).use_index(Name("egg"))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`)'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg")'
@@ -255,7 +298,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select_with_use_index_multiple_indexes(visitors){
+// fn test_select_with_use_index_multiple_indexes(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).use_index(Name("egg"), Name("bacon"))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`, `bacon`)'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "bacon")'
@@ -265,7 +308,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select_with_use_index_multiple_calls(visitors){
+// fn test_select_with_use_index_multiple_calls(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).use_index(Name("egg")).use_index(Name("spam"))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`, `spam`)'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "spam")'
@@ -275,7 +318,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_table_select_alias(visitors){
+// fn test_table_select_alias(){
 //     stmt = SelectStatement().from_(Name("abc")).select(1)
 //     assert visitors.mysql.sql(stmt) == 'SELECT 1 FROM `abc`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT 1 FROM "abc"'
@@ -285,7 +328,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_where_basic(visitors){
+// fn test_where_basic(){
 //     stmt = SelectStatement().from_(Name("abc")).where(foo="foo")
 //     assert visitors.mysql.sql(stmt) == "SELECT * FROM `abc` WHERE `foo` = 'foo'"
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'foo\''
@@ -315,7 +358,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_where_field_equals_for_update(visitors){
+// fn test_where_field_equals_for_update(){
 //     stmt = SelectStatement().from_(Name("abc")).where(foo=date(2020, 2, 2)).for_update()
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'2020-02-02\' FOR UPDATE'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE'
@@ -325,7 +368,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_where_field_equals_for_update_share(visitors){
+// fn test_where_field_equals_for_update_share(){
 //     stmt = SelectStatement().from_(Name("abc")).where(foo=date(2020, 2, 2)).for_update(share=True)
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'2020-02-02\' FOR UPDATE SHARE'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE SHARE'
@@ -335,7 +378,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_where_field_equals_for_update_nowait(visitors){
+// fn test_where_field_equals_for_update_nowait(){
 //     stmt = SelectStatement().from_(Name("abc")).where(foo=date(2020, 2, 2)).for_update(nowait=True)
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'2020-02-02\' FOR UPDATE NOWAIT'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE NOWAIT'
@@ -345,7 +388,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_where_field_equals_for_update_skip(visitors){
+// fn test_where_field_equals_for_update_skip(){
 //     stmt = SelectStatement().from_(Name("abc")).where(foo=date(2020, 2, 2)).for_update(skip=True)
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'2020-02-02\' FOR UPDATE SKIP LOCKED'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE SKIP LOCKED'
@@ -355,7 +398,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_where_field_equals_for_update_of(visitors){
+// fn test_where_field_equals_for_update_of(){
 //     stmt = SelectStatement().from_(Name("abc")).where(foo="bar").for_update(of=("abc",))
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'bar\' FOR UPDATE OF `abc`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'bar\' FOR UPDATE OF "abc"'
@@ -365,7 +408,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_where_field_equals_for_update_skip_locked_and_of(visitors){
+// fn test_where_field_equals_for_update_skip_locked_and_of(){
 //     stmt = SelectStatement().from_(Name("abc")).where(foo="bar").for_update(skip=True, of=("abc",))
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'bar\' FOR UPDATE OF `abc` SKIP LOCKED'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'bar\' FOR UPDATE OF "abc" SKIP LOCKED'
@@ -375,7 +418,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_where_field_equals_for_multiple_tables(visitors){
+// fn test_where_field_equals_for_multiple_tables(){
 //     stmt = (SelectStatement().from_(Name("abc"))
 //             .join(Name("efg")).on(abc__id=Name("id", "efg"))
 //             .where(abc__foo=Name("bar", "efg"))
@@ -388,7 +431,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_where_field_equals_where(visitors){
+// fn test_where_field_equals_where(){
 //     stmt = SelectStatement().from_(Name("abc")).where(abc__foo=1, abc__bar=Name('baz', Name("abc").name))
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `abc`.`foo` = 1 AND `abc`.`bar` = `abc`.`baz`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "abc"."foo" = 1 AND "abc"."bar" = "abc"."baz"'
@@ -398,7 +441,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_where_field_equals_where_not(visitors){
+// fn test_where_field_equals_where_not(){
 //     stmt = SelectStatement().from_(Name("abc")).where(~Binary.parse(foo=1)).where(bar=Name('baz', schema_name=Name("abc").name))
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE NOT `foo` = 1 AND `bar` = `abc`.`baz`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE NOT "foo" = 1 AND "bar" = "abc"."baz"'
@@ -408,7 +451,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_where_single_quote(visitors){
+// fn test_where_single_quote(){
 //     stmt = SelectStatement().from_(Name("abc")).where(foo="bar'foo")
 //     assert visitors.mysql.sql(stmt) == "SELECT * FROM `abc` WHERE `foo` = 'bar''foo'"
 //     assert visitors.sqlite.sql(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" = 'bar''foo'"
@@ -418,7 +461,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_where_field_matches_regex(visitors){
+// fn test_where_field_matches_regex(){
 //     stmt = SelectStatement().from_(Name("abc")).where(foo__regex="r^b")
 //     assert visitors.mysql.sql(stmt) == "SELECT * FROM `abc` WHERE `foo` REGEX 'r^b'"
 //     assert visitors.sqlite.sql(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" REGEX 'r^b'"
@@ -428,7 +471,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_ignore_empty_criterion_where(visitors){
+// fn test_ignore_empty_criterion_where(){
 //     stmt = SelectStatement().from_(Name("abc")).where()
 //     assert visitors.mysql.sql(stmt) == "SELECT * FROM `abc`"
 //     assert visitors.sqlite.sql(stmt) == "SELECT * FROM \"abc\""
@@ -438,7 +481,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select_with_force_index_and_where(visitors){
+// fn test_select_with_force_index_and_where(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).where(foo="bar").force_index(Name("egg"))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`) WHERE `foo` = \'bar\''
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg") WHERE "foo" = \'bar\''
@@ -448,7 +491,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_group_by__single(visitors){
+// fn test_group_by__single(){
 //     foo = Name("foo")
 //     stmt = SelectStatement().from_(Name("abc")).group_by(foo).select(foo)
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` GROUP BY `foo`'
@@ -459,7 +502,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_group_by__multi(visitors){
+// fn test_group_by__multi(){
 //     foo, bar = Name("foo"), Name("bar")
 //     stmt = SelectStatement().from_(Name("abc")).group_by(foo, bar).select(foo, bar)
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, `bar` FROM `abc` GROUP BY `foo`, `bar`'
@@ -470,7 +513,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_group_by__count_star(visitors){
+// fn test_group_by__count_star(){
 //     foo = Name("foo")
 //     stmt = SelectStatement().from_(Name("abc")).group_by(foo).select(foo, Count(STAR))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, COUNT(*) FROM `abc` GROUP BY `foo`'
@@ -481,7 +524,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_group_by__count_field(visitors){
+// fn test_group_by__count_field(){
 //     foo = Name("foo")
 //     stmt = SelectStatement().from_(Name("abc")).group_by(foo).select(foo, Count(Name("bar")))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, COUNT(`bar`) FROM `abc` GROUP BY `foo`'
@@ -492,7 +535,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_group_by__count_distinct(visitors){
+// fn test_group_by__count_distinct(){
 //     foo = Name("foo")
 //     stmt = SelectStatement().from_(Name("abc")).group_by(foo).select(foo, Count(STAR).distinct())
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, COUNT(DISTINCT *) FROM `abc` GROUP BY `foo`'
@@ -503,7 +546,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_group_by__sum_distinct(visitors){
+// fn test_group_by__sum_distinct(){
 //     foo = Name("foo")
 //     stmt = SelectStatement().from_(Name("abc")).group_by(foo).select(foo, Sum(Name("bar")).distinct())
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, SUM(DISTINCT `bar`) FROM `abc` GROUP BY `foo`'
@@ -514,7 +557,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_group_by__alias(visitors){
+// fn test_group_by__alias(){
 //     bar = Name("bar").as_("bar01")
 //     stmt = SelectStatement().from_(Name("abc")).select(Sum(Name("foo")), bar).group_by(bar)
 //     assert visitors.mysql.sql(stmt) == 'SELECT SUM(`foo`), `bar` AS `bar01` FROM `abc` GROUP BY `bar01`'
@@ -525,7 +568,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_group_by__alias_with_join(visitors){
+// fn test_group_by__alias_with_join(){
 //     table1 = Name("table1").as_("t1")
 //     bar = Name("bar", schema_name=table1.alias).as_("bar01")
 //     stmt = (SelectStatement().from_(Name("abc")).join(table1)
@@ -540,7 +583,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_mysql_query_uses_backtick_quote_chars(visitors){
+// fn test_mysql_query_uses_backtick_quote_chars(){
 //     stmt = SelectStatement().from_(Name("abc")).group_by(Name('foo')).select(Name('foo'))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` GROUP BY `foo`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
@@ -550,7 +593,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_having_greater_than(visitors){
+// fn test_having_greater_than(){
 //     foo, bar = Name('foo'), Name('bar')
 //     stmt = SelectStatement().from_(Name("abc")).select(foo, Sum(bar)).group_by(foo).having(Sum(bar).gt(1))
 //
@@ -562,7 +605,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_having_and(visitors){
+// fn test_having_and(){
 //     foo, bar = Name('foo'), Name('bar')
 //     stmt = SelectStatement().from_(Name("abc")).select(foo, Sum(bar)).group_by(foo).having((Sum(bar).gt(1)) & (Sum(bar).lt(100)))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, SUM(`bar`) FROM `abc` GROUP BY `foo` HAVING SUM(`bar`) > 1 AND SUM(`bar`) < 100'
@@ -573,7 +616,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_having_join_and_equality(visitors){
+// fn test_having_join_and_equality(){
 //     abc_foo = Name('foo', schema_name=Name("abc").name)
 //     abc_buz = Name('buz', schema_name=Name("abc").name)
 //     efg_foo = Name('foo', schema_name=Name("efg").name)
@@ -602,7 +645,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_order_by__single_field(visitors){
+// fn test_order_by__single_field(){
 //     stmt = SelectStatement().from_(Name("abc")).order_by(Name("foo")).select(Name("foo"))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` ORDER BY `foo`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo"'
@@ -612,7 +655,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_order_by__multi_fields(visitors){
+// fn test_order_by__multi_fields(){
 //     foo, bar = Name("foo"), Name("bar")
 //     stmt = SelectStatement().from_(Name("abc")).order_by(foo, bar).select(foo, bar)
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, `bar` FROM `abc` ORDER BY `foo`, `bar`'
@@ -623,7 +666,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_order_by_asc(visitors){
+// fn test_order_by_asc(){
 //     foo = Name("foo")
 //     stmt = SelectStatement().from_(Name("abc")).order_by(foo, sorted_in=SortedIn.ASC).select(foo)
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` ORDER BY `foo` ASC'
@@ -634,7 +677,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_order_by_desc(visitors){
+// fn test_order_by_desc(){
 //     foo = Name("foo")
 //     stmt = SelectStatement().from_(Name("abc")).order_by(foo, sorted_in=SortedIn.DESC).select(foo)
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` ORDER BY `foo` DESC'
@@ -645,7 +688,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_order_by__alias(visitors){
+// fn test_order_by__alias(){
 //     bar = Name("bar").as_("bar01")
 //     stmt = SelectStatement().from_(Name("abc")).select(Sum(Name("foo")), bar).order_by(bar)
 //     assert visitors.mysql.sql(stmt) == 'SELECT SUM(`foo`), `bar` AS `bar01` FROM `abc` ORDER BY `bar01`'
@@ -656,7 +699,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_table_field(visitors){
+// fn test_table_field(){
 //     bar = Name("foo").as_("bar")
 //     stmt = SelectStatement().from_(Name("abc")).select(bar)
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar` FROM `abc`'
@@ -667,7 +710,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_table_field__multi(visitors){
+// fn test_table_field__multi(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo").as_("bar"), Name("fiz").as_("buz"))
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar`, `fiz` AS `buz` FROM `abc`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" AS "bar", "fiz" AS "buz" FROM "abc"'
@@ -677,7 +720,7 @@ fn test_empty_query() {
 // # }
 //
 // #[test]
-// fn test_arithmetic_function(visitors){
+// fn test_arithmetic_function(){
 // #     """ @todo: support arithmetic """
 // #     stmt = SelectStatement().from_(Name("abc")).select((self.t.foo + self.t.bar).as_("biz"))
 // # visitors.mysql.sql(stmt) ==     self.assertEqual('SELECT "foo"+"bar" "biz" FROM "abc"'
@@ -685,7 +728,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_alias_functions(visitors){
+// fn test_alias_functions(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Count(STAR).as_("foo"))
 //     assert visitors.mysql.sql(stmt) == 'SELECT COUNT(*) AS `foo` FROM `abc`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT COUNT(*) AS "foo" FROM "abc"'
@@ -695,7 +738,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_alias_function_using_as_nested(visitors){
+// fn test_alias_function_using_as_nested(){
 //     """ We don't show aliases of fields that are arguments of a function. """
 //     stmt = SelectStatement().from_(Name("abc")).select(Sqrt(Count(STAR).as_("foo")).as_("bar"))
 //     assert visitors.mysql.sql(stmt) == 'SELECT SQRT(COUNT(*)) AS `bar` FROM `abc`'
@@ -706,7 +749,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_alias_in__group_by(visitors){
+// fn test_alias_in__group_by(){
 //     foo = Name('foo').as_('bar')
 //     stmt = SelectStatement().from_(Name("abc")).select(foo).group_by(foo)
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar` FROM `abc` GROUP BY `bar`'
@@ -717,7 +760,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_alias_in__order_by(visitors){
+// fn test_alias_in__order_by(){
 //     foo = Name('foo').as_('bar')
 //     stmt = SelectStatement().from_(Name("abc")).select(foo).order_by(foo)
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar` FROM `abc` ORDER BY `bar`'
@@ -728,7 +771,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_alias_ignored__in_value(visitors){
+// fn test_alias_ignored__in_value(){
 //     foo = Name('foo').as_('bar')
 //     stmt = SelectStatement().from_(Name("abc")).select(foo).where(username=foo)
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar` FROM `abc` WHERE `username` = `foo`'
@@ -739,7 +782,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_select__multiple_tables(visitors){
+// fn test_select__multiple_tables(){
 //     table_abc = Name("abc").as_("t0")
 //     table_efg = Name("efg").as_("t1")
 //     foo = Name('foo', schema_name=table_abc)
@@ -753,7 +796,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_use_aliases_in__group_by_and_order_by(visitors){
+// fn test_use_aliases_in__group_by_and_order_by(){
 //     table_abc = Name("abc").as_("t0")
 //     my_foo = Name("foo", table_abc.alias).as_("my_foo")
 //     bar = Name("bar", table_abc.alias)
@@ -766,7 +809,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_table_with_schema_and_alias(visitors){
+// fn test_table_with_schema_and_alias(){
 //     table = Name("abc", schema_name="schema").as_("alias")
 //     stmt = SelectStatement().from_(table)
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `schema`.`abc` AS `alias`'
@@ -777,7 +820,7 @@ fn test_empty_query() {
 // }
 //
 // #[test]
-// fn test_extraneous_quotes(visitors){
+// fn test_extraneous_quotes(){
 //     t1 = Name("table1").as_("t1")
 //     t2 = Name("table2").as_("t2")
 //     stmt = SelectStatement().from_(t1).join(t2).on(t1__value__bt=(Name("start", schema_name=t2), Name("end", schema_name=t2))).select(
@@ -795,7 +838,7 @@ fn test_empty_query() {
 //     #     }
 //
 // #[test]
-// fn test_where__in(visitors){
+// fn test_where__in(){
 //     #         stmt = (
 //     #             SelectStatement().from_(Name("abc"))
 //     #
@@ -814,14 +857,14 @@ fn test_empty_query() {
 //     #     }
 //
 // #[test]
-// fn test_where__in_nested(visitors){
+// fn test_where__in_nested(){
 //     #         stmt = SelectStatement().from_(Name("abc")).where(Name("abc").foo).isin(Name("efg"))
 //     #         assert visitors.mysql.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" IN (SELECT * FROM "efg")'
 //     #
 //     #     }
 //
 // #[test]
-// fn test_join(visitors){
+// fn test_join(){
 //     #         subquery = SelectStatement().from_("efg").select("fiz", "buz").where(F("buz") == 0)
 //     #
 //     #         stmt = (
@@ -841,7 +884,7 @@ fn test_empty_query() {
 //     #     }
 //
 // #[test]
-// fn test_select_subquery(visitors){
+// fn test_select_subquery(){
 //     #         substmt = SelectStatement().from_(Name("efg")).select("fizzbuzz").where(Name("efg").id == 1)
 //     #
 //     #         stmt = SelectStatement().from_(Name("abc")).select("foo", "bar").select(subq)
@@ -854,7 +897,7 @@ fn test_empty_query() {
 //     #     }
 //
 // #[test]
-// fn test_select_subquery_with_alias(visitors){
+// fn test_select_subquery_with_alias(){
 //     #         substmt = SelectStatement().from_(Name("efg")).select("fizzbuzz").where(Name("efg").id == 1)
 //     #
 //     #         stmt = SelectStatement().from_(Name("abc")).select("foo", "bar").select(subq.as_("sq"))
@@ -867,7 +910,7 @@ fn test_empty_query() {
 //     #     }
 //
 // #[test]
-// fn test_where__equality(visitors){
+// fn test_where__equality(){
 //     #         subquery = SelectStatement().from_("efg").select("fiz").where(F("buz") == 0)
 //     #         query = (
 //     #             SelectStatement().from_(Name("abc"))
@@ -883,7 +926,7 @@ fn test_empty_query() {
 //     #     }
 //
 // #[test]
-// fn test_select_from_nested_query(visitors){
+// fn test_select_from_nested_query(){
 //     #         subquery = SelectStatement().from_(Name("abc")).select(
 //     #             Name("abc").foo,
 //     #             Name("abc").bar,
@@ -904,7 +947,7 @@ fn test_empty_query() {
 //     #     }
 //
 // #[test]
-// fn test_select_from_nested_query_with_join(visitors){
+// fn test_select_from_nested_query_with_join(){
 //     #         subquery1 = (
 //     #             SelectStatement().from_(Name("abc"))
 //     #             .select(
@@ -947,7 +990,7 @@ fn test_empty_query() {
 //     #     }
 //
 // #[test]
-// fn test_from_subquery_without_alias(visitors){
+// fn test_from_subquery_without_alias(){
 //     #         subquery = SelectStatement().from_(Name("efg")).select(
 //     #             Name("efg").base_id.as_("x"), Name("efg").fizz, Name("efg").buzz
 //     #         )
@@ -965,7 +1008,7 @@ fn test_empty_query() {
 //     #     }
 //
 // #[test]
-// fn test_join_query_with_alias(visitors){
+// fn test_join_query_with_alias(){
 //     #         subquery = (
 //     #             SelectStatement().from_(Name("efg"))
 //     #             .select(
@@ -989,7 +1032,7 @@ fn test_empty_query() {
 //     #     }
 //
 // #[test]
-// fn test_with(visitors){
+// fn test_with(){
 //     #         sub_query = SelectStatement().from_(Name("efg")).select("fizz")
 //     #         test_query = SelectStatement().with_(sub_query, "an_alias").from_(AliasedQuery("an_alias"))
 //     #
@@ -1001,7 +1044,7 @@ fn test_empty_query() {
 //     #     }
 //
 // #[test]
-// fn test_join_with_with(visitors){
+// fn test_join_with_with(){
 //     #         sub_query = SelectStatement().from_(Name("efg")).select("fizz")
 //     #         test_query = (
 //     #             SelectStatement().with_(sub_query, "an_alias")
@@ -1019,7 +1062,7 @@ fn test_empty_query() {
 //     #     }
 //
 // #[test]
-// fn test_select_from_with_returning(visitors){
+// fn test_select_from_with_returning(){
 //     #         sub_query = SelectStatement().into(Name("abc")).insert(1).returning('*')
 //     #         test_query = SelectStatement().with_(sub_query, "an_alias").from_(AliasedQuery("an_alias"))
 //     #       assert

@@ -50,7 +50,7 @@ impl Expr {
             (Op::Ne, Value::Null) => Op::IsNot,
             _ => op,
         };
-        Expr::Binary { left: Operand::Column(left), op, right: Operand::Value(right) }
+        Expr::Binary { left: Operand::Column { name: left, alias: None }, op, right: Operand::Value(right) }
     }
 
     pub fn and(self, other: Expr) -> Expr {

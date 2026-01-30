@@ -4,7 +4,7 @@ use crate::sequel::build::Binder;
 
 #[derive(Clone)]
 pub enum Source {
-    Table { name: &'static str, alias: Option<&'static str> },
+    Table { schema: Option<&'static str>, name: &'static str, alias: Option<&'static str> },
     SubQuery { query: Box<SelectStatement>, alias: Option<&'static str> },
     Join { left: Box<Source>, right: Box<Source>, tp: JoinType, on: Expr },
 }
@@ -50,14 +50,14 @@ impl Source {
     }
     pub fn build(&self, binder: &mut Binder) -> String {
         match self {
-            Source::Table { name, alias } => match alias {
-                Some(alias_name) => format!("{} AS {}", binder.quote(name), binder.quote(alias_name)),
-                None => binder.quote(name),
-            },
-            Source::SubQuery { query, alias } => match alias {
-                Some(alias_name) => format!("{} AS {}", query.build(binder), alias_name),
-                None => query.build(binder),
-            },
+            Source::Table { schema, name, alias } => {
+                let sql = binder.quote_full(schema.as_deref(), name);
+                binder.with_alias(sql, alias.as_deref())
+            }
+            Source::SubQuery { query, alias } => {
+                let sql = query.build(binder);
+                binder.with_alias(sql, alias.as_deref())
+            }
             Source::Join { left: _, right, tp, on } => {
                 format!("{} {} ON {}", right.build(binder), tp.build(binder), on.build(binder))
             }

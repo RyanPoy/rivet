@@ -7,22 +7,22 @@ mod setup {
     use std::sync::LazyLock;
 
     pub const select_statement: LazyLock<SelectStatement> =
-        LazyLock::new(|| SelectStatement::new().select(Operand::Column("id")));
+        LazyLock::new(|| SelectStatement::new().select(Operand::Column { name: "id", alias: None }));
 }
 
 #[test]
 fn test_source_join_basic() {
     // 构造：users INNER JOIN orders ON users.id = orders.user_id
-    let left = Source::Table { name: "users", alias: Some("u") };
-    let right = Source::Table { name: "orders", alias: Some("o") };
+    let left = Source::Table { schema: None, name: "users", alias: Some("u") };
+    let right = Source::Table { schema: None, name: "orders", alias: Some("o") };
     let on_condition = Expr::new_binary("u.id", Op::Eq, Value::I32(1)); // 简化演示
 
     let join_source =
         Source::Join { left: Box::new(left), right: Box::new(right), tp: JoinType::Inner, on: on_condition };
 
     if let Source::Join { left, right, tp, .. } = join_source {
-        assert!(matches!(*left, Source::Table { name: "users", alias: Some("u") }));
-        assert!(matches!(*right, Source::Table { name: "orders", alias: Some("o") }));
+        assert!(matches!(*left, Source::Table { schema: None, name: "users", alias: Some("u") }));
+        assert!(matches!(*right, Source::Table { schema: None, name: "orders", alias: Some("o") }));
         assert_eq!(tp, JoinType::Inner);
     } else {
         panic!("Expected Source::Join");
@@ -32,9 +32,9 @@ fn test_source_join_basic() {
 #[test]
 fn test_source_nested_join() {
     // 构造更复杂的嵌套：(A JOIN B) LEFT JOIN C
-    let a = Source::Table { name: "table_a", alias: None };
-    let b = Source::Table { name: "table_b", alias: None };
-    let c = Source::Table { name: "table_c", alias: None };
+    let a = Source::Table { schema: None, name: "table_a", alias: None };
+    let b = Source::Table { schema: None, name: "table_b", alias: None };
+    let c = Source::Table { schema: None, name: "table_c", alias: None };
     let cond = Expr::new_binary("a.id", Op::Eq, Value::I32(1));
 
     let first_join = Source::Join { left: Box::new(a), right: Box::new(b), tp: JoinType::Inner, on: cond.clone() };
@@ -71,8 +71,8 @@ fn test_all_join_types_coverage() {
 
     for jt in types {
         let source = Source::Join {
-            left: Box::new(Source::Table { name: "a", alias: None }),
-            right: Box::new(Source::Table { name: "b", alias: None }),
+            left: Box::new(Source::Table { schema: None, name: "a", alias: None }),
+            right: Box::new(Source::Table { schema: None, name: "b", alias: None }),
             tp: jt,
             on: Expr::new_binary("a.id", Op::Eq, Value::I32(1)),
         };
