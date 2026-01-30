@@ -1,18 +1,18 @@
 use super::*;
-use crate::schema::col::Column;
+use crate::schema::col::Col;
 use crate::sequel::ast::Value;
 use rivet_orm_macros::table;
 
 #[allow(non_upper_case_globals)]
 mod setup {
-    use crate::orm::Column;
-    pub const age: Column<i32> = Column::new("age");
-    pub const has_children: Column<bool> = Column::new("has_children");
-    pub const username: Column<String> = Column::new("username");
+    use crate::orm::Col;
+    pub const age: Col<i32> = Col::new("age");
+    pub const has_children: Col<bool> = Col::new("has_children");
+    pub const username: Col<String> = Col::new("username");
 }
 
 #[test]
-fn test_column_define() {
+fn test_col_define() {
     #[table]
     struct User {
         id: i32,
@@ -39,12 +39,12 @@ fn test_column_define() {
         checked: true,
         temp: "fuck".to_string(),
     };
-    assert_eq!(User::id, Column::<i32>::new("id"));
-    assert_eq!(User::name, Column::<String>::new("username"));
-    assert_eq!(User::age, Column::<u32>::new("age"));
-    assert_eq!(User::nick_name, Column::<String>::new("nick_name"));
-    assert_eq!(User::checked, Column::<bool>::new("checked"));
-    assert_eq!(User::gender, Column::<String>::new("gender"));
+    assert_eq!(User::id, Col::<i32>::new("id"));
+    assert_eq!(User::name, Col::<String>::new("username"));
+    assert_eq!(User::age, Col::<u32>::new("age"));
+    assert_eq!(User::nick_name, Col::<String>::new("nick_name"));
+    assert_eq!(User::checked, Col::<bool>::new("checked"));
+    assert_eq!(User::gender, Col::<String>::new("gender"));
     assert_eq!(user.id, 1);
 }
 

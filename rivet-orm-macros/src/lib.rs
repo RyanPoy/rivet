@@ -98,7 +98,7 @@ fn expand_columns_metadata(
         let column_type = get_column_type(&m.tp);
 
         quote! {
-            pub const #field_ident: ::rivet::orm::Column<#column_type> = ::rivet::orm::Column::new(#column_name);
+            pub const #field_ident: ::rivet::orm::Col<#column_type> = ::rivet::orm::Col::new(#column_name);
         }
     });
 

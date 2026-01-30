@@ -15,17 +15,17 @@ macro_rules! register_column_types {
 register_column_types!(i8, i16, i32, i64, i128, u8, u16, u32, u64, u128, bool, String);
 
 #[derive(Debug, Eq, PartialEq)]
-pub struct Column<T: private::ColumnType> {
+pub struct Col<T: private::ColumnType> {
     pub name: &'static str,
     _marker: PhantomData<T>,
 }
-impl<T: private::ColumnType> IntoOperand<T> for Column<T> {
+impl<T: private::ColumnType> IntoOperand<T> for Col<T> {
     fn into_operand(self) -> Operand {
         Operand::Column { name: self.name, alias: None }
     }
 }
 
-impl<T: private::ColumnType> Column<T> {
+impl<T: private::ColumnType> Col<T> {
     pub const fn new(name: &'static str) -> Self {
         Self { name, _marker: PhantomData }
     }
@@ -63,7 +63,7 @@ impl<T: private::ColumnType> Column<T> {
 }
 
 #[allow(private_bounds)]
-impl Column<String> {
+impl Col<String> {
     pub fn like<V: IntoValue<String>>(&self, v: V) -> Expr {
         Expr::new_binary(self.name, Op::Like, v.into_value())
     }
