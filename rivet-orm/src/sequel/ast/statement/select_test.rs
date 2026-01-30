@@ -23,11 +23,11 @@ fn test_empty_query() {
     assert_eq!(params, vec![]);
 
     let (sql, params) = stmt.to_sql(&mut binder::sqlite());
-    assert_eq!(sql, "SELECT * FROM \"abc\"".to_string());
+    assert_eq!(sql, r#"SELECT * FROM "abc""#.to_string());
     assert_eq!(params, vec![]);
 
     let (sql, params) = stmt.to_sql(&mut binder::pg());
-    assert_eq!(sql, "SELECT * FROM \"abc\"".to_string());
+    assert_eq!(sql, r#"SELECT * FROM "abc""#.to_string());
     assert_eq!(params, vec![]);
 }
 
@@ -39,11 +39,11 @@ fn test_table_schema() {
     assert_eq!(params, vec![]);
 
     let (sql, params) = stmt.to_sql(&mut binder::sqlite());
-    assert_eq!(sql, "SELECT * FROM \"schema1\".\"abc\"".to_string());
+    assert_eq!(sql, r#"SELECT * FROM "schema1"."abc""#.to_string());
     assert_eq!(params, vec![]);
 
     let (sql, params) = stmt.to_sql(&mut binder::pg());
-    assert_eq!(sql, "SELECT * FROM \"schema1\".\"abc\"".to_string());
+    assert_eq!(sql, r#"SELECT * FROM "schema1"."abc""#.to_string());
     assert_eq!(params, vec![]);
 }
 
@@ -58,11 +58,11 @@ fn test_select_distinct_single() {
     assert_eq!(params, vec![]);
 
     let (sql, params) = stmt.to_sql(&mut binder::sqlite());
-    assert_eq!(sql, "SELECT DISTINCT \"foo\" FROM \"abc\"".to_string());
+    assert_eq!(sql, r#"SELECT DISTINCT "foo" FROM "abc""#.to_string());
     assert_eq!(params, vec![]);
 
     let (sql, params) = stmt.to_sql(&mut binder::pg());
-    assert_eq!(sql, "SELECT DISTINCT \"foo\" FROM \"abc\"".to_string());
+    assert_eq!(sql, r#"SELECT DISTINCT "foo" FROM "abc""#.to_string());
     assert_eq!(params, vec![]);
 }
 
@@ -78,11 +78,11 @@ fn test_select_distinct_multi() {
     assert_eq!(params, vec![]);
 
     let (sql, params) = stmt.to_sql(&mut binder::sqlite());
-    assert_eq!(sql, "SELECT DISTINCT \"foo\", \"bar\" FROM \"abc\"".to_string());
+    assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "abc""#.to_string());
     assert_eq!(params, vec![]);
 
     let (sql, params) = stmt.to_sql(&mut binder::pg());
-    assert_eq!(sql, "SELECT DISTINCT \"foo\", \"bar\" FROM \"abc\"".to_string());
+    assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "abc""#.to_string());
     assert_eq!(params, vec![]);
 }
 
@@ -95,11 +95,11 @@ fn test_select_single_column() {
     assert_eq!(params, vec![]);
 
     let (sql, params) = stmt.to_sql(&mut binder::sqlite());
-    assert_eq!(sql, "SELECT \"foo\" FROM \"abc\"".to_string());
+    assert_eq!(sql, r#"SELECT "foo" FROM "abc""#.to_string());
     assert_eq!(params, vec![]);
 
     let (sql, params) = stmt.to_sql(&mut binder::pg());
-    assert_eq!(sql, "SELECT \"foo\" FROM \"abc\"".to_string());
+    assert_eq!(sql, r#"SELECT "foo" FROM "abc""#.to_string());
     assert_eq!(params, vec![]);
 }
 
@@ -140,16 +140,26 @@ fn test_select_single_column_and_table_alias_str() {
     assert_eq!(params, vec![]);
 }
 
-// #[test]
-// fn test_select_multiple_columns(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).select(Name("bar"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, `bar` FROM `abc`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", "bar" FROM "abc"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo", "bar" FROM "abc"'
-//
-//
-// }
-//
+#[test]
+fn test_select_multiple_columns() {
+    let stmt = SelectStatement::new()
+        .from(Source::Table(Table::new("abc")))
+        .select(Operand::Column(Column::new("foo")))
+        .select(Operand::Column(Column::new("bar")));
+
+    let (sql, params) = stmt.to_sql(&mut binder::mysql());
+    assert_eq!(sql, "SELECT `foo`, `bar` FROM `abc`".to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::sqlite());
+    assert_eq!(sql, r#"SELECT "foo", "bar" FROM "abc""#.to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::pg());
+    assert_eq!(sql, r#"SELECT "foo", "bar" FROM "abc""#.to_string());
+    assert_eq!(params, vec![]);
+}
+
 // #[test]
 // fn test_select_multiple_tables(){
 //     stmt = (SelectStatement().from_(Name("abc")).select(Name("foo", schema_name=Name("abc").name))
