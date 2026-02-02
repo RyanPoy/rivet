@@ -3,13 +3,13 @@ use crate::sequel::build::Binder;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Column {
-    schema: Option<&'static str>,
-    name: &'static str,
-    alias: Option<&'static str>,
+    pub table: Option<&'static str>,
+    pub name: &'static str,
+    pub alias: Option<&'static str>,
 }
 impl Column {
     pub fn new(name: &'static str) -> Self {
-        Self { schema: None, name, alias: None }
+        Self { table: None, name, alias: None }
     }
 
     pub fn alias(mut self, name: &'static str) -> Self {
@@ -17,8 +17,8 @@ impl Column {
         self
     }
 
-    pub fn schema(mut self, name: &'static str) -> Self {
-        self.schema = Some(name);
+    pub fn table(mut self, name: &'static str) -> Self {
+        self.table = Some(name);
         self
     }
 }
@@ -32,8 +32,8 @@ pub enum Operand {
 impl Operand {
     pub fn build(&self, binder: &mut Binder) -> String {
         match self {
-            Operand::Column(Column { schema, name, alias }) => {
-                binder.with_alias(binder.quote_full(schema.as_deref(), name), alias.as_deref())
+            Operand::Column(Column { table, name, alias }) => {
+                binder.with_alias(binder.quote_full(table.as_deref(), name), alias.as_deref())
             }
             Operand::Value(v) => v.build(binder),
         }

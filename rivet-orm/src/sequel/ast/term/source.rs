@@ -3,13 +3,13 @@ use crate::sequel::ast::SelectStatement;
 use crate::sequel::build::Binder;
 #[derive(Debug, PartialOrd, PartialEq, Eq, Copy, Clone)]
 pub struct Table {
-    schema: Option<&'static str>,
-    name: &'static str,
-    alias: Option<&'static str>,
+    pub schema: Option<&'static str>,
+    pub name: &'static str,
+    pub alias: Option<&'static str>,
 }
 impl Table {
     pub fn new(name: &'static str) -> Self {
-        Self { schema: None, name: name, alias: None }
+        Self { schema: None, name, alias: None }
     }
     pub fn schema(mut self, name: &'static str) -> Self {
         self.schema = Some(name);
@@ -74,7 +74,7 @@ impl Source {
                 binder.with_alias(sql, alias.as_deref())
             }
             Source::SubQuery { query, alias } => {
-                let sql = query.build(binder);
+                let sql = format!("({})", query.build(binder));
                 binder.with_alias(sql, alias.as_deref())
             }
             Source::Join { left: _, right, tp, on } => {

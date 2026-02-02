@@ -32,8 +32,8 @@ impl Binder {
         }
     }
 
-    pub fn quote_full(&self, schema: Option<&str>, table: &str) -> String {
-        match schema {
+    pub fn quote_full(&self, prefix: Option<&str>, table: &str) -> String {
+        match prefix {
             Some(s) => format!("{}.{}", self.quote(s), self.quote(table)),
             None => self.quote(table),
         }

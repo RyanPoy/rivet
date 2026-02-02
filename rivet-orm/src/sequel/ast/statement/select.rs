@@ -1,6 +1,6 @@
-use crate::sequel::ast::Expr;
 use crate::sequel::ast::Source;
 use crate::sequel::ast::{Direction, Order};
+use crate::sequel::ast::{Expr, Table};
 use crate::sequel::ast::{Operand, Value};
 use crate::sequel::build::Binder;
 
@@ -83,6 +83,9 @@ impl SelectStatement {
         (sql, binder.params())
     }
     pub fn build(&self, binder: &mut Binder) -> String {
+        // 0. 扫描 Alias
+        let aliases = self.collect_aliases();
+
         let mut parts = Vec::new();
 
         // 1. SELECT 子句
@@ -91,9 +94,34 @@ impl SelectStatement {
             select_clause.push_str("DISTINCT ");
         }
         if self.select.is_empty() {
-            select_clause.push_str("*");
+            if aliases.len() == 1 {
+                let s = format!("{}.*", aliases[0].1);
+                select_clause.push_str(&s);
+            } else {
+                select_clause.push_str("*");
+            }
         } else {
-            let cols: Vec<String> = self.select.iter().map(|col| col.build(binder)).collect();
+            let cols: Vec<String> = self
+                .select
+                .iter()
+                .map(|operand| match operand {
+                    Operand::Column(col) => {
+                        let effective_table = match col.table {
+                            Some(t) => Some(aliases.iter().find(|(o, _)| *o == t).map(|(_, a)| *a).unwrap_or(t)),
+                            None => {
+                                if aliases.len() == 1 {
+                                    Some(aliases[0].1)
+                                } else {
+                                    None
+                                }
+                            }
+                        };
+                        let full_name = binder.quote_full(effective_table, col.name);
+                        binder.with_alias(full_name, col.alias.as_deref())
+                    }
+                    Operand::Value(v) => binder.bind(v.clone()),
+                })
+                .collect();
             select_clause.push_str(&cols.join(", "));
         }
         parts.push(select_clause);
@@ -146,6 +174,44 @@ impl SelectStatement {
         let final_sql = parts.join(" ");
         final_sql
         // binder.finish(final_sql)
+    }
+
+    fn collect_aliases(&self) -> Vec<(&str, &str)> {
+        let mut aliases: Vec<(&str, &str)> = Vec::new();
+        for source in &self.from {
+            match source {
+                Source::Table(Table { schema, name, alias }) => {
+                    if let Some(a) = alias {
+                        aliases.push((name, a));
+                    }
+                }
+                Source::SubQuery { query, alias } => {
+                    if let Some(a) = alias {
+                        aliases.push((a, a));
+                    }
+                }
+                Source::Join { left, right, .. } => {
+                    self.collect_from_source(&*left, &mut aliases);
+                    self.collect_from_source(&*right, &mut aliases);
+                }
+            }
+        }
+        aliases
+    }
+
+    fn collect_from_source(&self, source: &Source, aliases: &mut Vec<(&str, &str)>) {
+        match source {
+            Source::Table(Table { schema, name, alias }) => {
+                if let Some(a) = alias {
+                    aliases.push((*name, *a))
+                }
+            }
+            Source::Join { left, right, .. } => {
+                self.collect_from_source(left, aliases);
+                self.collect_from_source(right, aliases);
+            }
+            _ => {}
+        }
     }
 }
 
