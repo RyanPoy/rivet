@@ -89,7 +89,7 @@ impl IntoOperand<String> for Option<&str> {
 }
 impl<T, I, V> IntoOperand<Vec<T>> for I
 where
-    V: IntoValue<T>, // 约束 T 必须是合法的列类型
+    V: IntoValue, // 约束 T 必须是合法的列类型
     I: IntoIterator<Item = V>,
 {
     fn into_operand(self) -> Operand {

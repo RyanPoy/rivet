@@ -65,14 +65,14 @@ pub fn test_eq() {
     assert_exprs_eq!(
         setup::age.eq(20) => {"age", Op::Eq, Value::Single(Scalar::I32(20))},
         setup::age.eq(Some(20)) => {"age", Op::Eq, Value::Single(Scalar::I32(20))},
-        setup::age.eq(None) => {"age", Op::Is, Value::Single(Scalar::Null)},
+        setup::age.eq(None::<i32>) => {"age", Op::Is, Value::Single(Scalar::Null)},
     );
 
     // for bool
     assert_exprs_eq!(
         setup::has_children.eq(true) => {"has_children", Op::Eq, Value::Single(Scalar::Bool(true))},
         setup::has_children.eq(Some(true)) => {"has_children", Op::Eq, Value::Single(Scalar::Bool(true))},
-        setup::has_children.eq(None) => {"has_children", Op::Is, Value::Single(Scalar::Null)},
+        setup::has_children.eq(None::<bool>) => {"has_children", Op::Is, Value::Single(Scalar::Null)},
     );
 
     // for String
@@ -95,14 +95,14 @@ pub fn test_ne() {
     assert_exprs_eq!(
         setup::age.ne(20) => {"age", Op::Ne, Value::Single(Scalar::I32(20))},
         setup::age.ne(Some(20)) => {"age", Op::Ne, Value::Single(Scalar::I32(20))},
-        setup::age.ne(None) => {"age", Op::IsNot, Value::Single(Scalar::Null)},
+        setup::age.ne(None::<i32>) => {"age", Op::IsNot, Value::Single(Scalar::Null)},
     );
 
     // for bool
     assert_exprs_eq!(
         setup::has_children.ne(true) => {"has_children", Op::Ne, Value::Single(Scalar::Bool(true))},
         setup::has_children.ne(Some(true)) => {"has_children", Op::Ne, Value::Single(Scalar::Bool(true))},
-        setup::has_children.ne(None) => {"has_children", Op::IsNot, Value::Single(Scalar::Null)},
+        setup::has_children.ne(None::<bool>) => {"has_children", Op::IsNot, Value::Single(Scalar::Null)},
     );
 
     // for String
@@ -125,14 +125,14 @@ pub fn test_gt() {
     assert_exprs_eq!(
         setup::age.gt(20) => {"age", Op::Gt, Value::Single(Scalar::I32(20))},
         setup::age.gt(Some(20)) => {"age", Op::Gt, Value::Single(Scalar::I32(20))},
-        setup::age.gt(None) => {"age", Op::Gt, Value::Single(Scalar::Null)},
+        setup::age.gt(None::<i32>) => {"age", Op::Gt, Value::Single(Scalar::Null)},
     );
 
     // for bool
     assert_exprs_eq!(
         setup::has_children.gt(true) => {"has_children", Op::Gt, Value::Single(Scalar::Bool(true))},
         setup::has_children.gt(Some(true)) => {"has_children", Op::Gt, Value::Single(Scalar::Bool(true))},
-        setup::has_children.gt(None) => {"has_children", Op::Gt, Value::Single(Scalar::Null)},
+        setup::has_children.gt(None::<bool>) => {"has_children", Op::Gt, Value::Single(Scalar::Null)},
     );
 
     // for String
@@ -155,14 +155,14 @@ pub fn test_lt() {
     assert_exprs_eq!(
         setup::age.lt(20) => {"age", Op::Lt, Value::Single(Scalar::I32(20))},
         setup::age.lt(Some(20)) => {"age", Op::Lt, Value::Single(Scalar::I32(20))},
-        setup::age.lt(None) => {"age", Op::Lt, Value::Single(Scalar::Null)},
+        setup::age.lt(None::<i32>) => {"age", Op::Lt, Value::Single(Scalar::Null)},
     );
 
     // for bool
     assert_exprs_eq!(
         setup::has_children.lt(true) => {"has_children", Op::Lt, Value::Single(Scalar::Bool(true))},
         setup::has_children.lt(Some(true)) => {"has_children", Op::Lt, Value::Single(Scalar::Bool(true))},
-        setup::has_children.lt(None) => {"has_children", Op::Lt, Value::Single(Scalar::Null)},
+        setup::has_children.lt(None::<bool>) => {"has_children", Op::Lt, Value::Single(Scalar::Null)},
     );
 
     // for String
@@ -185,14 +185,14 @@ pub fn test_gte() {
     assert_exprs_eq!(
         setup::age.gte(20) => {"age", Op::Gte, Value::Single(Scalar::I32(20))},
         setup::age.gte(Some(20)) => {"age", Op::Gte, Value::Single(Scalar::I32(20))},
-        setup::age.gte(None) => {"age", Op::Gte, Value::Single(Scalar::Null)},
+        setup::age.gte(None::<i32>) => {"age", Op::Gte, Value::Single(Scalar::Null)},
     );
 
     // for bool
     assert_exprs_eq!(
         setup::has_children.gte(true) => {"has_children", Op::Gte, Value::Single(Scalar::Bool(true))},
         setup::has_children.gte(Some(true)) => {"has_children", Op::Gte, Value::Single(Scalar::Bool(true))},
-        setup::has_children.gte(None) => {"has_children", Op::Gte, Value::Single(Scalar::Null)},
+        setup::has_children.gte(None::<bool>) => {"has_children", Op::Gte, Value::Single(Scalar::Null)},
     );
 
     // for String
@@ -216,14 +216,14 @@ pub fn test_lte() {
     assert_exprs_eq!(
         setup::age.lte(20) => {"age", Op::Lte, Value::Single(Scalar::I32(20))},
         setup::age.lte(Some(20)) => {"age", Op::Lte, Value::Single(Scalar::I32(20))},
-        setup::age.lte(None) => {"age", Op::Lte, Value::Single(Scalar::Null)},
+        setup::age.lte(None::<i32>) => {"age", Op::Lte, Value::Single(Scalar::Null)},
     );
 
     // for bool
     assert_exprs_eq!(
         setup::has_children.lte(true) => {"has_children", Op::Lte, Value::Single(Scalar::Bool(true))},
         setup::has_children.lte(Some(true)) => {"has_children", Op::Lte, Value::Single(Scalar::Bool(true))},
-        setup::has_children.lte(None) => {"has_children", Op::Lte, Value::Single(Scalar::Null)},
+        setup::has_children.lte(None::<bool>) => {"has_children", Op::Lte, Value::Single(Scalar::Null)},
     );
 
     // for String
