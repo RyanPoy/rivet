@@ -1,4 +1,4 @@
-use crate::sequel::ast::Source;
+use crate::sequel::ast::{Scalar, Source};
 use crate::sequel::ast::{Direction, Order};
 use crate::sequel::ast::{Expr, Table};
 use crate::sequel::ast::{Operand, Value};
@@ -80,7 +80,8 @@ impl SelectStatement {
 
     pub fn to_sql(&self, binder: &mut Binder) -> (String, Vec<Value>) {
         let sql = self.build(binder);
-        (sql, binder.params())
+        let vs: Vec<Value> = binder.params().iter().map(|s| Value::Single(s.clone())).collect();
+        (sql, vs)
     }
     pub fn build(&self, binder: &mut Binder) -> String {
         // 0. 扫描 Alias
@@ -119,7 +120,11 @@ impl SelectStatement {
                         let full_name = binder.quote_full(effective_table, col.name);
                         binder.with_alias(full_name, col.alias.as_deref())
                     }
-                    Operand::Value(v) => binder.bind(v.clone()),
+                    Operand::Value(v) => match v {
+                        Value::Single(s) => binder.bind(s.clone()),
+                        Value::List(vs) => vs.iter().map(|s| binder.bind(s.clone())).collect::<Vec<String>>().join(","),
+                    },
+                    Operand::Literal(v) => v.into(),
                 })
                 .collect();
             select_clause.push_str(&cols.join(", "));
@@ -160,13 +165,13 @@ impl SelectStatement {
 
         // 7. LIMIT 子句 (将数字也绑定为参数)
         if let Some(limit) = self.limit {
-            let placeholder = binder.bind(Value::U32(limit));
+            let placeholder = binder.bind(Scalar::U32(limit));
             parts.push(format!("LIMIT {}", placeholder));
         }
 
         // 8. OFFSET 子句
         if let Some(offset) = self.offset {
-            let placeholder = binder.bind(Value::U32(offset));
+            let placeholder = binder.bind(Scalar::U32(offset));
             parts.push(format!("OFFSET {}", placeholder));
         }
 

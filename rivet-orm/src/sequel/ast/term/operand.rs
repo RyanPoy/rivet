@@ -1,4 +1,4 @@
-use crate::sequel::ast::{IntoValue, Value};
+use crate::sequel::ast::{IntoValue, Scalar, Value};
 use crate::sequel::build::Binder;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -27,6 +27,7 @@ impl Column {
 pub enum Operand {
     Column(Column),
     Value(Value),
+    Literal(String),
 }
 
 impl Operand {
@@ -36,6 +37,7 @@ impl Operand {
                 binder.with_alias(binder.quote_full(table.as_deref(), name), alias.as_deref())
             }
             Operand::Value(v) => v.build(binder),
+            Operand::Literal(v) => v.into(),
         }
     }
 }
@@ -53,7 +55,7 @@ macro_rules! impl_into_operand_for_numeric {
             }
             impl IntoOperand<$t> for Option<$t> {
                 fn into_operand(self) -> Operand {
-                    let value = self.map(|v| v.into_value()).unwrap_or(Value::Null);
+                    let value = self.map(|v| v.into_value()).unwrap_or(Value::Single(Scalar::Null));
                     Operand::Value(value)
                 }
             }
@@ -72,7 +74,7 @@ impl IntoOperand<String> for &String {
 }
 impl IntoOperand<String> for Option<&String> {
     fn into_operand(self) -> Operand {
-        Operand::Value(self.map(|s| s.into_value()).unwrap_or(Value::Null))
+        Operand::Value(self.map(|s| s.into_value()).unwrap_or(Value::Single(Scalar::Null)))
     }
 }
 impl IntoOperand<String> for &str {
@@ -82,7 +84,7 @@ impl IntoOperand<String> for &str {
 }
 impl IntoOperand<String> for Option<&str> {
     fn into_operand(self) -> Operand {
-        Operand::Value(self.map(|s| s.into_value()).unwrap_or(Value::Null))
+        Operand::Value(self.map(|s| s.into_value()).unwrap_or(Value::Single(Scalar::Null)))
     }
 }
 impl<T, I, V> IntoOperand<Vec<T>> for I
@@ -91,7 +93,13 @@ where
     I: IntoIterator<Item = V>,
 {
     fn into_operand(self) -> Operand {
-        let lst = self.into_iter().map(|v| v.into_value()).collect();
+        let lst = self
+            .into_iter()
+            .map(|v| match v.into_value() {
+                Value::Single(s) => s,
+                _ => panic!("Nested lists are not supported"),
+            })
+            .collect();
         Operand::Value(Value::List(lst))
     }
 }

@@ -1,4 +1,4 @@
-use crate::sequel::ast::{Column, Operand, SelectStatement, Source, Table};
+use crate::sequel::ast::{Column, Operand, SelectStatement, Source, Table, Value};
 
 mod binder {
     use crate::sequel::build::{Binder, Dialect};
@@ -200,12 +200,24 @@ fn test_select_subquery() {
     assert_eq!(sql, r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#.to_string());
     assert_eq!(params, vec![]);
 }
-//
+
 // #[test]
-// fn test_select__multiple_subqueries(){
-//         subquery0 = SelectStatement().from_(Name("abc")).select(Name("foo"))
-//         subquery1 = SelectStatement().from_(Name("efg")).select("bar")
-//         stmt = SelectStatement().from_(subquery0).from_(subquery1).select(subquery0.foo, subquery1.bar)
+// fn test_select_multiple_subqueries(){
+//     let sq0 = SelectStatement::new().from(Source::Table(Table::new("abc"))).select(Operand::Column(Column::new("foo")));
+//     let sq1 = SelectStatement::new().from(Source::Table(Table::new("efg"))).select(Operand::Column(Column::new("bar")));
+//     let stmt = SelectStatement::new().from(sq0).from(sq1).select(sq0.foo, sq1.bar);
+//     let stmt = SelectStatement::new().from(Source::SubQuery {query: Box::new(sq0), alias: Some("sq0")}).from(Source::SubQuery {query: Box::new(sq1), alias: Some("sq1")}}).select(sq0.foo, sq1.bar);
+//     let (sql, params) = stmt.to_sql(&mut binder::mysql());
+//     assert_eq!(sql, "SELECT `sq0`.`foo`, `sq0`.`bar` FROM (SELECT * FROM `abc`) AS `sq0`".to_string());
+//     assert_eq!(params, vec![]);
+//
+//     let (sql, params) = stmt.to_sql(&mut binder::sqlite());
+//     assert_eq!(sql, r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#.to_string());
+//     assert_eq!(params, vec![]);
+//
+//     let (sql, params) = stmt.to_sql(&mut binder::pg());
+//     assert_eq!(sql, r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#.to_string());
+//     assert_eq!(params, vec![]);
 //
 //       assert
 //             'SELECT "sq0"."foo","sq1"."bar" ' 'FROM (SELECT "foo" FROM "abc") "sq0",' '(SELECT "bar" FROM "efg") "sq1"',
@@ -213,9 +225,9 @@ fn test_select_subquery() {
 //         )
 //
 //     }
-//
+
 // #[test]
-// fn test_select__nested_subquery(){
+// fn test_select_nested_subquery(){
 //          subquery0 = SelectStatement().from_(Name("abc"))
 //          subquery1 = SelectStatement().from_(subquery0).select(subquery0.foo, subquery0.bar)
 //          subquery2 = SelectStatement().from_(subquery1).select(subquery1.foo)
@@ -231,16 +243,26 @@ fn test_select_subquery() {
 //          )
 //
 // }
-//
-// #[test]
-// fn test_select__no_table(){
-//     stmt = SelectStatement().select(1, 2, 3)
-//     assert visitors.mysql.sql(stmt) == "SELECT 1, 2, 3"
-//     assert visitors.sqlite.sql(stmt) == "SELECT 1, 2, 3"
-//     assert visitors.pg.sql(stmt) == "SELECT 1, 2, 3"
-//
-//
-// }
+
+#[test]
+fn test_select_no_table() {
+    let stmt = SelectStatement::new()
+        .select(Operand::Literal(1.to_string()))
+        .select(Operand::Literal(2.to_string()))
+        .select(Operand::Literal(3.to_string()));
+
+    let (sql, params) = stmt.to_sql(&mut binder::mysql());
+    assert_eq!(sql, "SELECT 1, 2, 3".to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::sqlite());
+    assert_eq!(sql, r#"SELECT 1, 2, 3"#.to_string());
+    assert_eq!(params, vec![]);
+
+    let (sql, params) = stmt.to_sql(&mut binder::pg());
+    assert_eq!(sql, r#"SELECT 1, 2, 3"#.to_string());
+    assert_eq!(params, vec![]);
+}
 //
 // #[test]
 // fn test_select_then_add_table(){
@@ -817,7 +839,7 @@ fn test_select_subquery() {
 // }
 //
 // #[test]
-// fn test_select__multiple_tables(){
+// fn test_select_multiple_tables(){
 //     table_abc = Name("abc").as_("t0")
 //     table_efg = Name("efg").as_("t1")
 //     foo = Name('foo', schema_name=table_abc)

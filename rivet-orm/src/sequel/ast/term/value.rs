@@ -1,7 +1,7 @@
 use crate::sequel::build::Binder;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub enum Value {
+pub enum Scalar {
     Null,
     I8(i8),
     I16(i16),
@@ -15,14 +15,20 @@ pub enum Value {
     U128(u128),
     Bool(bool),
     String(String),
-    List(Vec<Value>),
 }
-
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Value {
+    Single(Scalar),
+    List(Vec<Scalar>),
+}
 impl Value {
     pub fn build(&self, binder: &mut Binder) -> String {
         match self {
-            Value::List(vs) => format!("({})", vs.iter().map(|v| v.build(binder)).collect::<Vec<String>>().join(",")),
-            _ => binder.bind(self.clone()),
+            Value::Single(s) => binder.bind(s.clone()),
+            Value::List(vs) => {
+                let placeholders: Vec<String> = vs.iter().map(|s| binder.bind(s.clone())).collect();
+                format!("({})", placeholders.join(","))
+            }
         }
     }
 }
@@ -37,12 +43,12 @@ macro_rules! impl_into_value_for_numeric {
             // IntoValue
             impl IntoValue<$t> for $t {
                 fn into_value(self) -> Value {
-                    Value::$variant(self)
+                    Value::Single(Scalar::$variant(self))
                 }
             }
             impl IntoValue<$t> for Option<$t> {
                 fn into_value(self) -> Value {
-                    self.map(|v| v.into_value()).unwrap_or(Value::Null)
+                    self.map(|v| v.into_value()).unwrap_or(Value::Single(Scalar::Null))
                 }
             }
         )*
@@ -68,22 +74,22 @@ impl_into_value_for_numeric!(
 /// `Value` always owns `String`.
 impl IntoValue<String> for &String {
     fn into_value(self) -> Value {
-        Value::String(self.clone())
+        Value::Single(Scalar::String(self.clone()))
     }
 }
 impl IntoValue<String> for Option<&String> {
     fn into_value(self) -> Value {
-        self.map(|s| s.into_value()).unwrap_or(Value::Null)
+        self.map(|s| s.into_value()).unwrap_or(Value::Single(Scalar::Null))
     }
 }
 impl IntoValue<String> for &str {
     fn into_value(self) -> Value {
-        Value::String(self.to_string())
+        Value::Single(Scalar::String(self.to_string()))
     }
 }
 impl IntoValue<String> for Option<&str> {
     fn into_value(self) -> Value {
-        self.map(|s| s.into_value()).unwrap_or(Value::Null)
+        self.map(|s| s.into_value()).unwrap_or(Value::Single(Scalar::Null))
     }
 }
 impl<T, I, V> IntoValue<Vec<T>> for I
@@ -92,8 +98,14 @@ where
     I: IntoIterator<Item = V>,
 {
     fn into_value(self) -> Value {
-        let lst = self.into_iter().map(|v| v.into_value()).collect();
-        Value::List(lst)
+        Value::List(
+            self.into_iter()
+                .map(|v| match v.into_value() {
+                    Value::Single(s) => s,
+                    _ => panic!("Nested lists are not supported"),
+                })
+                .collect(),
+        )
     }
 }
 

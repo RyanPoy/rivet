@@ -1,5 +1,5 @@
 use super::*;
-use crate::sequel::ast::{Expr, Op, Table, Value};
+use crate::sequel::ast::{Expr, Op, Scalar, Table, Value};
 
 mod setup {
     use crate::sequel::ast::{Column, Operand, SelectStatement};
@@ -14,7 +14,7 @@ fn test_source_join_basic() {
     // 构造：users INNER JOIN orders ON users.id = orders.user_id
     let l = Source::Table(Table::new("users").alias("u"));
     let r = Source::Table(Table::new("orders").alias("o"));
-    let on = Expr::new_binary("u.id", Op::Eq, Value::I32(1)); // 简化演示
+    let on = Expr::new_binary("u.id", Op::Eq, Value::Single(Scalar::I32(1))); // 简化演示
 
     let join_source = Source::Join { left: Box::new(l), right: Box::new(r), tp: JoinType::Inner, on };
 
@@ -33,7 +33,7 @@ fn test_source_nested_join() {
     let a = Source::Table(Table::new("table_a"));
     let b = Source::Table(Table::new("table_b"));
     let c = Source::Table(Table::new("table_c"));
-    let cond = Expr::new_binary("a.id", Op::Eq, Value::I32(1));
+    let cond = Expr::new_binary("a.id", Op::Eq, Value::Single(Scalar::I32(1)));
 
     let first_join = Source::Join { left: Box::new(a), right: Box::new(b), tp: JoinType::Inner, on: cond.clone() };
 
@@ -72,7 +72,7 @@ fn test_all_join_types_coverage() {
             left: Box::new(Source::Table(Table::new("a"))),
             right: Box::new(Source::Table(Table::new("b"))),
             tp: jt,
-            on: Expr::new_binary("a.id", Op::Eq, Value::I32(1)),
+            on: Expr::new_binary("a.id", Op::Eq, Value::Single(Scalar::I32(1))),
         };
         if let Source::Join { tp, .. } = source {
             assert_eq!(tp, jt);

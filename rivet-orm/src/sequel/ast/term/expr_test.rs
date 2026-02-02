@@ -14,16 +14,16 @@ fn val(v: Value) -> Operand {
 #[test]
 fn test_new_binary_null_conversion() {
     // 测试 Eq + Null -> Is
-    let expr_is = Expr::new_binary("age", Op::Eq, Value::Null);
-    assert_eq!(expr_is, Expr::Binary { left: col("age"), op: Op::Is, right: val(Value::Null) });
+    let expr_is = Expr::new_binary("age", Op::Eq, Value::Single(Scalar::Null));
+    assert_eq!(expr_is, Expr::Binary { left: col("age"), op: Op::Is, right: val(Value::Single(Scalar::Null)) });
 
     // 测试 Ne + Null -> IsNot
-    let expr_is_not = Expr::new_binary("age", Op::Ne, Value::Null);
-    assert_eq!(expr_is_not, Expr::Binary { left: col("age"), op: Op::IsNot, right: val(Value::Null) });
+    let expr_is_not = Expr::new_binary("age", Op::Ne, Value::Single(Scalar::Null));
+    assert_eq!(expr_is_not, Expr::Binary { left: col("age"), op: Op::IsNot, right: val(Value::Single(Scalar::Null)) });
 
     // 测试普通值不转换 Op
-    let expr_normal = Expr::new_binary("age", Op::Eq, Value::I32(20));
-    assert_eq!(expr_normal, Expr::Binary { left: col("age"), op: Op::Eq, right: val(Value::I32(20)) });
+    let expr_normal = Expr::new_binary("age", Op::Eq, Value::Single(Scalar::I32(20)));
+    assert_eq!(expr_normal, Expr::Binary { left: col("age"), op: Op::Eq, right: val(Value::Single(Scalar::I32(20))) });
 }
 
 #[test]
@@ -42,7 +42,7 @@ fn test_all_ops_coverage() {
         Op::In,
         Op::NotIn,
     ] {
-        let expr = Expr::new_binary("col", op, Value::I32(1));
+        let expr = Expr::new_binary("col", op, Value::Single(Scalar::I32(1)));
         if let Expr::Binary { op: res_op, .. } = expr {
             assert!(matches!(res_op, _));
         }
@@ -51,8 +51,8 @@ fn test_all_ops_coverage() {
 
 #[test]
 fn test_logical_combination_and() {
-    let left = Expr::new_binary("age", Op::Gt, Value::I32(18));
-    let right = Expr::new_binary("age", Op::Lt, Value::I32(30));
+    let left = Expr::new_binary("age", Op::Gt, Value::Single(Scalar::I32(18)));
+    let right = Expr::new_binary("age", Op::Lt, Value::Single(Scalar::I32(30)));
 
     let combined = left.and(right);
 
@@ -67,8 +67,8 @@ fn test_logical_combination_and() {
 
 #[test]
 fn test_logical_combination_or() {
-    let left = Expr::new_binary("name", Op::Eq, Value::String("Alice".into()));
-    let right = Expr::new_binary("name", Op::Eq, Value::String("Bob".into()));
+    let left = Expr::new_binary("name", Op::Eq, Value::Single(Scalar::String("Alice".into())));
+    let right = Expr::new_binary("name", Op::Eq, Value::Single(Scalar::String("Bob".into())));
 
     let combined = left.or(right);
 
@@ -83,7 +83,7 @@ fn test_logical_combination_or() {
 
 #[test]
 fn test_logical_not() {
-    let inner = Expr::new_binary("checked", Op::Eq, Value::Bool(true));
+    let inner = Expr::new_binary("checked", Op::Eq, Value::Single(Scalar::Bool(true)));
     let not_expr = inner.not();
 
     match not_expr {
@@ -97,11 +97,11 @@ fn test_logical_not() {
 #[test]
 fn test_deep_nesting() {
     // 构造：NOT (age > 18 AND (name = "Luly" OR name = "Lucy"))
-    let expr = Expr::new_binary("age", Op::Gt, Value::I32(18))
-        .and(Expr::new_binary("name", Op::Eq, Value::String("Luly".into())).or(Expr::new_binary(
+    let expr = Expr::new_binary("age", Op::Gt, Value::Single(Scalar::I32(18)))
+        .and(Expr::new_binary("name", Op::Eq, Value::Single(Scalar::String("Luly".into()))).or(Expr::new_binary(
             "name",
             Op::Eq,
-            Value::String("Lucy".into()),
+            Value::Single(Scalar::String("Lucy".into())),
         )))
         .not();
 
