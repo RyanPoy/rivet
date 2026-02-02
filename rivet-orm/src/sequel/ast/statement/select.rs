@@ -1,16 +1,15 @@
-use crate::sequel::ast::{Scalar, Source};
+use crate::sequel::ast::{Column, Scalar, Source, Value};
 use crate::sequel::ast::{Direction, Order};
 use crate::sequel::ast::{Expr, Table};
-use crate::sequel::ast::{Operand, Value};
 use crate::sequel::build::Binder;
 
 #[derive(Clone)]
 pub struct SelectStatement {
     pub distinct: bool,
-    pub select: Vec<Operand>,
+    pub select: Vec<Column>,
     pub from: Vec<Source>,
     pub _where: Option<Expr>,
-    pub group: Vec<Operand>,
+    pub group: Vec<Column>,
     pub having: Option<Expr>,
     pub order: Vec<Order>,
     pub limit: Option<u32>,
@@ -37,7 +36,7 @@ impl SelectStatement {
         self
     }
 
-    pub fn select(mut self, col: Operand) -> Self {
+    pub fn select(mut self, col: Column) -> Self {
         self.select.push(col);
         self
     }
@@ -60,11 +59,11 @@ impl SelectStatement {
         self._where = Some(expr);
         self
     }
-    pub fn order_by(mut self, column: Operand) -> Self {
+    pub fn order_by(mut self, column: Column) -> Self {
         self.order.push(Order { column, direction: Direction::Asc });
         self
     }
-    pub fn order_by_desc(mut self, column: Operand) -> Self {
+    pub fn order_by_desc(mut self, column: Column) -> Self {
         self.order.push(Order { column, direction: Direction::Desc });
         self
     }
@@ -73,7 +72,7 @@ impl SelectStatement {
         self.having = Some(expr);
         self
     }
-    pub fn group_by(mut self, column: Operand) -> Self {
+    pub fn group_by(mut self, column: Column) -> Self {
         self.group.push(column);
         self
     }
@@ -95,38 +94,32 @@ impl SelectStatement {
             select_clause.push_str("DISTINCT ");
         }
         if self.select.is_empty() {
-            if aliases.len() == 1 {
-                let s = format!("{}.*", aliases[0].1);
-                select_clause.push_str(&s);
-            } else {
-                select_clause.push_str("*");
-            }
+            let s = if aliases.len() == 1 { &format!("{}.*", aliases[0].1) } else { "*" };
+            select_clause.push_str(s);
         } else {
-            let cols: Vec<String> = self
-                .select
-                .iter()
-                .map(|operand| match operand {
-                    Operand::Column(col) => {
-                        let effective_table = match col.table {
-                            Some(t) => Some(aliases.iter().find(|(o, _)| *o == t).map(|(_, a)| *a).unwrap_or(t)),
-                            None => {
-                                if aliases.len() == 1 {
-                                    Some(aliases[0].1)
-                                } else {
-                                    None
-                                }
-                            }
-                        };
-                        let full_name = binder.quote_full(effective_table, col.name);
-                        binder.with_alias(full_name, col.alias.as_deref())
+            let mut cols = Vec::new();
+            for col in &self.select {
+                let mut effective_table = None;
+                if let Some(t) = col.table {
+                    // 情况 A: 列指定了所属表名，尝试换算别名
+                    let mut resolved = t;
+                    for (original, alias) in &aliases {
+                        if *original == t {
+                            resolved = *alias;
+                            break;
+                        }
                     }
-                    Operand::Value(v) => match v {
-                        Value::Single(s) => binder.bind(s.clone()),
-                        Value::List(vs) => vs.iter().map(|s| binder.bind(s.clone())).collect::<Vec<String>>().join(","),
-                    },
-                    Operand::Literal(v) => v.into(),
-                })
-                .collect();
+                    effective_table = Some(resolved);
+                } else {
+                    // 情况 B: 列没指定表名，若当前只有一个表，则自动关联
+                    if aliases.len() == 1 {
+                        effective_table = Some(aliases[0].1);
+                    }
+                }
+
+                let full_name = binder.quote_full(effective_table, col.name);
+                cols.push(binder.with_alias(full_name, col.alias.as_deref()));
+            }
             select_clause.push_str(&cols.join(", "));
         }
         parts.push(select_clause);

@@ -1,4 +1,4 @@
-use crate::sequel::ast::{Column, Operand, Scalar, Value};
+use crate::sequel::ast::{Column, Scalar, Value};
 use crate::sequel::build::Binder;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -37,7 +37,7 @@ impl Op {
 }
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Expr {
-    Binary { left: Operand, op: Op, right: Operand },
+    Binary { left: Column, op: Op, right: Value },
     And { left: Box<Expr>, right: Box<Expr> },
     Or { left: Box<Expr>, right: Box<Expr> },
     Not { expr: Box<Expr> },
@@ -50,7 +50,7 @@ impl Expr {
             (Op::Ne, Value::Single(Scalar::Null)) => Op::IsNot,
             _ => op,
         };
-        Expr::Binary { left: Operand::Column(Column::new(left)), op, right: Operand::Value(right) }
+        Expr::Binary { left: Column::new(left), op, right }
     }
 
     pub fn and(self, other: Expr) -> Expr {

@@ -15,6 +15,25 @@ pub enum Scalar {
     String(String),
 }
 
+impl Scalar {
+    pub fn to_string(self) -> String {
+        match self {
+            Scalar::Null => String::from("NULL"),
+            Scalar::I8(v) => v.to_string(),
+            Scalar::I16(v) => v.to_string(),
+            Scalar::I32(v) => v.to_string(),
+            Scalar::I64(v) => v.to_string(),
+            Scalar::I128(v) => v.to_string(),
+            Scalar::U8(v) => v.to_string(),
+            Scalar::U16(v) => v.to_string(),
+            Scalar::U32(v) => v.to_string(),
+            Scalar::U64(v) => v.to_string(),
+            Scalar::U128(v) => v.to_string(),
+            Scalar::Bool(v) => v.to_string(),
+            Scalar::String(v) => v,
+        }
+    }
+}
 pub trait IntoScalar {
     fn into_scalar(self) -> Scalar;
 }

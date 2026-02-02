@@ -2,11 +2,11 @@ use super::*;
 use crate::sequel::ast::{Expr, Op, Scalar, Table, Value};
 
 mod setup {
-    use crate::sequel::ast::{Column, Operand, SelectStatement};
+    use crate::sequel::ast::{Column, SelectStatement};
     use std::sync::LazyLock;
 
     pub const STMT: LazyLock<SelectStatement> =
-        LazyLock::new(|| SelectStatement::new().select(Operand::Column(Column::new("id"))));
+        LazyLock::new(|| SelectStatement::new().select(Column::new("id")));
 }
 
 #[test]

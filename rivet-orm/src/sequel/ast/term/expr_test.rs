@@ -1,29 +1,25 @@
 use super::*;
-use crate::sequel::ast::{Column, Operand, Value};
-
-/// 辅助函数：快速创建 Column 操作数
-fn col(name: &'static str) -> Operand {
-    Operand::Column(Column::new(name))
-}
-
-/// 辅助函数：快速创建 Value 操作数
-fn val(v: Value) -> Operand {
-    Operand::Value(v)
-}
+use crate::sequel::ast::{Column, Value};
 
 #[test]
 fn test_new_binary_null_conversion() {
     // 测试 Eq + Null -> Is
     let expr_is = Expr::new_binary("age", Op::Eq, Value::Single(Scalar::Null));
-    assert_eq!(expr_is, Expr::Binary { left: col("age"), op: Op::Is, right: val(Value::Single(Scalar::Null)) });
+    assert_eq!(expr_is, Expr::Binary { left: Column::new("age"), op: Op::Is, right: Value::Single(Scalar::Null) });
 
     // 测试 Ne + Null -> IsNot
     let expr_is_not = Expr::new_binary("age", Op::Ne, Value::Single(Scalar::Null));
-    assert_eq!(expr_is_not, Expr::Binary { left: col("age"), op: Op::IsNot, right: val(Value::Single(Scalar::Null)) });
+    assert_eq!(
+        expr_is_not,
+        Expr::Binary { left: Column::new("age"), op: Op::IsNot, right: Value::Single(Scalar::Null) }
+    );
 
     // 测试普通值不转换 Op
     let expr_normal = Expr::new_binary("age", Op::Eq, Value::Single(Scalar::I32(20)));
-    assert_eq!(expr_normal, Expr::Binary { left: col("age"), op: Op::Eq, right: val(Value::Single(Scalar::I32(20))) });
+    assert_eq!(
+        expr_normal,
+        Expr::Binary { left: Column::new("age"), op: Op::Eq, right: Value::Single(Scalar::I32(20)) }
+    );
 }
 
 #[test]

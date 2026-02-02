@@ -1,4 +1,4 @@
-use crate::sequel::ast::Operand;
+use crate::sequel::ast::Column;
 use crate::sequel::build::Binder;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -9,7 +9,7 @@ pub enum Direction {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Order {
-    pub column: Operand,
+    pub column: Column,
     pub direction: Direction,
 }
 

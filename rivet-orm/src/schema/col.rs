@@ -1,4 +1,4 @@
-use crate::sequel::ast::{Column, Expr, IntoOperand, IntoScalar, IntoValue, Op, Operand, Scalar, Value};
+use crate::sequel::ast::{Expr, IntoValue, Op, Value};
 use std::marker::PhantomData;
 
 mod private {
@@ -19,41 +19,33 @@ pub struct Col<T: private::ColumnType> {
     pub name: &'static str,
     _marker: PhantomData<T>,
 }
-impl<T: private::ColumnType> IntoOperand<T> for Col<T> {
-    fn into_operand(self) -> Operand {
-        Operand::Column(Column::new(self.name))
-    }
-}
 
 impl<T: private::ColumnType> Col<T> {
     pub const fn new(name: &'static str) -> Self {
         Self { name, _marker: PhantomData }
     }
 
-    fn new_binary(&self, op: Op, value: Value) -> Expr {
-        Expr::new_binary(self.name, op, value)
-    }
     pub fn eq<V: IntoValue>(&self, v: V) -> Expr {
-        self.new_binary(Op::Eq, v.into_value())
+        Expr::new_binary(self.name, Op::Eq, v.into_value())
     }
 
     pub fn ne<V: IntoValue>(&self, v: V) -> Expr {
-        self.new_binary(Op::Ne, v.into_value())
+        Expr::new_binary(self.name, Op::Ne, v.into_value())
     }
 
     pub fn gt<V: IntoValue>(&self, v: V) -> Expr {
-        self.new_binary(Op::Gt, v.into_value())
+        Expr::new_binary(self.name, Op::Gt, v.into_value())
     }
     pub fn gte<V: IntoValue>(&self, v: V) -> Expr {
-        self.new_binary(Op::Gte, v.into_value())
+        Expr::new_binary(self.name, Op::Gte, v.into_value())
     }
 
     pub fn lt<V: IntoValue>(&self, v: V) -> Expr {
-        self.new_binary(Op::Lt, v.into_value())
+        Expr::new_binary(self.name, Op::Lt, v.into_value())
     }
 
     pub fn lte<V: IntoValue>(&self, v: V) -> Expr {
-        self.new_binary(Op::Lte, v.into_value())
+        Expr::new_binary(self.name, Op::Lte, v.into_value())
     }
 
     pub fn in_<I: IntoIterator<Item: IntoValue>>(&self, iter: I) -> Expr {
@@ -82,10 +74,10 @@ impl<T: private::ColumnType> Col<T> {
 #[allow(private_bounds)]
 impl Col<String> {
     pub fn like<V: IntoValue>(&self, v: V) -> Expr {
-        self.new_binary(Op::Like, v.into_value())
+        Expr::new_binary(self.name, Op::Like, v.into_value())
     }
     pub fn not_like<V: IntoValue>(&self, v: V) -> Expr {
-        self.new_binary(Op::NotLike, v.into_value())
+        Expr::new_binary(self.name, Op::NotLike, v.into_value())
     }
 }
 

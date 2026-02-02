@@ -2,7 +2,7 @@ pub mod statement;
 pub mod term;
 
 pub use term::expr::*;
-pub use term::operand::*;
+pub use term::column::*;
 pub use term::order::*;
 pub use term::source::*;
 pub use term::value::*;
