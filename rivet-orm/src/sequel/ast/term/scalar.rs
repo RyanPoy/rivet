@@ -70,7 +70,10 @@ impl From<&str> for Scalar {
     }
 }
 
-impl<T: Into<Scalar>> From<Option<T>> for Scalar {
+impl<T> From<Option<T>> for Scalar
+where
+    T: Into<Scalar>,
+{
     fn from(v: Option<T>) -> Self {
         match v {
             Some(inner) => inner.into(),

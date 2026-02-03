@@ -13,41 +13,67 @@ impl<T: ColType> Col<T> {
         Self { name, _marker: PhantomData }
     }
 
-    pub fn eq<V: Into<Option<T>>>(&self, v: V) -> Expr {
+    pub fn eq<V>(&self, v: V) -> Expr
+    where
+        V: Into<Option<T>>,
+    {
         let scalar = Scalar::from(v.into());
         Expr::new_binary(self.name, Op::Eq, Value::from(scalar))
     }
 
-    pub fn ne<V: Into<Option<T>>>(&self, v: V) -> Expr {
+    pub fn ne<V>(&self, v: V) -> Expr
+    where
+        V: Into<Option<T>>,
+    {
         let scalar = Scalar::from(v.into());
         Expr::new_binary(self.name, Op::Ne, Value::from(scalar))
     }
 
-    pub fn gt<V: Into<Option<T>>>(&self, v: V) -> Expr {
+    pub fn gt<V>(&self, v: V) -> Expr
+    where
+        V: Into<Option<T>>,
+    {
         let scalar = Scalar::from(v.into());
         Expr::new_binary(self.name, Op::Gt, Value::from(scalar))
     }
-    pub fn gte<V: Into<Option<T>>>(&self, v: V) -> Expr {
+    pub fn gte<V>(&self, v: V) -> Expr
+    where
+        V: Into<Option<T>>,
+    {
         let scalar = Scalar::from(v.into());
         Expr::new_binary(self.name, Op::Gte, Value::from(scalar))
     }
 
-    pub fn lt<V: Into<Option<T>>>(&self, v: V) -> Expr {
+    pub fn lt<V>(&self, v: V) -> Expr
+    where
+        V: Into<Option<T>>,
+    {
         let scalar = Scalar::from(v.into());
         Expr::new_binary(self.name, Op::Lt, Value::from(scalar))
     }
 
-    pub fn lte<V: Into<Option<T>>>(&self, v: V) -> Expr {
+    pub fn lte<V>(&self, v: V) -> Expr
+    where
+        V: Into<Option<T>>,
+    {
         let scalar = Scalar::from(v.into());
         Expr::new_binary(self.name, Op::Lte, Value::from(scalar))
     }
 
-    pub fn in_<I: IntoIterator<Item: Into<Option<T>>>>(&self, iter: I) -> Expr {
+    pub fn in_<V, I>(&self, iter: I) -> Expr
+    where
+        V: Into<Option<T>>,
+        I: IntoIterator<Item = V>,
+    {
         let scalars: Vec<Scalar> = iter.into_iter().map(|e| Scalar::from(e.into())).collect();
         Expr::new_binary(self.name, Op::In, Value::from(scalars))
     }
 
-    pub fn not_in<I: IntoIterator<Item: Into<Option<T>>>>(&self, iter: I) -> Expr {
+    pub fn not_in<V, I>(&self, iter: I) -> Expr
+    where
+        V: Into<Option<T>>,
+        I: IntoIterator<Item = V>,
+    {
         let scalars: Vec<Scalar> = iter.into_iter().map(|e| Scalar::from(e.into())).collect();
         Expr::new_binary(self.name, Op::NotIn, Value::from(scalars))
     }
