@@ -85,11 +85,7 @@ fn get_column_type(ty: &Type) -> Type {
         _ => ty.clone(),
     }
 }
-fn expand_columns_metadata(
-    struct_input: &ItemStruct,
-    metas: Vec<ColumnMeta>,
-    table_name: &str,
-) -> TokenStream2 {
+fn expand_columns_metadata(struct_input: &ItemStruct, metas: Vec<ColumnMeta>, table_name: &str) -> TokenStream2 {
     let column_consts = metas.iter().map(|m| {
         let field_ident = &m.ident;
         let column_name = &m.name;
@@ -124,9 +120,9 @@ fn find_arg(token: &mut Field, attr_name: &str, take: bool) -> Option<TokenStrea
 
     // 转换并返回其内部 Tokens
     match attr.meta {
-        Meta::List(l) => Some(l.tokens), // 匹配 #[col(name = "id")]
+        Meta::List(l) => Some(l.tokens),            // 匹配 #[col(name = "id")]
         Meta::Path(_) => Some(TokenStream2::new()), // 匹配 #[col] 或 #[no_col]
-        Meta::NameValue(nv) => Some(quote!(#nv)), // 兼容 #[col = "id"]
+        Meta::NameValue(nv) => Some(quote!(#nv)),   // 兼容 #[col = "id"]
     }
 }
 

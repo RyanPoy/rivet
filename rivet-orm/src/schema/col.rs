@@ -1,83 +1,68 @@
-use crate::sequel::ast::{Expr, IntoValue, Op, Value};
+use crate::schema::col_type::ColType;
+use crate::sequel::ast::{Expr, Op, Scalar, Value};
 use std::marker::PhantomData;
 
-mod private {
-    pub trait ColumnType {}
-}
-
-macro_rules! register_column_types {
-    ($($t:ty),*) => {
-        $(
-            impl private::ColumnType for $t {}
-        )*
-    };
-}
-register_column_types!(i8, i16, i32, i64, i128, u8, u16, u32, u64, u128, bool, String);
-
 #[derive(Debug, Eq, PartialEq)]
-pub struct Col<T: private::ColumnType> {
+pub struct Col<T: ColType> {
     pub name: &'static str,
     _marker: PhantomData<T>,
 }
 
-impl<T: private::ColumnType> Col<T> {
+impl<T: ColType> Col<T> {
     pub const fn new(name: &'static str) -> Self {
         Self { name, _marker: PhantomData }
     }
 
-    pub fn eq<V: IntoValue>(&self, v: V) -> Expr {
-        Expr::new_binary(self.name, Op::Eq, v.into_value())
+    pub fn eq<V: Into<Option<T>>>(&self, v: V) -> Expr {
+        let scalar = Scalar::from(v.into());
+        Expr::new_binary(self.name, Op::Eq, Value::from(scalar))
     }
 
-    pub fn ne<V: IntoValue>(&self, v: V) -> Expr {
-        Expr::new_binary(self.name, Op::Ne, v.into_value())
+    pub fn ne<V: Into<Option<T>>>(&self, v: V) -> Expr {
+        let scalar = Scalar::from(v.into());
+        Expr::new_binary(self.name, Op::Ne, Value::from(scalar))
     }
 
-    pub fn gt<V: IntoValue>(&self, v: V) -> Expr {
-        Expr::new_binary(self.name, Op::Gt, v.into_value())
+    pub fn gt<V: Into<Option<T>>>(&self, v: V) -> Expr {
+        let scalar = Scalar::from(v.into());
+        Expr::new_binary(self.name, Op::Gt, Value::from(scalar))
     }
-    pub fn gte<V: IntoValue>(&self, v: V) -> Expr {
-        Expr::new_binary(self.name, Op::Gte, v.into_value())
-    }
-
-    pub fn lt<V: IntoValue>(&self, v: V) -> Expr {
-        Expr::new_binary(self.name, Op::Lt, v.into_value())
+    pub fn gte<V: Into<Option<T>>>(&self, v: V) -> Expr {
+        let scalar = Scalar::from(v.into());
+        Expr::new_binary(self.name, Op::Gte, Value::from(scalar))
     }
 
-    pub fn lte<V: IntoValue>(&self, v: V) -> Expr {
-        Expr::new_binary(self.name, Op::Lte, v.into_value())
+    pub fn lt<V: Into<Option<T>>>(&self, v: V) -> Expr {
+        let scalar = Scalar::from(v.into());
+        Expr::new_binary(self.name, Op::Lt, Value::from(scalar))
     }
 
-    pub fn in_<I: IntoIterator<Item: IntoValue>>(&self, iter: I) -> Expr {
-        let mut scalars = vec![];
-        for v in iter {
-            match v.into_value() {
-                Value::Single(s) => scalars.push(s),
-                Value::List(vs) => scalars.extend(vs),
-            }
-        }
-        Expr::new_binary(self.name, Op::In, Value::List(scalars))
+    pub fn lte<V: Into<Option<T>>>(&self, v: V) -> Expr {
+        let scalar = Scalar::from(v.into());
+        Expr::new_binary(self.name, Op::Lte, Value::from(scalar))
     }
 
-    pub fn not_in<I: IntoIterator<Item: IntoValue>>(&self, iter: I) -> Expr {
-        let mut scalars = vec![];
-        for v in iter {
-            match v.into_value() {
-                Value::Single(s) => scalars.push(s),
-                Value::List(vs) => scalars.extend(vs),
-            }
-        }
-        Expr::new_binary(self.name, Op::NotIn, Value::List(scalars))
+    pub fn in_<I: IntoIterator<Item: Into<Option<T>>>>(&self, iter: I) -> Expr {
+        let scalars: Vec<Scalar> = iter.into_iter().map(|e| Scalar::from(e.into())).collect();
+        Expr::new_binary(self.name, Op::In, Value::from(scalars))
+    }
+
+    pub fn not_in<I: IntoIterator<Item: Into<Option<T>>>>(&self, iter: I) -> Expr {
+        let scalars: Vec<Scalar> = iter.into_iter().map(|e| Scalar::from(e.into())).collect();
+        Expr::new_binary(self.name, Op::NotIn, Value::from(scalars))
     }
 }
 
 #[allow(private_bounds)]
 impl Col<String> {
-    pub fn like<V: IntoValue>(&self, v: V) -> Expr {
-        Expr::new_binary(self.name, Op::Like, v.into_value())
+    pub fn like<V: Into<Option<String>>>(&self, v: V) -> Expr {
+        let scalar = Scalar::from(v.into());
+        Expr::new_binary(self.name, Op::Like, Value::from(scalar))
     }
-    pub fn not_like<V: IntoValue>(&self, v: V) -> Expr {
-        Expr::new_binary(self.name, Op::NotLike, v.into_value())
+
+    pub fn not_like<V: Into<Option<String>>>(&self, v: V) -> Expr {
+        let scalar = Scalar::from(v.into());
+        Expr::new_binary(self.name, Op::NotLike, Value::from(scalar))
     }
 }
 

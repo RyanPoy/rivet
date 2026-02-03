@@ -1,4 +1,4 @@
-use crate::sequel::ast::{Scalar, Value};
+use crate::sequel::ast::Scalar;
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Dialect {
     MySql,
@@ -28,7 +28,7 @@ impl Binder {
     pub fn format_literal(&self, scalar: Scalar) -> String {
         match scalar {
             Scalar::String(v) => self.quote(&v),
-            x=> x.to_string(),
+            x => x.to_string(),
         }
     }
 

@@ -1,6 +1,6 @@
 use super::*;
 use crate::schema::col::Col;
-use crate::sequel::ast::{Scalar, Value, Column};
+use crate::sequel::ast::{Column, Scalar, Value};
 use rivet_orm_macros::table;
 
 #[allow(non_upper_case_globals)]
@@ -81,13 +81,6 @@ pub fn test_eq() {
         setup::username.eq(Some("Lucy".to_string())) => {"username", Op::Eq, Value::Single(Scalar::String("Lucy".to_string()))},
         setup::username.eq(None::<String>) => {"username", Op::Is, Value::Single(Scalar::Null)},
     );
-
-    // for &str
-    assert_exprs_eq!(
-        setup::username.eq("Lucy") => {"username", Op::Eq, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.eq(Some("Lucy")) => {"username", Op::Eq, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.eq(None::<&str>) => {"username", Op::Is, Value::Single(Scalar::Null)},
-    );
 }
 #[test]
 pub fn test_ne() {
@@ -110,13 +103,6 @@ pub fn test_ne() {
         setup::username.ne("Lucy".to_string()) => {"username", Op::Ne, Value::Single(Scalar::String("Lucy".to_string()))},
         setup::username.ne(Some("Lucy".to_string())) => {"username", Op::Ne, Value::Single(Scalar::String("Lucy".to_string()))},
         setup::username.ne(None::<String>) => {"username", Op::IsNot, Value::Single(Scalar::Null)},
-    );
-
-    // for &str
-    assert_exprs_eq!(
-        setup::username.ne("Lucy") => {"username", Op::Ne, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.ne(Some("Lucy")) => {"username", Op::Ne, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.ne(None::<&str>) => {"username", Op::IsNot, Value::Single(Scalar::Null)},
     );
 }
 #[test]
@@ -141,13 +127,6 @@ pub fn test_gt() {
         setup::username.gt(Some("Lucy".to_string())) => {"username", Op::Gt, Value::Single(Scalar::String("Lucy".to_string()))},
         setup::username.gt(None::<String>) => {"username", Op::Gt, Value::Single(Scalar::Null)},
     );
-
-    // for &str
-    assert_exprs_eq!(
-        setup::username.gt("Lucy") => {"username", Op::Gt, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.gt(Some("Lucy")) => {"username", Op::Gt, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.gt(None::<&str>) => {"username", Op::Gt, Value::Single(Scalar::Null)},
-    );
 }
 #[test]
 pub fn test_lt() {
@@ -171,13 +150,6 @@ pub fn test_lt() {
         setup::username.lt(Some("Lucy".to_string())) => {"username", Op::Lt, Value::Single(Scalar::String("Lucy".to_string()))},
         setup::username.lt(None::<String>) => {"username", Op::Lt, Value::Single(Scalar::Null)},
     );
-
-    // for &str\
-    assert_exprs_eq!(
-        setup::username.lt("Lucy") => {"username", Op::Lt, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.lt(Some("Lucy")) => {"username", Op::Lt, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.lt(None::<&str>) => {"username", Op::Lt, Value::Single(Scalar::Null)},
-    );
 }
 #[test]
 pub fn test_gte() {
@@ -200,13 +172,6 @@ pub fn test_gte() {
         setup::username.gte("Lucy".to_string()) => {"username", Op::Gte, Value::Single(Scalar::String("Lucy".to_string()))},
         setup::username.gte(Some("Lucy".to_string())) => {"username", Op::Gte, Value::Single(Scalar::String("Lucy".to_string()))},
         setup::username.gte(None::<String>) => {"username", Op::Gte, Value::Single(Scalar::Null)},
-    );
-
-    // for &str
-    assert_exprs_eq!(
-        setup::username.gte("Lucy") => {"username", Op::Gte, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.gte(Some("Lucy")) => {"username", Op::Gte, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.gte(None::<&str>) => {"username", Op::Gte, Value::Single(Scalar::Null)},
     );
 }
 
@@ -232,13 +197,6 @@ pub fn test_lte() {
         setup::username.lte(Some("Lucy".to_string())) => {"username", Op::Lte, Value::Single(Scalar::String("Lucy".to_string()))},
         setup::username.lte(None::<String>) => {"username", Op::Lte, Value::Single(Scalar::Null)},
     );
-
-    // for &str
-    assert_exprs_eq!(
-        setup::username.lte("Lucy") => {"username", Op::Lte, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.lte(Some("Lucy")) => {"username", Op::Lte, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.lte(None::<&str>) => {"username", Op::Lte, Value::Single(Scalar::Null)},
-    );
 }
 #[test]
 pub fn test_like() {
@@ -248,12 +206,6 @@ pub fn test_like() {
         setup::username.like(Some("Lucy".to_string())) => {"username", Op::Like, Value::Single(Scalar::String("Lucy".to_string()))},
         setup::username.like(None::<String>) => {"username", Op::Like, Value::Single(Scalar::Null)},
     );
-    // for &str
-    assert_exprs_eq!(
-        setup::username.like("Lucy") => {"username", Op::Like, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.like(Some("Lucy")) => {"username", Op::Like, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.like(None::<&str>) => {"username", Op::Like, Value::Single(Scalar::Null)},
-    );
 }
 #[test]
 pub fn test_not_like() {
@@ -262,12 +214,6 @@ pub fn test_not_like() {
         setup::username.not_like("Lucy".to_string()) => {"username", Op::NotLike, Value::Single(Scalar::String("Lucy".to_string()))},
         setup::username.not_like(Some("Lucy".to_string())) => {"username", Op::NotLike, Value::Single(Scalar::String("Lucy".to_string()))},
         setup::username.not_like(None::<String>) => {"username", Op::NotLike, Value::Single(Scalar::Null)},
-    );
-    // for &str
-    assert_exprs_eq!(
-        setup::username.not_like("Lucy") => {"username", Op::NotLike, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.not_like(Some("Lucy")) => {"username", Op::NotLike, Value::Single(Scalar::String("Lucy".to_string()))},
-        setup::username.not_like(None::<&str>) => {"username", Op::NotLike, Value::Single(Scalar::Null)},
     );
 }
 
@@ -295,12 +241,12 @@ pub fn test_in() {
 
     // for String
     assert_exprs_eq!(
-        setup::username.in_(["Lucy", "Bob"]) => { "username", Op::In, Value::List(vec![Scalar::String("Lucy".to_string()),Scalar::String("Bob".to_string())])},
-        setup::username.in_(vec!["Lucy", "Bob"]) => { "username", Op::In, Value::List(vec![ Scalar::String("Lucy".to_string()), Scalar::String("Bob".to_string()) ]) },
-        setup::username.in_([Some("Lucy"), Some("Bob")]) => { "username", Op::In, Value::List(vec![Scalar::String("Lucy".to_string()),Scalar::String("Bob".to_string())])},
-        setup::username.in_(vec![Some("Lucy"), Some("Bob")]) => { "username", Op::In, Value::List(vec![ Scalar::String("Lucy".to_string()), Scalar::String("Bob".to_string()) ]) },
-        setup::username.in_([None::<&str>, None::<&str>]) => { "username", Op::In, Value::List(vec![Scalar::Null, Scalar::Null])},
-        setup::username.in_(vec![None::<&str>, None::<&str>]) => { "username", Op::In, Value::List(vec![ Scalar::Null, Scalar::Null]) },
+        setup::username.in_(["Lucy".to_string(), "Bob".to_string()]) => { "username", Op::In, Value::List(vec![Scalar::String("Lucy".to_string()),Scalar::String("Bob".to_string())])},
+        setup::username.in_(vec!["Lucy".to_string(), "Bob".to_string()]) => { "username", Op::In, Value::List(vec![ Scalar::String("Lucy".to_string()), Scalar::String("Bob".to_string()) ]) },
+        setup::username.in_([Some("Lucy".to_string()), Some("Bob".to_string())]) => { "username", Op::In, Value::List(vec![Scalar::String("Lucy".to_string()),Scalar::String("Bob".to_string())])},
+        setup::username.in_(vec![Some("Lucy".to_string()), Some("Bob".to_string())]) => { "username", Op::In, Value::List(vec![ Scalar::String("Lucy".to_string()), Scalar::String("Bob".to_string()) ]) },
+        setup::username.in_([None, None]) => { "username", Op::In, Value::List(vec![Scalar::Null, Scalar::Null])},
+        setup::username.in_(vec![None, None]) => { "username", Op::In, Value::List(vec![ Scalar::Null, Scalar::Null]) },
     );
 }
 
@@ -328,12 +274,12 @@ pub fn test_not_in() {
 
     // for String
     assert_exprs_eq!(
-        setup::username.not_in(["Lucy", "Bob"]) => { "username", Op::NotIn, Value::List(vec![Scalar::String("Lucy".to_string()),Scalar::String("Bob".to_string())])},
-        setup::username.not_in(vec!["Lucy", "Bob"]) => { "username", Op::NotIn, Value::List(vec![ Scalar::String("Lucy".to_string()), Scalar::String("Bob".to_string()) ]) },
-        setup::username.not_in([Some("Lucy"), Some("Bob")]) => { "username", Op::NotIn, Value::List(vec![Scalar::String("Lucy".to_string()),Scalar::String("Bob".to_string())])},
-        setup::username.not_in(vec![Some("Lucy"), Some("Bob")]) => { "username", Op::NotIn, Value::List(vec![ Scalar::String("Lucy".to_string()), Scalar::String("Bob".to_string()) ]) },
-        setup::username.not_in([None::<&str>, None::<&str>]) => { "username", Op::NotIn, Value::List(vec![Scalar::Null, Scalar::Null])},
-        setup::username.not_in(vec![None::<&str>, None::<&str>]) => { "username", Op::NotIn, Value::List(vec![ Scalar::Null, Scalar::Null]) },
+        setup::username.not_in(["Lucy".to_string(), "Bob".to_string()]) => { "username", Op::NotIn, Value::List(vec![Scalar::String("Lucy".to_string()),Scalar::String("Bob".to_string())])},
+        setup::username.not_in(vec!["Lucy".to_string(), "Bob".to_string()]) => { "username", Op::NotIn, Value::List(vec![ Scalar::String("Lucy".to_string()), Scalar::String("Bob".to_string()) ]) },
+        setup::username.not_in([Some("Lucy".to_string()), Some("Bob".to_string())]) => { "username", Op::NotIn, Value::List(vec![Scalar::String("Lucy".to_string()),Scalar::String("Bob".to_string())])},
+        setup::username.not_in(vec![Some("Lucy".to_string()), Some("Bob".to_string())]) => { "username", Op::NotIn, Value::List(vec![ Scalar::String("Lucy".to_string()), Scalar::String("Bob".to_string()) ]) },
+        setup::username.not_in([None, None]) => { "username", Op::NotIn, Value::List(vec![Scalar::Null, Scalar::Null])},
+        setup::username.not_in(vec![None, None]) => { "username", Op::NotIn, Value::List(vec![ Scalar::Null, Scalar::Null]) },
     );
 }
 
@@ -343,9 +289,9 @@ fn test_logical_operators_chaining() {
     let name = setup::username;
 
     // 1. 测试简单的 AND 组合，构建: age > 18 AND name = "Lucy"
-    let expr_and = age.gt(18).and(name.eq("Lucy"));
+    let expr_and = age.gt(18).and(name.eq("Lucy".to_string()));
 
-    assert_eq!(expr_and, Expr::And { left: Box::new(age.gt(18)), right: Box::new(name.eq("Lucy")) });
+    assert_eq!(expr_and, Expr::And { left: Box::new(age.gt(18)), right: Box::new(name.eq("Lucy".to_string())) });
 
     // 2. 测试 OR 与嵌套，构建: (age > 18 AND name = "Lucy") OR age < 10
     let expr_or = expr_and.or(age.lt(10));
@@ -357,8 +303,8 @@ fn test_logical_operators_chaining() {
     }
 
     // 3. 测试 NOT 运算符，构建: NOT (name = "Lucy")
-    let expr_not = name.eq("Lucy").not();
-    assert_eq!(expr_not, Expr::Not { expr: Box::new(name.eq("Lucy")) });
+    let expr_not = name.eq("Lucy".to_string()).not();
+    assert_eq!(expr_not, Expr::Not { expr: Box::new(name.eq("Lucy".to_string())) });
 }
 
 #[test]
@@ -369,7 +315,8 @@ fn test_complex_mixed_logic() {
 
     // 构造一个复杂的业务逻辑场景：
     // (年龄在 20~30 之间 且 名字是 Lucy) 或者 (没有孩子 且 名字不是 Bob)
-    let complex = (age.gte(20).and(age.lte(30)).and(name.eq("Lucy"))).or(has_child.eq(false).and(name.ne("Bob")));
+    let complex = (age.gte(20).and(age.lte(30)).and(name.eq("Lucy".to_string())))
+        .or(has_child.eq(false).and(name.ne("Bob".to_string())));
 
     // 这种测试主要验证链式调用的返回值依然是 Expr，且可以无限嵌套
     match complex {
@@ -379,4 +326,13 @@ fn test_complex_mixed_logic() {
         }
         _ => panic!("Complex expression structure mismatch"),
     }
+}
+
+#[test]
+fn test_basic() {
+    let age = setup::age;
+    age.eq(1);
+    age.eq(Some(1));
+    age.eq(None);
+    // age.eq("abc");
 }

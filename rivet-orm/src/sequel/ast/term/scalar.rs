@@ -1,3 +1,6 @@
+use core::fmt;
+use std::fmt::Formatter;
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Scalar {
     Null,
@@ -15,43 +18,38 @@ pub enum Scalar {
     String(String),
 }
 
-impl Scalar {
-    pub fn to_string(self) -> String {
+impl fmt::Display for Scalar {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Scalar::Null => String::from("NULL"),
-            Scalar::I8(v) => v.to_string(),
-            Scalar::I16(v) => v.to_string(),
-            Scalar::I32(v) => v.to_string(),
-            Scalar::I64(v) => v.to_string(),
-            Scalar::I128(v) => v.to_string(),
-            Scalar::U8(v) => v.to_string(),
-            Scalar::U16(v) => v.to_string(),
-            Scalar::U32(v) => v.to_string(),
-            Scalar::U64(v) => v.to_string(),
-            Scalar::U128(v) => v.to_string(),
-            Scalar::Bool(v) => v.to_string(),
-            Scalar::String(v) => v,
+            Scalar::Null => write!(f, "NULL"),
+            Scalar::I8(v) => write!(f, "{}", v),
+            Scalar::I16(v) => write!(f, "{}", v),
+            Scalar::I32(v) => write!(f, "{}", v),
+            Scalar::I64(v) => write!(f, "{}", v),
+            Scalar::I128(v) => write!(f, "{}", v),
+            Scalar::U8(v) => write!(f, "{}", v),
+            Scalar::U16(v) => write!(f, "{}", v),
+            Scalar::U32(v) => write!(f, "{}", v),
+            Scalar::U64(v) => write!(f, "{}", v),
+            Scalar::U128(v) => write!(f, "{}", v),
+            Scalar::Bool(v) => write!(f, "{}", v),
+            Scalar::String(v) => write!(f, "{}", v),
         }
     }
 }
-pub trait IntoScalar {
-    fn into_scalar(self) -> Scalar;
-}
 
-macro_rules! impl_into_scalar_for_numeric {
+macro_rules! impl_from_for_scalar {
     ($($t:ty => $variant:ident), *) => {
         $(
-            // IntoValue
-            impl IntoScalar for $t {
-                fn into_scalar(self) -> Scalar {
-                    Scalar::$variant(self)
+            impl From<$t> for Scalar {
+                fn from(v: $t) -> Self {
+                    Scalar::$variant(v)
                 }
             }
         )*
     };
 }
-
-impl_into_scalar_for_numeric!(
+impl_from_for_scalar!(
     i8 => I8,
     i16 => I16,
     i32 => I32,
@@ -65,13 +63,18 @@ impl_into_scalar_for_numeric!(
     bool => Bool,
     String => String
 );
-impl IntoScalar for &String {
-    fn into_scalar(self) -> Scalar {
-        Scalar::String(self.clone())
+
+impl From<&str> for Scalar {
+    fn from(v: &str) -> Self {
+        Scalar::String(v.to_string())
     }
 }
-impl IntoScalar for &str {
-    fn into_scalar(self) -> Scalar {
-        Scalar::String(self.to_string())
+
+impl<T: Into<Scalar>> From<Option<T>> for Scalar {
+    fn from(v: Option<T>) -> Self {
+        match v {
+            Some(inner) => inner.into(),
+            None => Scalar::Null,
+        }
     }
 }
