@@ -1,11 +1,11 @@
-use crate::ast2::render::SqlRender;
-
 #[derive(Debug, Clone)]
 pub struct NamedTable {
     pub name: String,
+    pub alias: Option<String>,
 }
 impl NamedTable {
-    pub fn render_by(&self, render: &mut SqlRender) -> String {
-        render.quote(&self.name)
+    pub fn alias(mut self, alias: impl Into<String>) -> Self {
+        self.alias = Some(alias.into());
+        self
     }
 }

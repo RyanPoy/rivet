@@ -1,4 +1,3 @@
-use crate::ast2::render::SqlRender;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum JoinType {
@@ -9,15 +8,14 @@ pub enum JoinType {
     Cross,
 }
 
-impl JoinType {
-    pub fn render_by(render: SqlRender) -> String {
-        todo!()
-    }
-}
 #[derive(Debug, Clone)]
-pub struct JoinedTable {}
+pub struct JoinedTable {
+    alias: Option<String>,
+}
+
 impl JoinedTable {
-    pub fn render_by(&self, render: &mut SqlRender) -> String {
-        todo!()
+    pub fn alias(mut self, alias: impl Into<String>) -> Self {
+        self.alias = Some(alias.into());
+        self
     }
 }

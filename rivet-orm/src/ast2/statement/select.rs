@@ -1,6 +1,6 @@
-use crate::ast2::render::SqlRender;
 use crate::ast2::term::table_ref::TableRef;
 
+#[derive(Clone, Debug)]
 pub struct SelectStatement {
     pub select_clause: Vec<String>,
     pub from_clause: Vec<TableRef>,
@@ -28,24 +28,6 @@ impl SelectStatement {
             self.from_clause.push(t.into());
         }
         self
-    }
-
-    pub fn render_by(&self, render: &mut SqlRender) -> String {
-        let mut parts = Vec::<String>::new();
-
-        parts.push(self.render_select(render));
-        parts.push(self.render_from(render));
-
-        parts.join(" ")
-    }
-
-    fn render_select(&self, render: &mut SqlRender) -> String {
-        "SELECT *".to_string()
-    }
-
-    fn render_from(&self, render: &mut SqlRender) -> String {
-        let sql: Vec<String> = self.from_clause.iter().map(|t| t.render_by(render)).collect();
-        format!("FROM {}", sql.join(", "))
     }
 }
 
