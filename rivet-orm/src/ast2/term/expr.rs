@@ -1,6 +1,7 @@
 use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::func::FuncArg;
+use crate::ast2::term::select_item::SelectItem;
 
 #[derive(Debug, Clone)]
 pub enum Expr {
@@ -39,4 +40,10 @@ pub enum Expr {
 
     // e.g. SELECT (SELECT MAX(id) FROM users);
     Subquery(Box<SelectStatement>),
+}
+
+impl Expr {
+    pub fn alias(self, name: impl Into<String>) -> SelectItem {
+        SelectItem::Expr { expr: self, alias: Some(name.into()) }
+    }
 }

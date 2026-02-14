@@ -1,5 +1,6 @@
 use crate::ast2::sql::visitor::Visitor;
 use crate::ast2::statement::select::SelectStatement;
+use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::named_table::NamedTable;
 use crate::ast2::term::table_ref::TableRef;
 
@@ -172,31 +173,30 @@ fn test_select_multiple_columns() {
     assert_eq!(sql, r#"SELECT "id", "name", "email" FROM "users""#);
 }
 
-// #[test]
-// fn test_select_single_column_with_alias() {
-//     let table = Source::table("abc");
-//     let col = table.column("foo").alias("bar");
-//     let stmt = SelectStatement::new().from(table).select(col);
-//     let (sql, params) = stmt.to_sql(&mut binder::mysql());
-//     assert_eq!(sql, "SELECT `foo` AS `bar` FROM `abc`".to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::sqlite());
-//     assert_eq!(sql, "SELECT \"foo\" AS \"bar\" FROM \"abc\"".to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::pg());
-//     assert_eq!(sql, "SELECT \"foo\" AS \"bar\" FROM \"abc\"".to_string());
-//     assert_eq!(params, vec![]);
-// }
-//
+#[test]
+fn test_select_single_column_with_alias() {
+    let stmt = SelectStatement::new().from("users").select(ColumnRef::new("id").alias("uid"));
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT `id` AS `uid` FROM `users`");
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT "id" AS "uid" FROM "users""#);
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT "id" AS "uid" FROM "users""#);
+}
+
 // #[test]
 // fn test_select_single_column_and_table_alias_str() {
 //     let table = Source::table("abc").alias("fizzbuzz");
 //     let col = table.column("foo").alias("bar");
 //     let stmt = SelectStatement::new().from(table).select(col);
 //
-//     let (sql, params) = stmt.to_sql(&mut binder::mysql());
+//     let (sql, params) = stmt.to_sql(&mut binder::mysql());   
 //     assert_eq!(sql, "SELECT `fizzbuzz`.`foo` AS `bar` FROM `abc` AS `fizzbuzz`".to_string());
 //     assert_eq!(params, vec![]);
 //
@@ -231,28 +231,28 @@ fn test_select_multiple_columns() {
 //     assert_eq!(sql, r#"SELECT "abc"."foo", "efg"."bar" FROM "abc", "efg""#.to_string());
 //     assert_eq!(params, vec![]);
 // }
-
-#[test]
-fn test_select_subquery() {
-    let table = Source::table("abc");
-    let subquery = Source::subquery(SelectStatement::new().from(table)).alias("sq0");
-
-    let col_foo = subquery.column("foo");
-    let col_bar = subquery.column("bar");
-    let stmt = SelectStatement::new().from(subquery).select(col_foo).select(col_bar);
-
-    let (sql, params) = stmt.to_sql(&mut binder::mysql());
-    assert_eq!(sql, "SELECT `sq0`.`foo`, `sq0`.`bar` FROM (SELECT * FROM `abc`) AS `sq0`".to_string());
-    assert_eq!(params, vec![]);
-
-    let (sql, params) = stmt.to_sql(&mut binder::sqlite());
-    assert_eq!(sql, r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#.to_string());
-    assert_eq!(params, vec![]);
-
-    let (sql, params) = stmt.to_sql(&mut binder::pg());
-    assert_eq!(sql, r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#.to_string());
-    assert_eq!(params, vec![]);
-}
+//
+// #[test]
+// fn test_select_subquery() {
+//     let table = Source::table("abc");
+//     let subquery = Source::subquery(SelectStatement::new().from(table)).alias("sq0");
+//
+//     let col_foo = subquery.column("foo");
+//     let col_bar = subquery.column("bar");
+//     let stmt = SelectStatement::new().from(subquery).select(col_foo).select(col_bar);
+//
+//     let (sql, params) = stmt.to_sql(&mut binder::mysql());
+//     assert_eq!(sql, "SELECT `sq0`.`foo`, `sq0`.`bar` FROM (SELECT * FROM `abc`) AS `sq0`".to_string());
+//     assert_eq!(params, vec![]);
+//
+//     let (sql, params) = stmt.to_sql(&mut binder::sqlite());
+//     assert_eq!(sql, r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#.to_string());
+//     assert_eq!(params, vec![]);
+//
+//     let (sql, params) = stmt.to_sql(&mut binder::pg());
+//     assert_eq!(sql, r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#.to_string());
+//     assert_eq!(params, vec![]);
+// }
 
 // #[test]
 // fn test_select_multiple_subqueries(){

@@ -67,8 +67,7 @@ impl Visitor {
         self.builder.push("(");
         self.visit_select_statement(&table.stmt);
         self.builder.push(")");
-        self.builder.push(" AS ");
-        self.builder.push_quote(table.alias.as_deref().unwrap());
+        self.builder.push(" AS ").push_quote(table.alias.as_deref().unwrap());
         self
     }
 
@@ -85,16 +84,21 @@ impl Visitor {
                 self.builder.push_quote(t).push("*");
             }
             SelectItem::Expr { expr, alias } => {
-                self.visit_expr(expr);
+                self.visit_expr(expr, alias.as_deref());
             }
         }
         self
     }
 
-    pub fn visit_expr(&mut self, expr: &Expr) -> &mut Self {
+    pub fn visit_expr(&mut self, expr: &Expr, alias: Option<&str>) -> &mut Self {
         match expr {
             Expr::Column(c) => {
-                self.builder.push_quote_with_alias(&c.name, c.qualifier.as_deref());
+                if let Some(qualifier) = &c.qualifier {
+                    self.builder.push_quote(qualifier);
+                    self.builder.push(".");
+                }
+                self.builder.push_quote(&c.name);
+                self.builder.push_alias(alias);
             }
             _ => (),
         }
