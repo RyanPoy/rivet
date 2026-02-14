@@ -84,13 +84,14 @@ impl Visitor {
                 self.builder.push_quote(t).push("*");
             }
             SelectItem::Expr { expr, alias } => {
-                self.visit_expr(expr, alias.as_deref());
+                self.visit_expr(expr);
+                self.builder.push_alias(alias.as_deref());
             }
         }
         self
     }
 
-    pub fn visit_expr(&mut self, expr: &Expr, alias: Option<&str>) -> &mut Self {
+    pub fn visit_expr(&mut self, expr: &Expr) -> &mut Self {
         match expr {
             Expr::Column(c) => {
                 if let Some(qualifier) = &c.qualifier {
@@ -98,7 +99,6 @@ impl Visitor {
                     self.builder.push(".");
                 }
                 self.builder.push_quote(&c.name);
-                self.builder.push_alias(alias);
             }
             _ => (),
         }

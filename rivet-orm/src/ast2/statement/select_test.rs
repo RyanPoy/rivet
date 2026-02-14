@@ -1,7 +1,9 @@
 use crate::ast2::sql::visitor::Visitor;
 use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::column_ref::ColumnRef;
+use crate::ast2::term::expr::Expr;
 use crate::ast2::term::named_table::NamedTable;
+use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::table_ref::TableRef;
 
 #[test]
@@ -174,20 +176,23 @@ fn test_select_multiple_columns() {
 }
 
 #[test]
-fn test_select_single_column_with_alias() {
-    let stmt = SelectStatement::new().from("users").select(ColumnRef::new("id").alias("uid"));
+fn test_select_column_with_alias() {
+    let stmt = SelectStatement::new()
+        .from("users")
+        .select(ColumnRef::new("id").alias("uid"))
+        .select(Expr::Column(ColumnRef::new("name")).alias("uname"));
 
     let mut v = Visitor::mysql();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, "SELECT `id` AS `uid` FROM `users`");
+    assert_eq!(sql, "SELECT `id` AS `uid`, `name` AS `uname` FROM `users`");
 
     let mut v = Visitor::postgre();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT "id" AS "uid" FROM "users""#);
+    assert_eq!(sql, r#"SELECT "id" AS "uid", "name" AS "uname" FROM "users""#);
 
     let mut v = Visitor::sqlite();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT "id" AS "uid" FROM "users""#);
+    assert_eq!(sql, r#"SELECT "id" AS "uid", "name" AS "uname" FROM "users""#);
 }
 
 // #[test]
@@ -196,7 +201,7 @@ fn test_select_single_column_with_alias() {
 //     let col = table.column("foo").alias("bar");
 //     let stmt = SelectStatement::new().from(table).select(col);
 //
-//     let (sql, params) = stmt.to_sql(&mut binder::mysql());   
+//     let (sql, params) = stmt.to_sql(&mut binder::mysql());
 //     assert_eq!(sql, "SELECT `fizzbuzz`.`foo` AS `bar` FROM `abc` AS `fizzbuzz`".to_string());
 //     assert_eq!(params, vec![]);
 //
