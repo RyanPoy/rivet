@@ -1,3 +1,4 @@
+use crate::ast2::term::table_ref::TableRef;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum JoinType {
@@ -10,12 +11,11 @@ pub enum JoinType {
 
 #[derive(Debug, Clone)]
 pub struct JoinedTable {
-    alias: Option<String>,
+    name: Option<String>,
 }
 
 impl JoinedTable {
-    pub fn alias(mut self, alias: impl Into<String>) -> Self {
-        self.alias = Some(alias.into());
-        self
+    pub fn alias(self, alias: impl Into<String>) -> TableRef {
+        TableRef::JoinedTable { table: self, alias: Some(alias.into()) }
     }
 }

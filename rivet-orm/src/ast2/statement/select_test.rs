@@ -3,7 +3,6 @@ use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::named_table::NamedTable;
-use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::table_ref::TableRef;
 
 #[test]
@@ -30,12 +29,13 @@ fn test_select_empty_from_single() {
     let sql = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users`");
 
-    let stmt = SelectStatement::new().from(NamedTable { name: "users".to_string(), alias: None }); // from(NamedTable)
+    let stmt = SelectStatement::new().from(NamedTable { name: "users".to_string() }); // from(NamedTable)
     let mut v = Visitor::postgre();
     let sql = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users""#.to_string());
 
-    let stmt = SelectStatement::new().from(TableRef::NamedTable(NamedTable { name: "users".to_string(), alias: None })); // from(TableRef)
+    let stmt = SelectStatement::new()
+        .from(TableRef::NamedTable { table: NamedTable { name: "users".to_string() }, alias: None }); // from(TableRef)
     let mut v = Visitor::sqlite();
     let sql = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users""#.to_string());

@@ -53,13 +53,23 @@ impl Visitor {
     }
     pub fn visit_table_ref(&mut self, table_ref: &TableRef) -> &mut Self {
         match table_ref {
-            TableRef::NamedTable(table) => self.visit_named_table(table),
-            TableRef::DerivedTable(table) => self.visit_derived_table(table),
-            TableRef::JoinedTable(table) => self.visit_joined_table(table),
+            TableRef::NamedTable { table, alias } => {
+                self.visit_named_table(table);
+                self.builder.push_alias(alias.as_deref());
+            }
+            TableRef::DerivedTable { table, alias } => {
+                self.visit_derived_table(table);
+                self.builder.push_alias(alias.as_deref());
+            }
+            TableRef::JoinedTable { table, alias } => {
+                self.visit_joined_table(table);
+                self.builder.push_alias(alias.as_deref());
+            }
         }
+        self
     }
     pub fn visit_named_table(&mut self, table: &NamedTable) -> &mut Self {
-        self.builder.push_quote_with_alias(&table.name, table.alias.as_deref());
+        self.builder.push_quote(&table.name);
         self
     }
 
@@ -67,7 +77,6 @@ impl Visitor {
         self.builder.push("(");
         self.visit_select_statement(&table.stmt);
         self.builder.push(")");
-        self.builder.push(" AS ").push_quote(table.alias.as_deref().unwrap());
         self
     }
 

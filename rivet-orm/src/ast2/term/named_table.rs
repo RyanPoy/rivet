@@ -1,11 +1,17 @@
+use crate::ast2::term::table_ref::TableRef;
+
 #[derive(Debug, Clone)]
 pub struct NamedTable {
     pub name: String,
-    pub alias: Option<String>,
 }
+impl From<&str> for NamedTable {
+    fn from(value: &str) -> Self {
+        NamedTable { name: value.to_string() }
+    }
+}
+
 impl NamedTable {
-    pub fn alias(mut self, alias: impl Into<String>) -> Self {
-        self.alias = Some(alias.into());
-        self
+    pub fn alias(self, alias: impl Into<String>) -> TableRef {
+        TableRef::NamedTable { table: self, alias: Some(alias.into()) }
     }
 }
