@@ -1,18 +1,38 @@
 use crate::ast2::sql::visitor::Visitor;
 use crate::ast2::statement::select::SelectStatement;
+use crate::ast2::term::named_table::NamedTable;
 use crate::ast2::term::table_ref::TableRef;
 
 #[test]
+fn test_select_without_from() {
+    let stmt = SelectStatement::new();
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT *");
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT *");
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT *");
+}
+
+#[test]
 fn test_select_empty_from_single() {
-    let stmt = SelectStatement::new().from("users");
+    let stmt = SelectStatement::new().from("users"); // from(&str)
     let mut v = Visitor::mysql();
     let sql = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users`");
 
+    let stmt = SelectStatement::new().from(NamedTable { name: "users".to_string(), alias: None }); // from(NamedTable)
     let mut v = Visitor::postgre();
     let sql = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users""#.to_string());
 
+    let stmt = SelectStatement::new().from(TableRef::NamedTable(NamedTable { name: "users".to_string(), alias: None })); // from(TableRef)
     let mut v = Visitor::sqlite();
     let sql = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users""#.to_string());
@@ -36,17 +56,28 @@ fn test_select_empty_from_single_with_alias() {
 }
 #[test]
 fn test_select_empty_from_multiple() {
-    let stmt = SelectStatement::new().from("users").from("orders").from("products");
+    let stmt1 = SelectStatement::new().from("users").from("orders").from("products");
+    let stmt2 = SelectStatement::new().from_many(vec!["users", "orders", "products"]);
+
     let mut v = Visitor::mysql();
-    let sql = v.visit_select_statement(&stmt).finish();
+    let sql = v.visit_select_statement(&stmt1).finish();
+    assert_eq!(sql, "SELECT * FROM `users`, `orders`, `products`");
+
+    let sql = v.reset().visit_select_statement(&stmt2).finish();
     assert_eq!(sql, "SELECT * FROM `users`, `orders`, `products`");
 
     let mut v = Visitor::postgre();
-    let sql = v.visit_select_statement(&stmt).finish();
+    let sql = v.visit_select_statement(&stmt1).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users", "orders", "products""#);
+
+    let sql = v.reset().visit_select_statement(&stmt2).finish();
     assert_eq!(sql, r#"SELECT * FROM "users", "orders", "products""#);
 
     let mut v = Visitor::sqlite();
-    let sql = v.visit_select_statement(&stmt).finish();
+    let sql = v.visit_select_statement(&stmt1).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users", "orders", "products""#);
+
+    let sql = v.reset().visit_select_statement(&stmt2).finish();
     assert_eq!(sql, r#"SELECT * FROM "users", "orders", "products""#);
 }
 
@@ -71,71 +102,18 @@ fn test_select_empty_from_multiple_with_alias() {
 }
 
 #[test]
-fn test_select_empty_from_multiple_2() {
-    let stmt = SelectStatement::new().from_many(vec!["users", "orders", "products"]);
+fn test_select_columns_from_table_mysql() {
+    let stmt = SelectStatement::new().select_many(vec!["id", "name", "email"]).from("users");
+
     let mut v = Visitor::mysql();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, "SELECT * FROM `users`, `orders`, `products`");
+    assert_eq!(sql, "SELECT `id`, `name`, `email` FROM `users`");
 
     let mut v = Visitor::postgre();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT * FROM "users", "orders", "products""#);
+    assert_eq!(sql, r#"SELECT "id", "name", "email" FROM "users""#);
 
     let mut v = Visitor::sqlite();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT * FROM "users", "orders", "products""#);
+    assert_eq!(sql, r#"SELECT "id", "name", "email" FROM "users""#);
 }
-
-// #[test]
-// fn test_select_columns_from_table_mysql() {
-//     let stmt = SelectStatement::new();
-//     stmt.select_clause = vec!["id".to_string(), "name".to_string(), "email".to_string()];
-//     stmt = stmt.from("users");
-//
-// let mut v = Visitor::mysql();
-//     let render = v;
-//     let sql = stmt.render_by(&render);
-//
-//     assert_eq!(sql, "SELECT id, name, email FROM `users`");
-// }
-//
-// // 测试 FROM 子句为空的情况
-// #[test]
-// fn test_select_without_from() {
-//     let stmt = SelectStatement::new();
-//
-// let mut v = Visitor::mysql();
-//     let render = v;
-//     let sql = stmt.render_by(&render);
-//
-//     assert_eq!(sql, "SELECT *");
-// }
-//
-// // 测试 From trait 的实现
-// #[test]
-// fn test_from_trait_for_table_ref() {
-//     let from_str: TableRef = "users".into();
-//     let from_string: TableRef = "users".to_string().into();
-//     let from_named_table: TableRef = NamedTable::new("users").into();
-//
-// let mut v = Visitor::mysql();
-//     let render = v;
-//
-//     assert_eq!(from_str.render_by(&render), "`users`");
-//     assert_eq!(from_string.render_by(&render), "`users`");
-//     assert_eq!(from_named_table.render_by(&render), "`users`");
-// }
-//
-// // 测试链式调用
-// #[test]
-// fn test_chained_method_calls() {
-//     let stmt = SelectStatement::new()
-//         .from(NamedTable::new("users"))
-//         .from("orders");
-//
-// let mut v = Visitor::mysql();
-//     let render = v;
-//     let sql = stmt.render_by(&render);
-//
-//     assert_eq!(sql, "SELECT * FROM `users`, `orders`");
-// }

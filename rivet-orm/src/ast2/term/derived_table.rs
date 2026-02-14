@@ -2,7 +2,7 @@ use crate::ast2::statement::select::SelectStatement;
 
 #[derive(Debug, Clone)]
 pub struct DerivedTable {
-    pub stmt: SelectStatement,
+    pub stmt: Box<SelectStatement>,
     pub alias: Option<String>,
 }
 

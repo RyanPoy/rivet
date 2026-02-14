@@ -14,6 +14,7 @@ impl From<&str> for TableRef {
         Self::NamedTable(NamedTable { name: value.to_string(), alias: None })
     }
 }
+
 impl From<NamedTable> for TableRef {
     fn from(value: NamedTable) -> Self {
         Self::NamedTable(value)

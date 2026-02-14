@@ -1,8 +1,30 @@
+use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::table_ref::TableRef;
 
+/// SelectStatement
+/// ├─ select_clause: Vec<SelectItem>
+/// │    ├─ SelectItem::Expr { expr: Expr, alias: Option<String> }
+/// │    │      ├─ Expr::Column(ColumnRef)
+/// │    │      ├─ Expr::Literal(Literal)
+/// │    │      ├─ Expr::Unary { op, expr: Box<Expr> }
+/// │    │      ├─ Expr::Binary { left: Box<Expr>, right: Box<Expr>, op }
+/// │    │      ├─ Expr::Func { name, args: Vec<FuncArg> }
+/// │    │      └─ Expr::Subquery(Box<SelectStatement>)  ← 子查询表达式，返回单值
+/// │    └─ SelectItem::Wildcard / QualifiedWildcard
+/// │
+/// └─ from_clause: Vec<TableRef>
+///      ├─ TableRef::NamedTable(NamedTable)
+///      ├─ TableRef::DerivedTable(DerivedTable)
+///      │      ├─ stmt: Box<SelectStatement>     ← 子查询返回表
+///      │      └─ alias: Option<String>
+///      └─ TableRef::JoinedTable(JoinedTable)
+///             ├─ left: Box<TableRef>
+///             ├─ right: Box<TableRef>
+///             ├─ join_type: JoinType
+///             └─ condition: Option<Expr>          ← ON 条件
 #[derive(Clone, Debug)]
 pub struct SelectStatement {
-    pub select_clause: Vec<String>,
+    pub select_clause: Vec<SelectItem>,
     pub from_clause: Vec<TableRef>,
 }
 
@@ -24,9 +46,22 @@ impl SelectStatement {
         T: Into<TableRef>,
         I: IntoIterator<Item = T>,
     {
-        for t in ts {
-            self.from_clause.push(t.into());
-        }
+        self.from_clause.extend(ts.into_iter().map(|t| t.into()));
+        self
+    }
+    pub fn select<C>(mut self, c: C) -> Self
+    where
+        C: Into<SelectItem>,
+    {
+        self.select_clause.push(c.into());
+        self
+    }
+    pub fn select_many<C, I>(mut self, cs: I) -> Self
+    where
+        C: Into<SelectItem>,
+        I: IntoIterator<Item = C>,
+    {
+        self.select_clause.extend(cs.into_iter().map(|c| c.into()));
         self
     }
 }
