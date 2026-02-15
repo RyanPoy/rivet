@@ -68,7 +68,7 @@ impl Visitor {
         self
     }
     pub fn visit_named_table(&mut self, table: &NamedTable) -> &mut Self {
-        self.builder.push_quote(&table.name);
+        self.builder.push_quote(table.name());
         self
     }
 
