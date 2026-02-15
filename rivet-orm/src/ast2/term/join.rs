@@ -16,6 +16,6 @@ pub struct Join {
 
 impl Join {
     pub fn alias(self, alias: impl Into<String>) -> TableRef {
-        TableRef::Join { table: self, alias: Some(alias.into()) }
+        TableRef::Join { join: self, alias: Some(alias.into()) }
     }
 }

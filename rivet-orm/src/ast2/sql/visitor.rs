@@ -1,12 +1,13 @@
 use crate::ast2::sql::builder::Builder;
 use crate::ast2::sql::dialect::Dialect;
 use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::join::Join;
 use crate::ast2::term::named_table::NamedTable;
 use crate::ast2::term::select_item::SelectItem;
+use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::table_ref::TableRef;
+use std::ops::Deref;
 
 pub struct Visitor {
     builder: Builder,
@@ -52,16 +53,16 @@ impl Visitor {
     }
     pub fn visit_table_ref(&mut self, table_ref: &TableRef) -> &mut Self {
         match table_ref {
-            TableRef::NamedTable { table, alias } => {
+            TableRef::Named { table, alias } => {
                 self.visit_named_table(table);
                 self.builder.push_alias(alias.as_deref());
             }
-            TableRef::Subquery { table, alias } => {
-                self.visit_derived_table(table);
+            TableRef::Subquery { subquery, alias } => {
+                self.visit_subquery(subquery);
                 self.builder.push_alias(Some(alias));
             }
-            TableRef::Join { table, alias } => {
-                self.visit_joined_table(table);
+            TableRef::Join { join, alias } => {
+                self.visit_join(join);
                 self.builder.push_alias(alias.as_deref());
             }
         }
@@ -72,14 +73,14 @@ impl Visitor {
         self
     }
 
-    pub fn visit_derived_table(&mut self, table: &Subquery) -> &mut Self {
+    pub fn visit_subquery(&mut self, subquery: &Subquery) -> &mut Self {
         self.builder.push("(");
-        self.visit_select_statement(&table.stmt);
+        self.visit_select_statement(subquery.deref());
         self.builder.push(")");
         self
     }
 
-    pub fn visit_joined_table(&mut self, table: &Join) -> &mut Self {
+    pub fn visit_join(&mut self, join: &Join) -> &mut Self {
         self
     }
 

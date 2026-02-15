@@ -18,7 +18,7 @@ impl NamedTable {
     }
 
     pub fn alias(self, alias: impl Into<String>) -> TableRef {
-        TableRef::NamedTable { table: self, alias: Some(alias.into()) }
+        TableRef::Named { table: self, alias: Some(alias.into()) }
     }
 
     #[inline]

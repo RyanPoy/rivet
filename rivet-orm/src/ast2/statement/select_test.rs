@@ -34,7 +34,7 @@ fn test_select_empty_from_single() {
     let sql = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users""#.to_string());
 
-    let stmt = SelectStatement::new().from(TableRef::NamedTable { table: NamedTable::new("users"), alias: None }); // from(TableRef)
+    let stmt = SelectStatement::new().from(TableRef::Named { table: NamedTable::new("users"), alias: None }); // from(TableRef)
     let mut v = Visitor::sqlite();
     let sql = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users""#.to_string());
