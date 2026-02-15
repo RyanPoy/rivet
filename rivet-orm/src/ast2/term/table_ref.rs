@@ -1,11 +1,11 @@
-use crate::ast2::term::derived_table::DerivedTable;
+use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::join_table::JoinedTable;
 use crate::ast2::term::named_table::NamedTable;
 
 #[derive(Debug, Clone)]
 pub enum TableRef {
     NamedTable { table: NamedTable, alias: Option<String> },
-    DerivedTable { table: DerivedTable, alias: String },
+    Subquery { table: Subquery, alias: String },
     JoinedTable { table: JoinedTable, alias: Option<String> },
 }
 
@@ -28,7 +28,7 @@ impl TableRef {
     pub fn alias(self, value: impl Into<String>) -> Self {
         match self {
             Self::NamedTable { table, .. } => Self::NamedTable { table, alias: Some(value.into()) },
-            Self::DerivedTable { table, .. } => Self::DerivedTable { table, alias: value.into() },
+            Self::Subquery { table, .. } => Self::Subquery { table, alias: value.into() },
             Self::JoinedTable { table, .. } => Self::JoinedTable { table, alias: Some(value.into()) },
         }
     }

@@ -1,7 +1,7 @@
 use crate::ast2::sql::builder::Builder;
 use crate::ast2::sql::dialect::Dialect;
 use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::derived_table::DerivedTable;
+use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::join_table::JoinedTable;
 use crate::ast2::term::named_table::NamedTable;
@@ -56,7 +56,7 @@ impl Visitor {
                 self.visit_named_table(table);
                 self.builder.push_alias(alias.as_deref());
             }
-            TableRef::DerivedTable { table, alias } => {
+            TableRef::Subquery { table, alias } => {
                 self.visit_derived_table(table);
                 self.builder.push_alias(Some(alias));
             }
@@ -72,7 +72,7 @@ impl Visitor {
         self
     }
 
-    pub fn visit_derived_table(&mut self, table: &DerivedTable) -> &mut Self {
+    pub fn visit_derived_table(&mut self, table: &Subquery) -> &mut Self {
         self.builder.push("(");
         self.visit_select_statement(&table.stmt);
         self.builder.push(")");

@@ -1,5 +1,5 @@
 pub mod column_ref;
-pub mod derived_table;
+pub mod subquery;
 pub mod expr;
 pub mod func;
 pub mod join_table;
