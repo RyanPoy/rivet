@@ -1,6 +1,5 @@
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
-use crate::ast2::term::expr::Expr::Column;
 
 #[derive(Clone, Debug)]
 pub enum SelectItem {

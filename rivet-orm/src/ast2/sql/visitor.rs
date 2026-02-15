@@ -58,7 +58,7 @@ impl Visitor {
             }
             TableRef::DerivedTable { table, alias } => {
                 self.visit_derived_table(table);
-                self.builder.push_alias(alias.as_deref());
+                self.builder.push_alias(Some(alias));
             }
             TableRef::JoinedTable { table, alias } => {
                 self.visit_joined_table(table);
