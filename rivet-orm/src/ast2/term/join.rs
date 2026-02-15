@@ -10,12 +10,12 @@ pub enum JoinType {
 }
 
 #[derive(Debug, Clone)]
-pub struct JoinedTable {
+pub struct Join {
     pub name: String,
 }
 
-impl JoinedTable {
+impl Join {
     pub fn alias(self, alias: impl Into<String>) -> TableRef {
-        TableRef::JoinedTable { table: self, alias: Some(alias.into()) }
+        TableRef::Join { table: self, alias: Some(alias.into()) }
     }
 }

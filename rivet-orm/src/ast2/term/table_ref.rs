@@ -1,12 +1,12 @@
-use crate::ast2::term::subquery::Subquery;
-use crate::ast2::term::join_table::JoinedTable;
+use crate::ast2::term::join::Join;
 use crate::ast2::term::named_table::NamedTable;
+use crate::ast2::term::subquery::Subquery;
 
 #[derive(Debug, Clone)]
 pub enum TableRef {
     NamedTable { table: NamedTable, alias: Option<String> },
     Subquery { table: Subquery, alias: String },
-    JoinedTable { table: JoinedTable, alias: Option<String> },
+    Join { table: Join, alias: Option<String> },
 }
 
 impl<T> From<T> for TableRef
@@ -29,29 +29,29 @@ impl TableRef {
         match self {
             Self::NamedTable { table, .. } => Self::NamedTable { table, alias: Some(value.into()) },
             Self::Subquery { table, .. } => Self::Subquery { table, alias: value.into() },
-            Self::JoinedTable { table, .. } => Self::JoinedTable { table, alias: Some(value.into()) },
+            Self::Join { table, .. } => Self::Join { table, alias: Some(value.into()) },
         }
     }
 
-    // pub fn visible_name(&self) -> &str {
-    //     match self {
-    //         Self::NamedTable { table, alias } => {
-    //             if let Some(a) = alias {
-    //                 a.as_str()
-    //             } else {
-    //                 table.name()
-    //             }
-    //         }
-    //
-    //         Self::DerivedTable { table, alias } => alias,
-    //
-    //         Self::JoinedTable { table, alias } => {
-    //             if let Some(a) = alias {
-    //                 a.as_str()
-    //             } else {
-    //                 table.name.as_str()
-    //             }
-    //         }
-    //     }
-    // }
+    pub fn visible_name(&self) -> &str {
+        match self {
+            Self::NamedTable { table, alias } => {
+                if let Some(a) = alias {
+                    a.as_str()
+                } else {
+                    table.name()
+                }
+            }
+
+            Self::Subquery { table, alias } => alias,
+
+            Self::Join { table, alias } => {
+                if let Some(a) = alias {
+                    a.as_str()
+                } else {
+                    table.name.as_str()
+                }
+            }
+        }
+    }
 }

@@ -3,7 +3,7 @@ use crate::ast2::sql::dialect::Dialect;
 use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::expr::Expr;
-use crate::ast2::term::join_table::JoinedTable;
+use crate::ast2::term::join::Join;
 use crate::ast2::term::named_table::NamedTable;
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::table_ref::TableRef;
@@ -60,7 +60,7 @@ impl Visitor {
                 self.visit_derived_table(table);
                 self.builder.push_alias(Some(alias));
             }
-            TableRef::JoinedTable { table, alias } => {
+            TableRef::Join { table, alias } => {
                 self.visit_joined_table(table);
                 self.builder.push_alias(alias.as_deref());
             }
@@ -79,7 +79,7 @@ impl Visitor {
         self
     }
 
-    pub fn visit_joined_table(&mut self, table: &JoinedTable) -> &mut Self {
+    pub fn visit_joined_table(&mut self, table: &Join) -> &mut Self {
         self
     }
 
