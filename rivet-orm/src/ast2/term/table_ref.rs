@@ -1,6 +1,7 @@
 use crate::ast2::term::derived_table::DerivedTable;
 use crate::ast2::term::join_table::JoinedTable;
 use crate::ast2::term::named_table::NamedTable;
+use std::ops::Deref;
 
 #[derive(Debug, Clone)]
 pub enum TableRef {
@@ -27,6 +28,28 @@ impl TableRef {
             Self::NamedTable { table, .. } => Self::NamedTable { table, alias: Some(value.into()) },
             Self::DerivedTable { table, .. } => Self::DerivedTable { table, alias: Some(value.into()) },
             Self::JoinedTable { table, .. } => Self::JoinedTable { table, alias: Some(value.into()) },
+        }
+    }
+
+    pub fn visible_name(&self) -> &str {
+        match self {
+            Self::NamedTable { table, alias } => {
+                if let Some(a) = alias {
+                    a.as_str()
+                } else {
+                    table.name.as_str()
+                }
+            }
+
+            Self::DerivedTable { table, alias } => alias.as_deref().expect("DerivedTable miss alias"),
+
+            Self::JoinedTable { table, alias } => {
+                if let Some(a) = alias {
+                    a.as_str()
+                } else {
+                    table.name.as_str()
+                }
+            }
         }
     }
 }

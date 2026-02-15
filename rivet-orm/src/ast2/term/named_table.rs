@@ -6,11 +6,15 @@ pub struct NamedTable {
 }
 impl From<&str> for NamedTable {
     fn from(value: &str) -> Self {
-        NamedTable { name: value.to_string() }
+        NamedTable::new(value)
     }
 }
 
 impl NamedTable {
+    pub fn new(name: impl Into<String>) -> Self {
+        NamedTable { name: name.into() }
+    }
+
     pub fn alias(self, alias: impl Into<String>) -> TableRef {
         TableRef::NamedTable { table: self, alias: Some(alias.into()) }
     }

@@ -28,17 +28,16 @@ impl Visitor {
 
     pub fn visit_select_statement(&mut self, select_stmt: &SelectStatement) -> &mut Self {
         self.builder.push("SELECT ");
-        if select_stmt.select_clause.is_empty() {
-            self.builder.push("*");
-        } else {
-            let mut iter = select_stmt.select_clause.iter();
-            if let Some(item) = iter.next() {
+
+        let mut iter = select_stmt.select_clause.iter();
+        if let Some(item) = iter.next() {
+            self.visit_select_item(item);
+            for item in iter {
+                self.builder.push(", ");
                 self.visit_select_item(item);
-                for item in iter {
-                    self.builder.push(", ");
-                    self.visit_select_item(item);
-                }
             }
+        } else {
+            self.builder.push("*");
         }
         let mut iter = select_stmt.from_clause.iter();
         if let Some(t) = iter.next() {

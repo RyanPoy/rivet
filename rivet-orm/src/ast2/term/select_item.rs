@@ -1,5 +1,6 @@
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
+use crate::ast2::term::expr::Expr::Column;
 
 #[derive(Clone, Debug)]
 pub enum SelectItem {
@@ -15,10 +16,11 @@ impl From<&str> for SelectItem {
         } else if value.ends_with(".*") {
             SelectItem::QualifiedWildcard(value[..value.len() - 2].to_string())
         } else {
-            SelectItem::Expr {
-                expr: Expr::Column(ColumnRef { name: String::from(value), qualifier: None }),
-                alias: None,
-            }
+            let col = match value.split_once(".") {
+                Some((q, n)) => ColumnRef { qualifier: Some(q.to_string()), name: n.to_string() },
+                None => ColumnRef { qualifier: None, name: value.to_string() },
+            };
+            SelectItem::Expr { expr: Expr::Column(col), alias: None }
         }
     }
 }

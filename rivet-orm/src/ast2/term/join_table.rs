@@ -11,7 +11,7 @@ pub enum JoinType {
 
 #[derive(Debug, Clone)]
 pub struct JoinedTable {
-    name: Option<String>,
+    pub name: String,
 }
 
 impl JoinedTable {

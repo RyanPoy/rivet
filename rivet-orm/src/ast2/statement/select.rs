@@ -1,5 +1,6 @@
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::table_ref::TableRef;
+use std::collections::HashMap;
 
 /// SelectStatement
 /// ├─ select_clause: Vec<SelectItem>

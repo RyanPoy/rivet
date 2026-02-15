@@ -29,13 +29,12 @@ fn test_select_empty_from_single() {
     let sql = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users`");
 
-    let stmt = SelectStatement::new().from(NamedTable { name: "users".to_string() }); // from(NamedTable)
+    let stmt = SelectStatement::new().from(NamedTable::new("users")); // from(NamedTable)
     let mut v = Visitor::postgre();
     let sql = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users""#.to_string());
 
-    let stmt = SelectStatement::new()
-        .from(TableRef::NamedTable { table: NamedTable { name: "users".to_string() }, alias: None }); // from(TableRef)
+    let stmt = SelectStatement::new().from(TableRef::NamedTable { table: NamedTable::new("users"), alias: None }); // from(TableRef)
     let mut v = Visitor::sqlite();
     let sql = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users""#.to_string());
@@ -179,64 +178,24 @@ fn test_select_multiple_columns() {
 fn test_select_column_with_alias() {
     let stmt = SelectStatement::new()
         .from("users")
-        .select(ColumnRef::new("id").alias("uid"))
-        .select(Expr::Column(ColumnRef::new("name")).alias("uname"));
+        .from("cards")
+        .select("card_number")
+        .select(ColumnRef::new("id").qualifier("cards").alias("cid"))
+        .select(Expr::Column(ColumnRef::new("name").qualifier("users")).alias("uname"));
 
     let mut v = Visitor::mysql();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, "SELECT `id` AS `uid`, `name` AS `uname` FROM `users`");
+    assert_eq!(sql, "SELECT `card_number`, `cards`.`id` AS `cid`, `users`.`name` AS `uname` FROM `users`, `cards`");
 
     let mut v = Visitor::postgre();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT "id" AS "uid", "name" AS "uname" FROM "users""#);
+    assert_eq!(sql, r#"SELECT "card_number", "cards"."id" AS "cid", "users"."name" AS "uname" FROM "users", "cards""#);
 
     let mut v = Visitor::sqlite();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT "id" AS "uid", "name" AS "uname" FROM "users""#);
+    assert_eq!(sql, r#"SELECT "card_number", "cards"."id" AS "cid", "users"."name" AS "uname" FROM "users", "cards""#);
 }
 
-// #[test]
-// fn test_select_single_column_and_table_alias_str() {
-//     let table = Source::table("abc").alias("fizzbuzz");
-//     let col = table.column("foo").alias("bar");
-//     let stmt = SelectStatement::new().from(table).select(col);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::mysql());
-//     assert_eq!(sql, "SELECT `fizzbuzz`.`foo` AS `bar` FROM `abc` AS `fizzbuzz`".to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::sqlite());
-//     assert_eq!(sql, r#"SELECT "fizzbuzz"."foo" AS "bar" FROM "abc" AS "fizzbuzz""#.to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::pg());
-//     assert_eq!(sql, r#"SELECT "fizzbuzz"."foo" AS "bar" FROM "abc" AS "fizzbuzz""#.to_string());
-//     assert_eq!(params, vec![]);
-// }
-
-// #[test]
-// fn test_select_multiple_tables() {
-//     let table_abc = Source::table("ac");
-//     let col_foo = table_abc.column("foo");
-//
-//     let table_efg = Source::table("eg");
-//     let col_bar = table_efg.column("bar");
-//
-//     let stmt = SelectStatement::new().from(table_abc).select(col_foo).from(table_efg).select(col_bar);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::mysql());
-//     assert_eq!(sql, "SELECT `abc`.`foo`, `efg`.`bar` FROM `abc`, `efg`".to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::sqlite());
-//     assert_eq!(sql, r#"SELECT "abc"."foo", "efg"."bar" FROM "abc", "efg""#.to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::pg());
-//     assert_eq!(sql, r#"SELECT "abc"."foo", "efg"."bar" FROM "abc", "efg""#.to_string());
-//     assert_eq!(params, vec![]);
-// }
-//
 // #[test]
 // fn test_select_subquery() {
 //     let table = Source::table("abc");
