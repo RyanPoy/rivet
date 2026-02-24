@@ -75,7 +75,7 @@ impl Visitor {
 
     pub fn visit_subquery(&mut self, subquery: &Subquery) -> &mut Self {
         self.builder.push("(");
-        self.visit_select_statement(subquery.deref());
+        self.visit_select_statement(subquery.select_statement());
         self.builder.push(")");
         self
     }
