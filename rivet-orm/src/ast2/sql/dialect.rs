@@ -4,6 +4,7 @@ pub trait Dialect {
     fn supports_distinct_on(&self) -> bool;
     fn supports_window_function(&self) -> bool;
     fn supports_returning(&self) -> bool;
+    fn supports_standalone_offset(&self) -> bool;
 }
 
 pub struct MySQL;
@@ -26,6 +27,10 @@ impl Dialect for MySQL {
     }
     #[inline]
     fn supports_returning(&self) -> bool {
+        false
+    }
+    #[inline]
+    fn supports_standalone_offset(&self) -> bool {
         false
     }
 }
@@ -52,6 +57,10 @@ impl Dialect for PostgreSQL {
     fn supports_returning(&self) -> bool {
         true
     }
+    #[inline]
+    fn supports_standalone_offset(&self) -> bool {
+        true
+    }
 }
 pub struct Sqlite;
 impl Dialect for Sqlite {
@@ -73,6 +82,11 @@ impl Dialect for Sqlite {
     }
     #[inline]
     fn supports_returning(&self) -> bool {
+        true
+    }
+
+    #[inline]
+    fn supports_standalone_offset(&self) -> bool {
         true
     }
 }

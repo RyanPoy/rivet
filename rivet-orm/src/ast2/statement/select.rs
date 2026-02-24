@@ -30,12 +30,15 @@ pub struct SelectStatement {
     pub distinct: Distinct,
     pub select_clause: Vec<SelectItem>,
     pub from_clause: Vec<TableRef>,
+    pub limit: Option<usize>,
+    pub offset: Option<usize>,
 }
 
 impl SelectStatement {
     pub fn new() -> Self {
-        Self { distinct: Distinct::None, select_clause: Vec::new(), from_clause: Vec::new() }
+        Self { distinct: Distinct::None, select_clause: Vec::new(), from_clause: Vec::new(), limit: None, offset: None }
     }
+
     pub fn distinct(mut self) -> Self {
         self.distinct = Distinct::Simple;
         self
@@ -79,6 +82,17 @@ impl SelectStatement {
         self
     }
 
+    pub fn limit(mut self, n: usize) -> Self {
+        if n > 0 {
+            self.limit = Some(n);
+        }
+        self
+    }
+
+    pub fn offset(mut self, n: usize) -> Self {
+        self.offset = Some(n);
+        self
+    }
     pub fn alias(self, name: &str) -> TableRef {
         Subquery::from(self).alias(name)
     }

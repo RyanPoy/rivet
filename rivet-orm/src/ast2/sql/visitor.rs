@@ -52,8 +52,21 @@ impl Visitor {
                 self.visit_table_ref(t);
             }
         }
+        self.build_table_ref(select_stmt);
         self
     }
+
+    fn build_table_ref(&mut self, select_stmt: &SelectStatement) {
+        if let Some(n) = select_stmt.limit {
+            self.builder.push(format!(" LIMIT {}", n));
+        }
+        if self.builder.dialect.supports_standalone_offset() || select_stmt.limit.is_some() {
+            if let Some(n) = select_stmt.offset {
+                self.builder.push(format!(" OFFSET {}", n));
+            }
+        }
+    }
+
     pub fn visit_table_ref(&mut self, table_ref: &TableRef) -> &mut Self {
         match table_ref {
             TableRef::Named { table, alias } => {

@@ -339,46 +339,74 @@ fn test_select_nested_subquery() {
 //
 // }
 //
-// #[test]
-// fn test_select_with_limit(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).limit(10)
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` LIMIT 10'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" LIMIT 10'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" LIMIT 10'
-//
-//
-// }
-//
-// #[test]
-// fn test_select_with_limit_zero(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).limit(0)
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc"'
-//
-//
-// }
-//
-// #[test]
-// fn test_select_with_offset(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).offset(10)
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` OFFSET 10'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" OFFSET 10'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" OFFSET 10'
-//
-//
-// }
-//
-// #[test]
-// fn test_select_with_limit_and_offset(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).offset(10).limit(10)
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` LIMIT 10 OFFSET 10'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" LIMIT 10 OFFSET 10'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" LIMIT 10 OFFSET 10'
-//
-//
-// }
-//
+#[test]
+fn test_select_with_limit() {
+    let stmt = SelectStatement::new().from("users").select("foo").limit(10);
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT `foo` FROM `users` LIMIT 10");
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT "foo" FROM "users" LIMIT 10"#);
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT "foo" FROM "users" LIMIT 10"#);
+}
+
+#[test]
+fn test_select_with_limit_zero(){
+    let stmt = SelectStatement::new().from("users").select("foo").limit(0);
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT `foo` FROM `users`");
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT "foo" FROM "users""#);
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT "foo" FROM "users""#);
+}
+
+#[test]
+fn test_select_with_offset_without_limit(){
+    let stmt = SelectStatement::new().from("users").select("foo").offset(10);
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT `foo` FROM `users`");
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT "foo" FROM "users" OFFSET 10"#);
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT "foo" FROM "users" OFFSET 10"#);
+}
+
+#[test]
+fn test_select_with_limit_and_offset(){
+    let stmt = SelectStatement::new().from("users").select("foo").limit(10).offset(5);
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT `foo` FROM `users` LIMIT 10 OFFSET 5");
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT "foo" FROM "users" LIMIT 10 OFFSET 5"#);
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT "foo" FROM "users" LIMIT 10 OFFSET 5"#);
+}
+
 // #[test]
 // fn test_select_with_force_index(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg"))
