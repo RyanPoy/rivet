@@ -1,15 +1,15 @@
 use crate::ast2::sql::dialect::Dialect;
 
 pub struct Builder {
-    dialect: Dialect,
+    pub dialect: &'static dyn Dialect,
     pub buff: String,
 }
 
 impl Builder {
-    pub fn new(dialect: Dialect) -> Self {
+    pub fn new(dialect: &'static dyn Dialect) -> Self {
         Self::with_capacity(dialect, 512)
     }
-    pub fn with_capacity(dialect: Dialect, size: usize) -> Self {
+    pub fn with_capacity(dialect: &'static dyn Dialect, size: usize) -> Self {
         Self { dialect, buff: String::with_capacity(size) }
     }
     #[inline]
@@ -28,10 +28,8 @@ impl Builder {
     }
 
     pub fn push_quote(&mut self, s: &str) -> &mut Self {
-        match self.dialect {
-            Dialect::MySQL => self.push("`").push(s).push("`"),
-            Dialect::PostgreSQL | Dialect::SQLite => self.push("\"").push(s).push("\""),
-        }
+        let quote_char = self.dialect.quote_char();
+        self.push(quote_char).push(s).push(quote_char)
     }
     #[inline]
     pub fn push_with_alias(&mut self, s: &str, alias: Option<&str>) -> &mut Self {

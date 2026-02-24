@@ -19,7 +19,13 @@ impl From<&str> for SelectItem {
                 Some((q, n)) => ColumnRef { qualifier: Some(q.to_string()), name: n.to_string() },
                 None => ColumnRef { qualifier: None, name: value.to_string() },
             };
-            SelectItem::Expr { expr: Expr::Column(col), alias: None }
+            SelectItem::from(col)
         }
+    }
+}
+
+impl From<ColumnRef> for SelectItem {
+    fn from(col: ColumnRef) -> Self {
+        SelectItem::Expr { expr: Expr::Column(col), alias: None }
     }
 }

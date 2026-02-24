@@ -1,6 +1,7 @@
+use crate::ast2::term::column_ref::ColumnRef;
+use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::table_ref::TableRef;
-use std::collections::HashMap;
 
 /// SelectStatement
 /// ├─ select_clause: Vec<SelectItem>
@@ -25,13 +26,22 @@ use std::collections::HashMap;
 ///             └─ condition: Option<Expr>          ← ON 条件
 #[derive(Clone, Debug)]
 pub struct SelectStatement {
+    pub distinct: Distinct,
     pub select_clause: Vec<SelectItem>,
     pub from_clause: Vec<TableRef>,
 }
 
 impl SelectStatement {
     pub fn new() -> Self {
-        Self { select_clause: Vec::new(), from_clause: Vec::new() }
+        Self { distinct: Distinct::None, select_clause: Vec::new(), from_clause: Vec::new() }
+    }
+    pub fn distinct(mut self) -> Self {
+        self.distinct = Distinct::Simple;
+        self
+    }
+    pub fn distinct_on(mut self, cols: Vec<ColumnRef>) -> Self {
+        self.distinct = Distinct::On(cols);
+        self
     }
 
     pub fn from<T>(mut self, t: T) -> Self
@@ -50,6 +60,7 @@ impl SelectStatement {
         self.from_clause.extend(ts.into_iter().map(|t| t.into()));
         self
     }
+
     pub fn select<C>(mut self, c: C) -> Self
     where
         C: Into<SelectItem>,
@@ -57,6 +68,7 @@ impl SelectStatement {
         self.select_clause.push(c.into());
         self
     }
+
     pub fn select_many<C, I>(mut self, cs: I) -> Self
     where
         C: Into<SelectItem>,

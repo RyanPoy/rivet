@@ -103,43 +103,7 @@ fn test_select_empty_from_multiple_with_alias() {
     let sql = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" AS "u", "orders" AS "o", "products" AS "p""#);
 }
-//
-// #[test]
-// fn test_select_distinct_single() {
-//     let table = Source::table("abc");
-//     let col = table.column("foo");
-//     let stmt = SelectStatement::new().from(table).select(col).distinct();
-//     let (sql, params) = stmt.to_sql(&mut binder::mysql());
-//     assert_eq!(sql, "SELECT DISTINCT `foo` FROM `abc`".to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::sqlite());
-//     assert_eq!(sql, r#"SELECT DISTINCT "foo" FROM "abc""#.to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::pg());
-//     assert_eq!(sql, r#"SELECT DISTINCT "foo" FROM "abc""#.to_string());
-//     assert_eq!(params, vec![]);
-// }
-//
-// #[test]
-// fn test_select_distinct_multi() {
-//     let table = Source::table("abc");
-//     let col_foo = table.column("foo");
-//     let col_bar = table.column("bar");
-//     let stmt = SelectStatement::new().from(table).select(col_foo).select(col_bar).distinct();
-//     let (sql, params) = stmt.to_sql(&mut binder::mysql());
-//     assert_eq!(sql, "SELECT DISTINCT `foo`, `bar` FROM `abc`".to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::sqlite());
-//     assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "abc""#.to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::pg());
-//     assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "abc""#.to_string());
-//     assert_eq!(params, vec![]);
-// }
+
 #[test]
 fn test_select_single_column() {
     let stmt = SelectStatement::new().select("id").from("users");
@@ -194,6 +158,59 @@ fn test_select_column_with_alias() {
     let mut v = Visitor::sqlite();
     let sql = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT "card_number", "cards"."id" AS "cid", "users"."name" AS "uname" FROM "users", "cards""#);
+}
+
+#[test]
+fn test_select_distinct_single() {
+    let stmt = SelectStatement::new().from("users").select("foo").distinct();
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT DISTINCT `foo` FROM `users`");
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT DISTINCT "foo" FROM "users""#);
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT DISTINCT "foo" FROM "users""#);
+}
+
+#[test]
+fn test_select_distinct_multi() {
+    let stmt = SelectStatement::new().from("users").select("foo").select("bar").distinct();
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT DISTINCT `foo`, `bar` FROM `users`");
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "users""#);
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "users""#);
+}
+
+#[test]
+fn test_select_distinct_on() {
+    let foo = ColumnRef::new("foo");
+    let bar = ColumnRef::new("bar");
+    let stmt = SelectStatement::new().from("users").select(foo.clone()).select(bar.clone()).distinct_on(vec![foo, bar]);
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT DISTINCT `foo`, `bar` FROM `users`");
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT DISTINCT ON ("foo", "bar") "foo", "bar" FROM "users""#);
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "users""#);
 }
 
 // #[test]

@@ -7,6 +7,12 @@ pub struct ColumnRef {
     pub name: String,
 }
 
+impl From<&str> for ColumnRef {
+    fn from(value: &str) -> Self {
+        Self::new(value)
+    }
+}
+
 impl ColumnRef {
     pub fn new(name: impl Into<String>) -> Self {
         ColumnRef { qualifier: None, name: name.into() }
