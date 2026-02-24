@@ -26,11 +26,11 @@ impl From<NamedTable> for TableRef {
 }
 
 impl TableRef {
-    pub fn alias(self, value: impl Into<String>) -> Self {
+    pub fn alias(self, name: impl Into<String>) -> Self {
         match self {
-            Self::Named { table, .. } => Self::Named { table, alias: Some(value.into()) },
-            Self::Subquery { subquery, .. } => Self::Subquery { subquery, alias: value.into() },
-            Self::Join { join, .. } => Self::Join { join, alias: Some(value.into()) },
+            Self::Named { table, .. } => Self::Named { table, alias: Some(name.into()) },
+            Self::Subquery { subquery, .. } => Self::Subquery { subquery, alias: name.into() },
+            Self::Join { join, .. } => Self::Join { join, alias: Some(name.into()) },
         }
     }
 

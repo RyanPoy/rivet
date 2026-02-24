@@ -1,6 +1,7 @@
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::select_item::SelectItem;
+use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::table_ref::TableRef;
 
 /// SelectStatement
@@ -76,6 +77,10 @@ impl SelectStatement {
     {
         self.select_clause.extend(cs.into_iter().map(|c| c.into()));
         self
+    }
+
+    pub fn alias(self, name: &str) -> TableRef {
+        Subquery::from(self).alias(name)
     }
 }
 

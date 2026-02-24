@@ -231,70 +231,82 @@ fn test_select_distinct_on_multi() {
     assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "users""#);
 }
 
-// #[test]
-// fn test_select_subquery() {
-//     let table = Source::table("abc");
-//     let subquery = Source::subquery(SelectStatement::new().from(table)).alias("sq0");
-//
-//     let col_foo = subquery.column("foo");
-//     let col_bar = subquery.column("bar");
-//     let stmt = SelectStatement::new().from(subquery).select(col_foo).select(col_bar);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::mysql());
-//     assert_eq!(sql, "SELECT `sq0`.`foo`, `sq0`.`bar` FROM (SELECT * FROM `abc`) AS `sq0`".to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::sqlite());
-//     assert_eq!(sql, r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#.to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::pg());
-//     assert_eq!(sql, r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#.to_string());
-//     assert_eq!(params, vec![]);
-// }
+#[test]
+fn test_select_subquery() {
+    let stmt = SelectStatement::new()
+        .from(SelectStatement::new().from("abc").alias("sq0"))
+        .select("sq0.foo")
+        .select("sq0.bar");
 
-// #[test]
-// fn test_select_multiple_subqueries(){
-//     let sq0 = SelectStatement::new().from(Source::table("abc")).select(Column::new("foo")));
-//     let sq1 = SelectStatement::new().from(Source::table("efg")).select(Column::new("bar")));
-//     let stmt = SelectStatement::new().from(sq0).from(sq1).select(sq0.foo, sq1.bar);
-//     let stmt = SelectStatement::new().from(Source::SubQuery {query: Box::new(sq0), alias: Some("sq0")}).from(Source::SubQuery {query: Box::new(sq1), alias: Some("sq1")}}).select(sq0.foo, sq1.bar);
-//     let (sql, params) = stmt.to_sql(&mut binder::mysql());
-//     assert_eq!(sql, "SELECT `sq0`.`foo`, `sq0`.`bar` FROM (SELECT * FROM `abc`) AS `sq0`".to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::sqlite());
-//     assert_eq!(sql, r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#.to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::pg());
-//     assert_eq!(sql, r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#.to_string());
-//     assert_eq!(params, vec![]);
-//
-//       assert
-//             'SELECT "sq0"."foo","sq1"."bar" ' 'FROM (SELECT "foo" FROM "abc") "sq0",' '(SELECT "bar" FROM "efg") "sq1"',
-//             str(q),
-//         )
-//
-//     }
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT `sq0`.`foo`, `sq0`.`bar` FROM (SELECT * FROM `abc`) AS `sq0`");
 
-// #[test]
-// fn test_select_nested_subquery(){
-//          subquery0 = SelectStatement().from_(Name("abc"))
-//          subquery1 = SelectStatement().from_(subquery0).select(subquery0.foo, subquery0.bar)
-//          subquery2 = SelectStatement().from_(subquery1).select(subquery1.foo)
-//
-//          stmt = SelectStatement().from_(subquery2).select(subquery2.foo)
-//
-//        assert
-//              'SELECT "sq2"."foo" '
-//              'FROM (SELECT "sq1"."foo" '
-//              'FROM (SELECT "sq0"."foo","sq0"."bar" '
-//              'FROM (SELECT * FROM "abc") "sq0") "sq1") "sq2"',
-//              str(q),
-//          )
-//
-// }
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#);
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#);
+}
+
+#[test]
+fn test_select_multiple_subqueries() {
+    let sq0 = SelectStatement::new().from("abc").select("foo").alias("sq0");
+    let sq1 = SelectStatement::new().from("efg").select("bar").alias("sq1");
+    let stmt = SelectStatement::new().from_many(vec![sq0, sq1]).select_many(["sq0.foo", "sq1.bar"]);
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(
+        sql,
+        "SELECT `sq0`.`foo`, `sq1`.`bar` FROM (SELECT `foo` FROM `abc`) AS `sq0`, (SELECT `bar` FROM `efg`) AS `sq1`"
+    );
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(
+        sql,
+        r#"SELECT "sq0"."foo", "sq1"."bar" FROM (SELECT "foo" FROM "abc") AS "sq0", (SELECT "bar" FROM "efg") AS "sq1""#
+    );
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(
+        sql,
+        r#"SELECT "sq0"."foo", "sq1"."bar" FROM (SELECT "foo" FROM "abc") AS "sq0", (SELECT "bar" FROM "efg") AS "sq1""#
+    );
+}
+
+#[test]
+fn test_select_nested_subquery() {
+    let sq0 = SelectStatement::new().from("abc").alias("sq0");
+    let sq1 = SelectStatement::new().from(sq0).select_many(vec!["sq0.foo", "sq0.bar"]).alias("sq1");
+    let sq2 = SelectStatement::new().from(sq1).select("sq1.foo").alias("sq2");
+    let stmt = SelectStatement::new().from(sq2).select("sq2.foo");
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(
+        sql,
+        "SELECT `sq2`.`foo` FROM (SELECT `sq1`.`foo` FROM (SELECT `sq0`.`foo`, `sq0`.`bar` FROM (SELECT * FROM `abc`) AS `sq0`) AS `sq1`) AS `sq2`"
+    );
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(
+        sql,
+        r#"SELECT "sq2"."foo" FROM (SELECT "sq1"."foo" FROM (SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0") AS "sq1") AS "sq2""#
+    );
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(
+        sql,
+        r#"SELECT "sq2"."foo" FROM (SELECT "sq1"."foo" FROM (SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0") AS "sq1") AS "sq2""#
+    );
+}
 
 // #[test]
 // fn test_select_no_table() {
