@@ -193,9 +193,27 @@ fn test_select_distinct_multi() {
     let sql = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "users""#);
 }
+#[test]
+fn test_select_distinct_on_single() {
+    let foo = ColumnRef::new("foo");
+    let bar = ColumnRef::new("bar");
+    let stmt = SelectStatement::new().from("users").select(foo.clone()).select(bar.clone()).distinct_on(vec![foo]);
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT DISTINCT `foo`, `bar` FROM `users`");
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT DISTINCT ON ("foo") "foo", "bar" FROM "users""#);
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "users""#);
+}
 
 #[test]
-fn test_select_distinct_on() {
+fn test_select_distinct_on_multi() {
     let foo = ColumnRef::new("foo");
     let bar = ColumnRef::new("bar");
     let stmt = SelectStatement::new().from("users").select(foo.clone()).select(bar.clone()).distinct_on(vec![foo, bar]);
