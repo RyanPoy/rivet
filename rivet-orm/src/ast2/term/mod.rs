@@ -3,6 +3,7 @@ pub mod distinct;
 pub mod expr;
 pub mod func;
 pub mod join;
+pub mod literal;
 pub mod named_table;
 pub mod select_item;
 pub mod subquery;

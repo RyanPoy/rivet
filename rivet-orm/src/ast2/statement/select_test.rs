@@ -2,6 +2,7 @@ use crate::ast2::sql::visitor::Visitor;
 use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
+use crate::ast2::term::literal::Literal;
 use crate::ast2::term::named_table::NamedTable;
 use crate::ast2::term::table_ref::TableRef;
 
@@ -308,25 +309,22 @@ fn test_select_nested_subquery() {
     );
 }
 
-// #[test]
-// fn test_select_no_table() {
-//     let stmt = SelectStatement::new()
-//         .select(Literal(1.to_string()))
-//         .select(Literal(2.to_string()))
-//         .select(Literal(3.to_string()));
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::mysql());
-//     assert_eq!(sql, "SELECT 1, 2, 3".to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::sqlite());
-//     assert_eq!(sql, r#"SELECT 1, 2, 3"#.to_string());
-//     assert_eq!(params, vec![]);
-//
-//     let (sql, params) = stmt.to_sql(&mut binder::pg());
-//     assert_eq!(sql, r#"SELECT 1, 2, 3"#.to_string());
-//     assert_eq!(params, vec![]);
-// }
+#[test]
+fn test_select_no_table() {
+    let stmt = SelectStatement::new().select(Literal::Int(1)).select(Literal::Int(2)).select(Literal::Int(3));
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT 1, 2, 3");
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT 1, 2, 3"#);
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT 1, 2, 3"#);
+}
 
 //
 // #[test]
@@ -357,7 +355,7 @@ fn test_select_with_limit() {
 }
 
 #[test]
-fn test_select_with_limit_zero(){
+fn test_select_with_limit_zero() {
     let stmt = SelectStatement::new().from("users").select("foo").limit(0);
 
     let mut v = Visitor::mysql();
@@ -374,7 +372,7 @@ fn test_select_with_limit_zero(){
 }
 
 #[test]
-fn test_select_with_offset_without_limit(){
+fn test_select_with_offset_without_limit() {
     let stmt = SelectStatement::new().from("users").select("foo").offset(10);
 
     let mut v = Visitor::mysql();
@@ -391,7 +389,7 @@ fn test_select_with_offset_without_limit(){
 }
 
 #[test]
-fn test_select_with_limit_and_offset(){
+fn test_select_with_limit_and_offset() {
     let stmt = SelectStatement::new().from("users").select("foo").limit(10).offset(5);
 
     let mut v = Visitor::mysql();

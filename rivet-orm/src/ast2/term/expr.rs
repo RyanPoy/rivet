@@ -1,6 +1,7 @@
 use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::func::FuncArg;
+use crate::ast2::term::literal::Literal;
 use crate::ast2::term::select_item::SelectItem;
 
 #[derive(Debug, Clone)]
@@ -8,11 +9,12 @@ pub enum Expr {
     // e.g. SELECT id FROM users;
     //      SELECT u.id FROM users u;
     Column(ColumnRef),
+
     // e.g. SELECT 1;
     //      SELECT 'hello';
     //      SELECT true;
     //      SELECT NULL;
-    // Literal(Literal),
+    Literal(Literal),
 
     // e.g. SELECT -price FROM orders;
     //      SELECT NOT active FROM users;
@@ -45,5 +47,11 @@ pub enum Expr {
 impl Expr {
     pub fn alias(self, name: impl Into<String>) -> SelectItem {
         SelectItem::Expr { expr: self, alias: Some(name.into()) }
+    }
+}
+
+impl From<Literal> for Expr {
+    fn from(literal: Literal) -> Self {
+        Expr::Literal(literal)
     }
 }

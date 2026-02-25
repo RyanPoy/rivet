@@ -5,6 +5,7 @@ use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::join::Join;
+use crate::ast2::term::literal::Literal;
 use crate::ast2::term::named_table::NamedTable;
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::subquery::Subquery;
@@ -52,17 +53,17 @@ impl Visitor {
                 self.visit_table_ref(t);
             }
         }
-        self.build_table_ref(select_stmt);
+        self.visit_limit_and_offset(select_stmt.limit, select_stmt.offset);
         self
     }
 
-    fn build_table_ref(&mut self, select_stmt: &SelectStatement) {
-        if let Some(n) = select_stmt.limit {
-            self.builder.push(format!(" LIMIT {}", n));
+    pub fn visit_limit_and_offset(&mut self, limit: Option<usize>, offset: Option<usize>) {
+        if let Some(n) = limit {
+            self.builder.push(&format!(" LIMIT {}", n));
         }
-        if self.builder.dialect.supports_standalone_offset() || select_stmt.limit.is_some() {
-            if let Some(n) = select_stmt.offset {
-                self.builder.push(format!(" OFFSET {}", n));
+        if self.builder.dialect.supports_standalone_offset() || limit.is_some() {
+            if let Some(n) = offset {
+                self.builder.push(&format!(" OFFSET {}", n));
             }
         }
     }
@@ -84,6 +85,7 @@ impl Visitor {
         }
         self
     }
+
     pub fn visit_named_table(&mut self, table: &NamedTable) -> &mut Self {
         self.builder.push_quote(table.name());
         self
@@ -118,16 +120,10 @@ impl Visitor {
 
     pub fn visit_expr(&mut self, expr: &Expr) -> &mut Self {
         match expr {
-            Expr::Column(c) => {
-                if let Some(qualifier) = &c.qualifier {
-                    self.builder.push_quote(qualifier);
-                    self.builder.push(".");
-                }
-                self.builder.push_quote(&c.name);
-            }
-            _ => (),
+            Expr::Column(c) => self.visit_column_ref(c),
+            Expr::Literal(l) => self.visit_literal(l),
+            _ => self,
         }
-        self
     }
 
     pub fn visit_distinct(&mut self, distinct: &Distinct) -> &mut Self {
@@ -161,6 +157,40 @@ impl Visitor {
             self.builder.push_quote(q).push(".");
         }
         self.builder.push_quote(&col.name);
+        self
+    }
+
+    pub fn visit_literal(&mut self, lit: &Literal) -> &mut Self {
+        match lit {
+            Literal::Null => {
+                self.builder.push("NULL");
+            }
+            Literal::Int(v) => {
+                self.builder.push(&v.to_string());
+            }
+            Literal::Float(v) => {
+                self.builder.push(&v.to_string());
+            }
+            Literal::Boolean(v) => {
+                self.builder.push(&v.to_string());
+            }
+            Literal::String(v) => {
+                let escaped = v.replace("'", "''");
+                self.builder.push("'").push(&escaped).push("'");
+            }
+            Literal::Array(vs) => {
+                let mut iter = vs.iter();
+                if let Some(item) = iter.next() {
+                    self.builder.push("(");
+                    self.visit_literal(item);
+                    for item in iter {
+                        self.builder.push(", ");
+                        self.visit_literal(item);
+                    }
+                    self.builder.push(")");
+                }
+            }
+        };
         self
     }
 

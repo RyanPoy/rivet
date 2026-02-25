@@ -1,5 +1,6 @@
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
+use crate::ast2::term::literal::Literal;
 
 #[derive(Clone, Debug)]
 pub enum SelectItem {
@@ -27,5 +28,17 @@ impl From<&str> for SelectItem {
 impl From<ColumnRef> for SelectItem {
     fn from(col: ColumnRef) -> Self {
         SelectItem::Expr { expr: Expr::Column(col), alias: None }
+    }
+}
+
+impl From<Expr> for SelectItem {
+    fn from(expr: Expr) -> Self {
+        SelectItem::Expr { expr, alias: None }
+    }
+}
+
+impl From<Literal> for SelectItem {
+    fn from(lit: Literal) -> Self {
+        SelectItem::Expr { expr: Expr::Literal(lit), alias: None }
     }
 }
