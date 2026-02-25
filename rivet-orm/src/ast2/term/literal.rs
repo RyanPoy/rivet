@@ -1,4 +1,5 @@
-use std::vec::IntoIter;
+use crate::ast2::term::expr::Expr;
+use crate::ast2::term::select_item::SelectItem;
 
 #[derive(Debug, Clone)]
 pub enum Literal {
@@ -9,3 +10,8 @@ pub enum Literal {
     String(String),
 }
 
+impl Literal {
+    pub fn alias(self, name: impl Into<String>) -> SelectItem {
+        Expr::Literal(self).alias(name)
+    }
+}

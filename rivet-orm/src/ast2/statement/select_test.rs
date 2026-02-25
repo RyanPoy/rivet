@@ -313,35 +313,24 @@ fn test_select_nested_subquery() {
 fn test_select_no_table() {
     let stmt = SelectStatement::new()
         .select(Literal::Int(1))
-        .select(Literal::Float(2.1))
+        .select(Literal::Float(2.1).alias("avg"))
         .select(Literal::String(String::from("No.1")))
         .select(Literal::Bool(false))
         .select(Literal::Null);
 
     let mut v = Visitor::mysql();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, "SELECT 1, 2.1, 'No.1', false, NULL");
+    assert_eq!(sql, "SELECT 1, 2.1 AS `avg`, 'No.1', false, NULL");
 
     let mut v = Visitor::postgre();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT 1, 2.1, 'No.1', false, NULL"#);
+    assert_eq!(sql, r#"SELECT 1, 2.1 AS "avg", 'No.1', false, NULL"#);
 
     let mut v = Visitor::sqlite();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT 1, 2.1, 'No.1', false, NULL"#);
+    assert_eq!(sql, r#"SELECT 1, 2.1 AS "avg", 'No.1', false, NULL"#);
 }
 
-//
-// #[test]
-// fn test_select_then_add_table(){
-//     stmt = SelectStatement().select(1, 2, 3).from_(Name("abc")).select("foo").select(Name("bar"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT 1, 2, 3, \'foo\', `bar` FROM `abc`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT 1, 2, 3, \'foo\', "bar" FROM "abc"'
-//     assert visitors.pg.sql(stmt) == 'SELECT 1, 2, 3, \'foo\', "bar" FROM "abc"'
-//
-//
-// }
-//
 #[test]
 fn test_select_with_limit() {
     let stmt = SelectStatement::new().from("users").select("foo").limit(10);
