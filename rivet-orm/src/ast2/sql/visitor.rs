@@ -171,24 +171,12 @@ impl Visitor {
             Literal::Float(v) => {
                 self.builder.push(&v.to_string());
             }
-            Literal::Boolean(v) => {
+            Literal::Bool(v) => {
                 self.builder.push(&v.to_string());
             }
             Literal::String(v) => {
                 let escaped = v.replace("'", "''");
                 self.builder.push("'").push(&escaped).push("'");
-            }
-            Literal::Array(vs) => {
-                let mut iter = vs.iter();
-                if let Some(item) = iter.next() {
-                    self.builder.push("(");
-                    self.visit_literal(item);
-                    for item in iter {
-                        self.builder.push(", ");
-                        self.visit_literal(item);
-                    }
-                    self.builder.push(")");
-                }
             }
         };
         self

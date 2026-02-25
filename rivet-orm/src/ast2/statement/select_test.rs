@@ -311,19 +311,24 @@ fn test_select_nested_subquery() {
 
 #[test]
 fn test_select_no_table() {
-    let stmt = SelectStatement::new().select(Literal::Int(1)).select(Literal::Int(2)).select(Literal::Int(3));
+    let stmt = SelectStatement::new()
+        .select(Literal::Int(1))
+        .select(Literal::Float(2.1))
+        .select(Literal::String(String::from("No.1")))
+        .select(Literal::Bool(false))
+        .select(Literal::Null);
 
     let mut v = Visitor::mysql();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, "SELECT 1, 2, 3");
+    assert_eq!(sql, "SELECT 1, 2.1, 'No.1', false, NULL");
 
     let mut v = Visitor::postgre();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT 1, 2, 3"#);
+    assert_eq!(sql, r#"SELECT 1, 2.1, 'No.1', false, NULL"#);
 
     let mut v = Visitor::sqlite();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT 1, 2, 3"#);
+    assert_eq!(sql, r#"SELECT 1, 2.1, 'No.1', false, NULL"#);
 }
 
 //

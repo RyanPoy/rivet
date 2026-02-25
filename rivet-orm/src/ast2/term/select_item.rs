@@ -42,3 +42,4 @@ impl From<Literal> for SelectItem {
         SelectItem::Expr { expr: Expr::Literal(lit), alias: None }
     }
 }
+

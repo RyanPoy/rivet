@@ -12,9 +12,10 @@ impl Builder {
     pub fn with_capacity(dialect: &'static dyn Dialect, size: usize) -> Self {
         Self { dialect, buff: String::with_capacity(size) }
     }
+
     #[inline]
     pub fn push(&mut self, s: &str) -> &mut Self {
-        self.buff.push_str(s.as_ref());
+        self.buff.push_str(s);
         self
     }
 
