@@ -15,32 +15,19 @@ impl Literal {
         Expr::Literal(self).alias(name)
     }
 }
-macro_rules! impl_from_for_literal {
-    ($variant:ident => [$($t:ty),*]) => {
-        $(
-            impl From<$t> for Literal {
-                fn from(v: $t) -> Self {
-                    Literal::$variant(v as _)
-                }
-            }
-        )*
-    };
-}
-impl_from_for_literal!(Int => [i8, i16, i32, i64]);
-impl_from_for_literal!(Float => [f32, f64]);
+// 整数
+impl From<i8> for Literal { fn from(v: i8) -> Self { Literal::Int(v as i64) } }
+impl From<i16> for Literal { fn from(v: i16) -> Self { Literal::Int(v as i64) } }
+impl From<i32> for Literal { fn from(v: i32) -> Self { Literal::Int(v as i64) } }
+impl From<i64> for Literal { fn from(v: i64) -> Self { Literal::Int(v) } }
 
-impl From<&str> for Literal {
-    fn from(v: &str) -> Self {
-        Literal::String(v.into())
-    }
-}
-impl From<String> for Literal {
-    fn from(v: String) -> Self {
-        Literal::String(v)
-    }
-}
-impl From<bool> for Literal {
-    fn from(v: bool) -> Self {
-        Literal::Bool(v)
-    }
-}
+// 浮点
+impl From<f32> for Literal { fn from(v: f32) -> Self { Literal::Float(v as f64) } }
+impl From<f64> for Literal { fn from(v: f64) -> Self { Literal::Float(v) } }
+
+// 字符串
+impl From<&str> for Literal { fn from(v: &str) -> Self { Literal::String(v.into()) } }
+impl From<String> for Literal { fn from(v: String) -> Self { Literal::String(v) } }
+
+// 布尔值
+impl From<bool> for Literal { fn from(v: bool) -> Self { Literal::Bool(v) } }
