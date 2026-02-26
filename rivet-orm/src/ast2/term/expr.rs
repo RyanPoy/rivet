@@ -1,4 +1,5 @@
 use crate::ast2::statement::select::SelectStatement;
+use crate::ast2::term::binary::Op;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::func::FuncArg;
 use crate::ast2::term::literal::Literal;
@@ -23,7 +24,7 @@ pub enum Expr {
     // e.g. SELECT price * quantity FROM orders;
     //      SELECT a + b FROM t;
     //      SELECT a = b FROM t;
-    // Binary { left: Box<Expr>, op: BinaryOp, right: Box<Expr> },
+    Binary { left: Box<Expr>, op: Op, right: Box<Expr> },
 
     // e.g. SELECT SUM(price) FROM orders;
     //      SELECT LOWER(name) FROM users;
@@ -38,7 +39,7 @@ pub enum Expr {
     //     END
     // FROM
     //      products;
-    Case { conditions: Vec<(Expr, Expr)>, else_expr: Option<Box<Expr>> },
+    // Case { conditions: Vec<(Expr, Expr)>, else_expr: Option<Box<Expr>> },
 
     // e.g. SELECT (SELECT MAX(id) FROM users);
     Subquery(Box<SelectStatement>),
@@ -55,3 +56,10 @@ impl From<Literal> for Expr {
         Expr::Literal(literal)
     }
 }
+
+impl From<ColumnRef> for Expr {
+    fn from(value: ColumnRef) -> Self {
+        Expr::Column(value)
+    }
+}
+

@@ -38,8 +38,8 @@ impl From<Expr> for SelectItem {
 }
 
 impl From<Literal> for SelectItem {
-    fn from(lit: Literal) -> Self {
-        SelectItem::Expr { expr: Expr::Literal(lit), alias: None }
+    fn from(literal: Literal) -> Self {
+        SelectItem::Expr { expr: Expr::Literal(literal), alias: None }
     }
 }
 

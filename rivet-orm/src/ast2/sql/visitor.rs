@@ -1,6 +1,7 @@
 use crate::ast2::sql::builder::Builder;
 use crate::ast2::sql::dialect::{Dialect, LITE, MY, PG};
 use crate::ast2::statement::select::SelectStatement;
+use crate::ast2::term::binary::Op;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::expr::Expr;
@@ -10,6 +11,7 @@ use crate::ast2::term::named_table::NamedTable;
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::table_ref::TableRef;
+use std::ops::Deref;
 
 pub struct Visitor {
     builder: Builder,
@@ -44,6 +46,7 @@ impl Visitor {
         } else {
             self.builder.push("*");
         }
+
         let mut iter = select_stmt.from_clause.iter();
         if let Some(t) = iter.next() {
             self.builder.push(" FROM ");
@@ -53,6 +56,17 @@ impl Visitor {
                 self.visit_table_ref(t);
             }
         }
+
+        let mut iter = select_stmt.where_clause.iter();
+        if let Some(f) = iter.next() {
+            self.builder.push(" WHERE ");
+            self.visit_expr(f);
+            for f in iter {
+                self.builder.push(" AND ");
+                self.visit_expr(f);
+            }
+        }
+
         self.visit_limit_and_offset(select_stmt.limit, select_stmt.offset);
         self
     }
@@ -122,8 +136,15 @@ impl Visitor {
         match expr {
             Expr::Column(c) => self.visit_column_ref(c),
             Expr::Literal(l) => self.visit_literal(l),
+            Expr::Binary { left, op, right } => self.visit_expr(left).visit_op(op).visit_expr(right),
             _ => self,
         }
+    }
+
+    #[inline]
+    pub fn visit_op(&mut self, op: &Op) -> &mut Self {
+        self.builder.push(" ").push(op.as_ref()).push(" ");
+        self
     }
 
     pub fn visit_distinct(&mut self, distinct: &Distinct) -> &mut Self {
@@ -172,7 +193,13 @@ impl Visitor {
                 self.builder.push(&v.to_string());
             }
             Literal::Bool(v) => {
-                self.builder.push(&v.to_string());
+                if self.builder.dialect.supports_boolean() {
+                    self.builder.push(&v.to_string());
+                } else if *v {
+                    self.builder.push("1");
+                } else {
+                    self.builder.push("0");
+                }
             }
             Literal::String(v) => {
                 let escaped = v.replace("'", "''");

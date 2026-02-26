@@ -320,7 +320,7 @@ fn test_select_no_table() {
 
     let mut v = Visitor::mysql();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, "SELECT 1, 2.1 AS `avg`, 'No.1', false, NULL");
+    assert_eq!(sql, "SELECT 1, 2.1 AS `avg`, 'No.1', 0, NULL");
 
     let mut v = Visitor::postgre();
     let sql = v.visit_select_statement(&stmt).finish();
@@ -328,7 +328,7 @@ fn test_select_no_table() {
 
     let mut v = Visitor::sqlite();
     let sql = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT 1, 2.1 AS "avg", 'No.1', false, NULL"#);
+    assert_eq!(sql, r#"SELECT 1, 2.1 AS "avg", 'No.1', 0, NULL"#);
 }
 
 #[test]
@@ -399,114 +399,104 @@ fn test_select_with_limit_and_offset() {
     assert_eq!(sql, r#"SELECT "foo" FROM "users" LIMIT 10 OFFSET 5"#);
 }
 
+#[test]
+fn test_where_basic__eq_str() {
+    let col = ColumnRef::new("foo");
+    let stmt = SelectStatement::new().from("users").filter(col.eq(Literal::from("foo")));
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` = 'foo'");
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" = 'foo'"#);
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" = 'foo'"#);
+}
+
+#[test]
+fn test_where_basic__eq_num() {
+    let col = ColumnRef::new("foo");
+    let stmt = SelectStatement::new().from("users").filter(col.eq(Literal::from(0)));
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` = 0");
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" = 0"#);
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" = 0"#);
+}
+#[test]
+fn test_where_basic__eq_bool() {
+    let col = ColumnRef::new("foo");
+    let stmt = SelectStatement::new().from("users").filter(col.eq(Literal::from(true)));
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` = 1");
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" = true"#);
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" = 1"#);
+}
+#[test]
+fn test_where_basic__is_none() {
+    let col = ColumnRef::new("foo");
+    let stmt = SelectStatement::new().from("users").filter(col.eq(Literal::Null));
+
+    let mut v = Visitor::mysql();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` IS NULL");
+
+    let mut v = Visitor::postgre();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" IS NULL"#);
+
+    let mut v = Visitor::sqlite();
+    let sql = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" IS NULL"#);
+}
 // #[test]
-// fn test_select_with_force_index(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`)'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg")'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg")'
+// fn test_where_basic__eq_date() {
+//     let col = ColumnRef::new("foo");
+//     let stmt = SelectStatement::new().from("users").filter(col.eq(Literal::Null));
 //
+//     let mut v = Visitor::mysql();
+//     let sql = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` IS NULL");
 //
+//     let mut v = Visitor::postgre();
+//     let sql = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" IS NULL"#);
+//
+//     let mut v = Visitor::sqlite();
+//     let sql = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" IS NULL"#);
+//
+//     // stmt = SelectStatement().from_(Name("users")).where(foo=date(2020, 2, 2))
+//     // assert visitors.mysql.sql(stmt) == "SELECT * FROM `users` WHERE `foo` = '2020-02-02'"
+//     // assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "users" WHERE "foo" = \'2020-02-02\''
+//     // assert visitors.pg.sql(stmt) == 'SELECT * FROM "users" WHERE "foo" = \'2020-02-02\''
 // }
-//
-// #[test]
-// fn test_select_with_force_index_multiple_indexes(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg"), Name("bacon"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`, `bacon`)'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "bacon")'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "bacon")'
-//
-//
-// }
-//
-// #[test]
-// fn test_select_with_force_index_multiple_calls(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg")).force_index(Name("spam"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`, `spam`)'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "spam")'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "spam")'
-//
-//
-// }
-//
-// #[test]
-// fn test_select_with_use_index(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).use_index(Name("egg"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`)'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg")'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg")'
-//
-//
-// }
-//
-// #[test]
-// fn test_select_with_use_index_multiple_indexes(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).use_index(Name("egg"), Name("bacon"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`, `bacon`)'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "bacon")'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "bacon")'
-//
-//
-// }
-//
-// #[test]
-// fn test_select_with_use_index_multiple_calls(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).use_index(Name("egg")).use_index(Name("spam"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`, `spam`)'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "spam")'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "spam")'
-//
-//
-// }
-//
-// #[test]
-// fn test_table_select_alias(){
-//     stmt = SelectStatement().from_(Name("abc")).select(1)
-//     assert visitors.mysql.sql(stmt) == 'SELECT 1 FROM `abc`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT 1 FROM "abc"'
-//     assert visitors.pg.sql(stmt) == 'SELECT 1 FROM "abc"'
-//
-//
-// }
-//
-// #[test]
-// fn test_where_basic(){
-//     stmt = SelectStatement().from_(Name("abc")).where(foo="foo")
-//     assert visitors.mysql.sql(stmt) == "SELECT * FROM `abc` WHERE `foo` = 'foo'"
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'foo\''
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'foo\''
-//
-//     stmt = SelectStatement().from_(Name("abc")).where(foo=0)
-//     assert visitors.mysql.sql(stmt) == "SELECT * FROM `abc` WHERE `foo` = 0"
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = 0'
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = 0'
-//
-//     stmt = SelectStatement().from_(Name("abc")).where(foo=True)
-//     assert visitors.mysql.sql(stmt) == "SELECT * FROM `abc` WHERE `foo` = 1"
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = 1'
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = 1'
-//
-//     stmt = SelectStatement().from_(Name("abc")).where(foo=date(2020, 2, 2))
-//     assert visitors.mysql.sql(stmt) == "SELECT * FROM `abc` WHERE `foo` = '2020-02-02'"
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\''
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\''
-//
-//     stmt = SelectStatement().from_(Name("abc")).where(foo=None)
-//     assert visitors.mysql.sql(stmt) == "SELECT * FROM `abc` WHERE `foo` IS NULL"
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" IS NULL'
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" IS NULL'
-//
-//
-// }
-//
+
 // #[test]
 // fn test_where_field_equals_for_update(){
 //     stmt = SelectStatement().from_(Name("abc")).where(foo=date(2020, 2, 2)).for_update()
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'2020-02-02\' FOR UPDATE'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE'
 //     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE'
-//
-//
 // }
 //
 // #[test]
@@ -515,8 +505,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'2020-02-02\' FOR UPDATE SHARE'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE SHARE'
 //     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE SHARE'
-//
-//
 // }
 //
 // #[test]
@@ -525,8 +513,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'2020-02-02\' FOR UPDATE NOWAIT'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE NOWAIT'
 //     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE NOWAIT'
-//
-//
 // }
 //
 // #[test]
@@ -535,8 +521,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'2020-02-02\' FOR UPDATE SKIP LOCKED'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE SKIP LOCKED'
 //     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE SKIP LOCKED'
-//
-//
 // }
 //
 // #[test]
@@ -545,8 +529,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'bar\' FOR UPDATE OF `abc`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'bar\' FOR UPDATE OF "abc"'
 //     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'bar\' FOR UPDATE OF "abc"'
-//
-//
 // }
 //
 // #[test]
@@ -555,8 +537,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'bar\' FOR UPDATE OF `abc` SKIP LOCKED'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'bar\' FOR UPDATE OF "abc" SKIP LOCKED'
 //     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'bar\' FOR UPDATE OF "abc" SKIP LOCKED'
-//
-//
 // }
 //
 // #[test]
@@ -568,8 +548,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` JOIN `efg` ON `abc`.`id` = `efg`.`id` WHERE `abc`.`foo` = `efg`.`bar`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" JOIN "efg" ON "abc"."id" = "efg"."id" WHERE "abc"."foo" = "efg"."bar"'
 //     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" JOIN "efg" ON "abc"."id" = "efg"."id" WHERE "abc"."foo" = "efg"."bar"'
-//
-//
 // }
 //
 // #[test]
@@ -578,8 +556,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `abc`.`foo` = 1 AND `abc`.`bar` = `abc`.`baz`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "abc"."foo" = 1 AND "abc"."bar" = "abc"."baz"'
 //     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "abc"."foo" = 1 AND "abc"."bar" = "abc"."baz"'
-//
-//
 // }
 //
 // #[test]
@@ -588,8 +564,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE NOT `foo` = 1 AND `bar` = `abc`.`baz`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE NOT "foo" = 1 AND "bar" = "abc"."baz"'
 //     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE NOT "foo" = 1 AND "bar" = "abc"."baz"'
-//
-//
 // }
 //
 // #[test]
@@ -598,8 +572,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == "SELECT * FROM `abc` WHERE `foo` = 'bar''foo'"
 //     assert visitors.sqlite.sql(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" = 'bar''foo'"
 //     assert visitors.pg.sql(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" = 'bar''foo'"
-//
-//
 // }
 //
 // #[test]
@@ -608,8 +580,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == "SELECT * FROM `abc` WHERE `foo` REGEX 'r^b'"
 //     assert visitors.sqlite.sql(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" REGEX 'r^b'"
 //     assert visitors.pg.sql(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" REGEX 'r^b'"
-//
-//
 // }
 //
 // #[test]
@@ -618,8 +588,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == "SELECT * FROM `abc`"
 //     assert visitors.sqlite.sql(stmt) == "SELECT * FROM \"abc\""
 //     assert visitors.pg.sql(stmt) == "SELECT * FROM \"abc\""
-//
-//
 // }
 //
 // #[test]
@@ -628,8 +596,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`) WHERE `foo` = \'bar\''
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg") WHERE "foo" = \'bar\''
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg") WHERE "foo" = \'bar\''
-//
-//
 // }
 //
 // #[test]
@@ -639,8 +605,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` GROUP BY `foo`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
-//
-//
 // }
 //
 // #[test]
@@ -650,8 +614,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, `bar` FROM `abc` GROUP BY `foo`, `bar`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", "bar" FROM "abc" GROUP BY "foo", "bar"'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo", "bar" FROM "abc" GROUP BY "foo", "bar"'
-//
-//
 // }
 //
 // #[test]
@@ -661,8 +623,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, COUNT(*) FROM `abc` GROUP BY `foo`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", COUNT(*) FROM "abc" GROUP BY "foo"'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo", COUNT(*) FROM "abc" GROUP BY "foo"'
-//
-//
 // }
 //
 // #[test]
@@ -672,8 +632,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, COUNT(`bar`) FROM `abc` GROUP BY `foo`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", COUNT("bar") FROM "abc" GROUP BY "foo"'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo", COUNT("bar") FROM "abc" GROUP BY "foo"'
-//
-//
 // }
 //
 // #[test]
@@ -683,8 +641,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, COUNT(DISTINCT *) FROM `abc` GROUP BY `foo`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", COUNT(DISTINCT *) FROM "abc" GROUP BY "foo"'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo", COUNT(DISTINCT *) FROM "abc" GROUP BY "foo"'
-//
-//
 // }
 //
 // #[test]
@@ -694,8 +650,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, SUM(DISTINCT `bar`) FROM `abc` GROUP BY `foo`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", SUM(DISTINCT "bar") FROM "abc" GROUP BY "foo"'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo", SUM(DISTINCT "bar") FROM "abc" GROUP BY "foo"'
-//
-//
 // }
 //
 // #[test]
@@ -705,8 +659,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT SUM(`foo`), `bar` AS `bar01` FROM `abc` GROUP BY `bar01`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" GROUP BY "bar01"'
 //     assert visitors.pg.sql(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" GROUP BY "bar01"'
-//
-//
 // }
 //
 // #[test]
@@ -720,8 +672,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.sqlite.sql(
 //         stmt) == 'SELECT SUM("foo"), "t1"."bar" AS "bar01" FROM "abc" JOIN "table1" AS "t1" ON "abc"."id" = "t1"."t_ref" GROUP BY "bar01"'
 //     assert visitors.pg.sql(stmt) == 'SELECT SUM("foo"), "t1"."bar" AS "bar01" FROM "abc" JOIN "table1" AS "t1" ON "abc"."id" = "t1"."t_ref" GROUP BY "bar01"'
-//
-//
 // }
 //
 // #[test]
@@ -730,8 +680,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` GROUP BY `foo`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
-//
-//
 // }
 //
 // #[test]
@@ -742,8 +690,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, SUM(`bar`) FROM `abc` GROUP BY `foo` HAVING SUM(`bar`) > 1'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1'
-//
-//
 // }
 //
 // #[test]
@@ -753,8 +699,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, SUM(`bar`) FROM `abc` GROUP BY `foo` HAVING SUM(`bar`) > 1 AND SUM(`bar`) < 100'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1 AND SUM("bar") < 100'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1 AND SUM("bar") < 100'
-//
-//
 // }
 //
 // #[test]
@@ -782,8 +726,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.pg.sql(stmt) == ('SELECT "abc"."foo", SUM("efg"."bar"), "abc"."buz" FROM "abc" '
 //                                      'JOIN "efg" ON "abc"."foo" = "efg"."foo" GROUP BY "abc"."foo" '
 //                                      'HAVING "abc"."buz" = \'fiz\' AND SUM("efg"."bar") > 100')
-//
-//
 // }
 //
 // #[test]
@@ -792,8 +734,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` ORDER BY `foo`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo"'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo"'
-//
-//
 // }
 //
 // #[test]
@@ -803,8 +743,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, `bar` FROM `abc` ORDER BY `foo`, `bar`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", "bar" FROM "abc" ORDER BY "foo", "bar"'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo", "bar" FROM "abc" ORDER BY "foo", "bar"'
-//
-//
 // }
 //
 // #[test]
@@ -814,8 +752,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` ORDER BY `foo` ASC'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" ASC'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" ASC'
-//
-//
 // }
 //
 // #[test]
@@ -825,8 +761,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` ORDER BY `foo` DESC'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" DESC'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" DESC'
-//
-//
 // }
 //
 // #[test]
@@ -836,8 +770,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT SUM(`foo`), `bar` AS `bar01` FROM `abc` ORDER BY `bar01`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" ORDER BY "bar01"'
 //     assert visitors.pg.sql(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" ORDER BY "bar01"'
-//
-//
 // }
 //
 // #[test]
@@ -847,8 +779,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar` FROM `abc`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc"'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc"'
-//
-//
 // }
 //
 // #[test]
@@ -875,8 +805,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT COUNT(*) AS `foo` FROM `abc`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT COUNT(*) AS "foo" FROM "abc"'
 //     assert visitors.pg.sql(stmt) == 'SELECT COUNT(*) AS "foo" FROM "abc"'
-//
-//
 // }
 //
 // #[test]
@@ -886,8 +814,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT SQRT(COUNT(*)) AS `bar` FROM `abc`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT SQRT(COUNT(*)) AS "bar" FROM "abc"'
 //     assert visitors.pg.sql(stmt) == 'SELECT SQRT(COUNT(*)) AS "bar" FROM "abc"'
-//
-//
 // }
 //
 // #[test]
@@ -897,8 +823,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar` FROM `abc` GROUP BY `bar`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc" GROUP BY "bar"'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc" GROUP BY "bar"'
-//
-//
 // }
 //
 // #[test]
@@ -908,8 +832,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar` FROM `abc` ORDER BY `bar`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc" ORDER BY "bar"'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc" ORDER BY "bar"'
-//
-//
 // }
 //
 // #[test]
@@ -919,8 +841,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar` FROM `abc` WHERE `username` = `foo`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc" WHERE "username" = "foo"'
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc" WHERE "username" = "foo"'
-//
-//
 // }
 //
 // #[test]
@@ -933,8 +853,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `t0`.`foo`, `t1`.`bar` FROM `abc` AS `t0`, `efg` AS `t1`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "t0"."foo", "t1"."bar" FROM "abc" AS "t0", "efg" AS "t1"'
 //     assert visitors.pg.sql(stmt) == 'SELECT "t0"."foo", "t1"."bar" FROM "abc" AS "t0", "efg" AS "t1"'
-//
-//
 // }
 //
 // #[test]
@@ -946,8 +864,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT `t0`.`foo` AS `my_foo`, `t0`.`bar` FROM `abc` AS `t0` GROUP BY `my_foo` ORDER BY `my_foo`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "t0"."foo" AS "my_foo", "t0"."bar" FROM "abc" AS "t0" GROUP BY "my_foo" ORDER BY "my_foo"'
 //     assert visitors.pg.sql(stmt) == 'SELECT "t0"."foo" AS "my_foo", "t0"."bar" FROM "abc" AS "t0" GROUP BY "my_foo" ORDER BY "my_foo"'
-//
-//
 // }
 //
 // #[test]
@@ -957,8 +873,6 @@ fn test_select_with_limit_and_offset() {
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `schema`.`abc` AS `alias`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "schema"."abc" AS "alias"'
 //     assert visitors.pg.sql(stmt) == 'SELECT * FROM "schema"."abc" AS "alias"'
-//
-//
 // }
 //
 // #[test]
@@ -1212,3 +1126,51 @@ fn test_select_with_limit_and_offset() {
 //     #         )
 //     #
 //     #
+// #[test]
+// fn test_select_with_force_index(){
+//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg"))
+//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`)'
+//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg")'
+//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg")'
+// }
+//
+// #[test]
+// fn test_select_with_force_index_multiple_indexes(){
+//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg"), Name("bacon"))
+//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`, `bacon`)'
+//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "bacon")'
+//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "bacon")'
+// }
+//
+// #[test]
+// fn test_select_with_force_index_multiple_calls(){
+//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg")).force_index(Name("spam"))
+//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`, `spam`)'
+//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "spam")'
+//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "spam")'
+// }
+//
+// #[test]
+// fn test_select_with_use_index(){
+//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).use_index(Name("egg"))
+//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`)'
+//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg")'
+//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg")'
+// }
+//
+// #[test]
+// fn test_select_with_use_index_multiple_indexes(){
+//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).use_index(Name("egg"), Name("bacon"))
+//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`, `bacon`)'
+//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "bacon")'
+//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "bacon")'
+// }
+//
+// #[test]
+// fn test_select_with_use_index_multiple_calls(){
+//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).use_index(Name("egg")).use_index(Name("spam"))
+//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`, `spam`)'
+//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "spam")'
+//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "spam")'
+// }
+//

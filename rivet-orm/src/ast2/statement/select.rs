@@ -1,5 +1,6 @@
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::distinct::Distinct;
+use crate::ast2::term::expr::Expr;
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::table_ref::TableRef;
@@ -30,13 +31,21 @@ pub struct SelectStatement {
     pub distinct: Distinct,
     pub select_clause: Vec<SelectItem>,
     pub from_clause: Vec<TableRef>,
+    pub where_clause: Vec<Expr>,
     pub limit: Option<usize>,
     pub offset: Option<usize>,
 }
 
 impl SelectStatement {
     pub fn new() -> Self {
-        Self { distinct: Distinct::None, select_clause: Vec::new(), from_clause: Vec::new(), limit: None, offset: None }
+        Self {
+            distinct: Distinct::None,
+            select_clause: Vec::new(),
+            from_clause: Vec::new(),
+            where_clause: Vec::new(),
+            limit: None,
+            offset: None,
+        }
     }
 
     pub fn distinct(mut self) -> Self {
@@ -79,6 +88,11 @@ impl SelectStatement {
         I: IntoIterator<Item = C>,
     {
         self.select_clause.extend(cs.into_iter().map(|c| c.into()));
+        self
+    }
+
+    pub fn filter(mut self, c: Expr) -> Self {
+        self.where_clause.push(c);
         self
     }
 
