@@ -578,14 +578,30 @@ fn test_where_basic_in_date() {
     );
 }
 
-// #[test]
-// fn test_where_field_equals_for_update(){
-//     stmt = SelectStatement().from_(Name("abc")).where(foo=date(2020, 2, 2)).for_update()
-//     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'2020-02-02\' FOR UPDATE'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE'
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE'
-// }
-//
+#[test]
+fn test_where_field_equals_for_update() {
+    let col = ColumnRef::new("foo");
+    let stmt = SelectStatement::new()
+        .from("users")
+        .filter(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
+        .for_update();
+
+    let mut v = Visitor::mysql();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE");
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+
+    let mut v = Visitor::postgre();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE"#);
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+
+    let mut v = Visitor::sqlite();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ? FOR UPDATE"#);
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+}
+
 // #[test]
 // fn test_where_field_equals_for_update_share(){
 //     stmt = SelectStatement().from_(Name("abc")).where(foo=date(2020, 2, 2)).for_update(share=True)

@@ -13,6 +13,8 @@ pub trait Dialect {
     fn supports_returning(&self) -> bool;
     fn supports_standalone_offset(&self) -> bool;
     fn supports_boolean(&self) -> bool;
+
+    fn supports_select_for_update(&self) -> bool;
 }
 
 pub struct MySQL;
@@ -48,6 +50,10 @@ impl Dialect for MySQL {
     #[inline]
     fn supports_boolean(&self) -> bool {
         false
+    }
+    #[inline]
+    fn supports_select_for_update(&self) -> bool {
+        true
     }
 }
 
@@ -85,6 +91,10 @@ impl Dialect for PostgreSQL {
     fn supports_boolean(&self) -> bool {
         true
     }
+    #[inline]
+    fn supports_select_for_update(&self) -> bool {
+        true
+    }
 }
 pub struct Sqlite;
 impl Dialect for Sqlite {
@@ -118,6 +128,10 @@ impl Dialect for Sqlite {
     }
     #[inline]
     fn supports_boolean(&self) -> bool {
+        false
+    }
+    #[inline]
+    fn supports_select_for_update(&self) -> bool {
         false
     }
 }

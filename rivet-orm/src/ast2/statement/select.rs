@@ -1,6 +1,7 @@
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::expr::Expr;
+use crate::ast2::term::lock::Lock;
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::table_ref::TableRef;
@@ -34,6 +35,7 @@ pub struct SelectStatement {
     pub where_clause: Vec<Expr>,
     pub limit: Option<usize>,
     pub offset: Option<usize>,
+    pub lock: Lock,
 }
 
 impl SelectStatement {
@@ -45,6 +47,7 @@ impl SelectStatement {
             where_clause: Vec::new(),
             limit: None,
             offset: None,
+            lock: Lock::None,
         }
     }
 
@@ -95,7 +98,10 @@ impl SelectStatement {
         self.where_clause.push(c);
         self
     }
-
+    pub fn for_update(mut self) -> Self {
+        self.lock = Lock::Update;
+        self
+    }
     pub fn limit(mut self, n: usize) -> Self {
         if n > 0 {
             self.limit = Some(n);
@@ -107,6 +113,7 @@ impl SelectStatement {
         self.offset = Some(n);
         self
     }
+
     pub fn alias(self, name: &str) -> TableRef {
         Subquery::from(self).alias(name)
     }
