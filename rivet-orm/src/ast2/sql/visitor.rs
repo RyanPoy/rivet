@@ -7,7 +7,7 @@ use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::join::Join;
 use crate::ast2::term::literal::Literal;
-use crate::ast2::term::lock::Lock;
+use crate::ast2::term::lock::{Lock, Wait};
 use crate::ast2::term::named_table::NamedTable;
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::subquery::Subquery;
@@ -70,7 +70,12 @@ impl Visitor {
         }
 
         self.visit_limit_and_offset(select_stmt.limit, select_stmt.offset);
-        self.visit_lock(&select_stmt.lock);
+
+        if self.builder.dialect.supports_select_for_update() {
+            if let Some((lock, wait)) = &select_stmt.locking {
+                self.visit_locking(lock, wait);
+            }
+        }
         self
     }
 
@@ -233,19 +238,19 @@ impl Visitor {
         };
         self
     }
-    pub fn visit_lock(&mut self, lock: &Lock) -> &mut Self {
+    pub fn visit_locking(&mut self, lock: &Lock, wait: &Wait) -> &mut Self {
         match lock {
-            Lock::None => self,
-            Lock::Update => {
-                self.builder.push(" FOR UPDATE");
-                self
-            },
-            Lock::Share => {
-                self.builder.push(" FOR SHARE");
-                self
-            },
-        }
+            Lock::Update => self.builder.push(" FOR UPDATE"),
+            Lock::Share => self.builder.push(" FOR UPDATE SHARE"),
+        };
+        match wait {
+            Wait::DEFAULT => &self.builder,
+            Wait::NoWait => self.builder.push(" NOWAIT"),
+            Wait::SkipLocked => self.builder.push(" SKIP LOCKED"),
+        };
+        self
     }
+
     #[inline]
     pub fn finish(&self) -> (&str, &Vec<Literal>) {
         (&self.builder.buff, &self.builder.binder)

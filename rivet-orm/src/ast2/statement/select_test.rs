@@ -4,6 +4,7 @@ use crate::ast2::term::calendar::Date;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::literal::Literal;
+use crate::ast2::term::lock::{Lock, Wait};
 use crate::ast2::term::named_table::NamedTable;
 use crate::ast2::term::table_ref::TableRef;
 
@@ -579,12 +580,12 @@ fn test_where_basic_in_date() {
 }
 
 #[test]
-fn test_where_field_equals_for_update() {
+fn test_select_for_update() {
     let col = ColumnRef::new("foo");
     let stmt = SelectStatement::new()
         .from("users")
         .filter(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
-        .for_update();
+        .for_update(Lock::Update, Wait::DEFAULT);
 
     let mut v = Visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
@@ -598,34 +599,82 @@ fn test_where_field_equals_for_update() {
 
     let mut v = Visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ? FOR UPDATE"#);
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#);
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 }
 
-// #[test]
-// fn test_where_field_equals_for_update_share(){
-//     stmt = SelectStatement().from_(Name("abc")).where(foo=date(2020, 2, 2)).for_update(share=True)
-//     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'2020-02-02\' FOR UPDATE SHARE'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE SHARE'
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE SHARE'
-// }
-//
-// #[test]
-// fn test_where_field_equals_for_update_nowait(){
-//     stmt = SelectStatement().from_(Name("abc")).where(foo=date(2020, 2, 2)).for_update(nowait=True)
-//     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'2020-02-02\' FOR UPDATE NOWAIT'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE NOWAIT'
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE NOWAIT'
-// }
-//
-// #[test]
-// fn test_where_field_equals_for_update_skip(){
-//     stmt = SelectStatement().from_(Name("abc")).where(foo=date(2020, 2, 2)).for_update(skip=True)
-//     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'2020-02-02\' FOR UPDATE SKIP LOCKED'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE SKIP LOCKED'
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'2020-02-02\' FOR UPDATE SKIP LOCKED'
-// }
-//
+#[test]
+fn test_select_for_share() {
+    let col = ColumnRef::new("foo");
+    let stmt = SelectStatement::new()
+        .from("users")
+        .filter(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
+        .for_update(Lock::Share, Wait::DEFAULT);
+
+    let mut v = Visitor::mysql();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE SHARE");
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+
+    let mut v = Visitor::postgre();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE SHARE"#);
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+
+    let mut v = Visitor::sqlite();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#);
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+}
+
+#[test]
+fn test_select_for_update_nowait() {
+    let col = ColumnRef::new("foo");
+    let stmt = SelectStatement::new()
+        .from("users")
+        .filter(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
+        .for_update(Lock::Update, Wait::NoWait);
+
+    let mut v = Visitor::mysql();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE NOWAIT");
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+
+    let mut v = Visitor::postgre();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE NOWAIT"#);
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+
+    let mut v = Visitor::sqlite();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#);
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+}
+
+#[test]
+fn test_select_for_update_skip() {
+    let col = ColumnRef::new("foo");
+    let stmt = SelectStatement::new()
+        .from("users")
+        .filter(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
+        .for_update(Lock::Update, Wait::SkipLocked);
+
+    let mut v = Visitor::mysql();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE SKIP LOCKED");
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+
+    let mut v = Visitor::postgre();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE SKIP LOCKED"#);
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+
+    let mut v = Visitor::sqlite();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#);
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+}
+
 // #[test]
 // fn test_where_field_equals_for_update_of(){
 //     stmt = SelectStatement().from_(Name("abc")).where(foo="bar").for_update(of=("abc",))
