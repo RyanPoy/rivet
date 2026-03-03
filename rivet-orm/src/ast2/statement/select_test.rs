@@ -676,7 +676,7 @@ fn test_select_for_update_skip() {
 }
 
 #[test]
-fn test_select_for_update_of(){
+fn test_select_for_update_of() {
     let col = ColumnRef::new("foo");
     let stmt = SelectStatement::new()
         .from("users")
@@ -700,7 +700,7 @@ fn test_select_for_update_of(){
 }
 
 #[test]
-fn test_select_for_update_skip_locked_and_of(){
+fn test_select_for_update_skip_locked_and_of() {
     let col = ColumnRef::new("foo");
     let stmt = SelectStatement::new()
         .from("users")
@@ -709,12 +709,18 @@ fn test_select_for_update_skip_locked_and_of(){
 
     let mut v = Visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE OF `f` SKIP LOCKED");
+    assert_eq!(
+        sql,
+        "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE OF `f` SKIP LOCKED"
+    );
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
     let mut v = Visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE OF "f" SKIP LOCKED"#);
+    assert_eq!(
+        sql,
+        r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE OF "f" SKIP LOCKED"#
+    );
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
     let mut v = Visitor::sqlite();
@@ -724,46 +730,77 @@ fn test_select_for_update_skip_locked_and_of(){
 }
 
 #[test]
-fn test_where_field_equals_where(){
+fn test_where_field_equals_where() {
     let t = TableRef::from("users");
     let col_foo = t.column("foo");
     let col_bar = t.column("bar");
     let col_baz = t.column("baz");
-    let stmt = SelectStatement::new().from(t).where_(col_foo.eq(Literal::Int(1))).where_(col_bar.eq(col_baz));
+    let stmt = SelectStatement::new()
+        .from(t)
+        .where_(col_foo.eq(Literal::Int(1)))
+        .where_(col_bar.eq(col_baz));
 
     let mut v = Visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, "SELECT * FROM `users` WHERE `users`.`foo` = ? AND `users`.`bar` = `users`.`baz`");
+    assert_eq!(
+        sql,
+        "SELECT * FROM `users` WHERE `users`.`foo` = ? AND `users`.`bar` = `users`.`baz`"
+    );
     assert_eq!(values.clone(), vec![Literal::from(1)]);
 
     let mut v = Visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "users"."foo" = $1 AND "users"."bar" = "users"."baz""#);
+    assert_eq!(
+        sql,
+        r#"SELECT * FROM "users" WHERE "users"."foo" = $1 AND "users"."bar" = "users"."baz""#
+    );
     assert_eq!(values.clone(), vec![Literal::from(1)]);
 
     let mut v = Visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "users"."foo" = ? AND "users"."bar" = "users"."baz""#);
+    assert_eq!(
+        sql,
+        r#"SELECT * FROM "users" WHERE "users"."foo" = ? AND "users"."bar" = "users"."baz""#
+    );
     assert_eq!(values.clone(), vec![Literal::from(1)]);
 }
 
-// #[test]
-// fn test_where_field_equals_where_not(){
-//     let table_users = TableRef::from("users");
-//     stmt = SelectStatement::new().from(table_users).where_(~Binary.parse(foo=1)).where(bar=Name('baz', schema_name=Name("abc").name))
-//     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE NOT `foo` = 1 AND `bar` = `abc`.`baz`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE NOT "foo" = 1 AND "bar" = "abc"."baz"'
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE NOT "foo" = 1 AND "bar" = "abc"."baz"'
-// }
+#[test]
+fn test_where_field_equals_where_not() {
+    let table_users = TableRef::from("users");
+    let col_foo = ColumnRef::from("foo");
+    let col_bar = ColumnRef::from("bar");
+    let col_baz = table_users.column("baz");
+    let stmt = SelectStatement::new()
+        .from(table_users)
+        .where_(!col_foo.eq(Literal::from(1)))
+        .where_(col_bar.eq(col_baz));
 
-// #[test]
-// fn test_where_single_quote(){
-//     stmt = SelectStatement().from_(Name("abc")).where(foo="bar'foo")
-//     assert visitors.mysql.sql(stmt) == "SELECT * FROM `abc` WHERE `foo` = 'bar''foo'"
-//     assert visitors.sqlite.sql(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" = 'bar''foo'"
-//     assert visitors.pg.sql(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" = 'bar''foo'"
-// }
-//
+    let mut v = Visitor::mysql();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(
+        sql,
+        "SELECT * FROM `users` WHERE  NOT `foo` = ? AND `bar` = `users`.`baz`"
+    );
+    assert_eq!(values.clone(), vec![Literal::from(1)]);
+
+    let mut v = Visitor::postgre();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(
+        sql,
+        r#"SELECT * FROM "users" WHERE  NOT "foo" = $1 AND "bar" = "users"."baz""#
+    );
+    assert_eq!(values.clone(), vec![Literal::from(1)]);
+
+    let mut v = Visitor::sqlite();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(
+        sql,
+        r#"SELECT * FROM "users" WHERE  NOT "foo" = ? AND "bar" = "users"."baz""#
+    );
+    assert_eq!(values.clone(), vec![Literal::from(1)]);
+}
+
 // #[test]
 // fn test_where_field_matches_regex(){
 //     stmt = SelectStatement().from_(Name("abc")).where(foo__regex="r^b")
@@ -771,15 +808,7 @@ fn test_where_field_equals_where(){
 //     assert visitors.sqlite.sql(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" REGEX 'r^b'"
 //     assert visitors.pg.sql(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" REGEX 'r^b'"
 // }
-//
-// #[test]
-// fn test_ignore_empty_criterion_where(){
-//     stmt = SelectStatement().from_(Name("abc")).where()
-//     assert visitors.mysql.sql(stmt) == "SELECT * FROM `abc`"
-//     assert visitors.sqlite.sql(stmt) == "SELECT * FROM \"abc\""
-//     assert visitors.pg.sql(stmt) == "SELECT * FROM \"abc\""
-// }
-//
+
 // #[test]
 // fn test_select_with_force_index_and_where(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).where(foo="bar").force_index(Name("egg"))

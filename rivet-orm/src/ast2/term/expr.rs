@@ -1,5 +1,5 @@
 use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::binary::Op;
+use crate::ast2::term::binary::{NOT, Op};
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::func::FuncArg;
 use crate::ast2::term::literal::Literal;
@@ -27,7 +27,10 @@ pub enum Expr {
 
     // e.g. SELECT -price FROM orders;
     //      SELECT NOT active FROM users;
-    // Unary { op: UnaryOp, expr: Box<Expr> },
+    Unary {
+        op: Op,
+        expr: Box<Expr>,
+    },
 
     // e.g. SELECT price * quantity FROM orders;
     //      SELECT a + b FROM t;
@@ -65,6 +68,16 @@ impl Expr {
         SelectItem::Expr {
             expr: self,
             alias: Some(name.into()),
+        }
+    }
+}
+impl std::ops::Not for Expr {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        Self::Unary {
+            op: NOT,
+            expr: Box::new(self),
         }
     }
 }

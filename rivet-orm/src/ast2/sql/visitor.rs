@@ -151,7 +151,8 @@ impl Visitor {
                     .visit_expr_list(list, inline);
                 self
             },
-            _ => self,
+            Expr::Unary { op, expr } => self.visit_op(op).visit_expr(expr, inline),
+            _ => panic!("不支持"),
         }
     }
 

@@ -20,6 +20,7 @@ pub const GTE: Op = Op(">=");
 pub const LT: Op = Op("<");
 pub const LTE: Op = Op("<=");
 
+pub const NOT: Op = Op("NOT");
 pub const AND: Op = Op("AND");
 pub const OR: Op = Op("OR");
 pub const LIKE: Op = Op("LIKE");
