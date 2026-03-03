@@ -675,22 +675,54 @@ fn test_select_for_update_skip() {
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 }
 
-// #[test]
-// fn test_where_field_equals_for_update_of(){
-//     stmt = SelectStatement().from_(Name("abc")).where(foo="bar").for_update(of=("abc",))
-//     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'bar\' FOR UPDATE OF `abc`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'bar\' FOR UPDATE OF "abc"'
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'bar\' FOR UPDATE OF "abc"'
-// }
-//
-// #[test]
-// fn test_where_field_equals_for_update_skip_locked_and_of(){
-//     stmt = SelectStatement().from_(Name("abc")).where(foo="bar").for_update(skip=True, of=("abc",))
-//     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `foo` = \'bar\' FOR UPDATE OF `abc` SKIP LOCKED'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'bar\' FOR UPDATE OF "abc" SKIP LOCKED'
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" = \'bar\' FOR UPDATE OF "abc" SKIP LOCKED'
-// }
-//
+#[test]
+fn test_select_for_update_of(){
+    let col = ColumnRef::new("foo");
+    let stmt = SelectStatement::new()
+        .from("users")
+        .filter(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
+        .for_update(Lock::UpdateOf("c".to_string()), Wait::DEFAULT);
+
+    let mut v = Visitor::mysql();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE OF `c`");
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+
+    let mut v = Visitor::postgre();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE OF "c""#);
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+
+    let mut v = Visitor::sqlite();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#);
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+}
+
+#[test]
+fn test_select_for_update_skip_locked_and_of(){
+    let col = ColumnRef::new("foo");
+    let stmt = SelectStatement::new()
+        .from("users")
+        .filter(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
+        .for_update(Lock::UpdateOf("f".to_string()), Wait::SkipLocked);
+
+    let mut v = Visitor::mysql();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE OF `f` SKIP LOCKED");
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+
+    let mut v = Visitor::postgre();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE OF "f" SKIP LOCKED"#);
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+
+    let mut v = Visitor::sqlite();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#);
+    assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+}
+
 // #[test]
 // fn test_where_field_equals_for_multiple_tables(){
 //     stmt = (SelectStatement().from_(Name("abc"))

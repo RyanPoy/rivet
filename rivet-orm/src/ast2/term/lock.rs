@@ -1,6 +1,7 @@
 #[derive(Clone, Debug)]
 pub enum Lock {
     Update,
+    UpdateOf(String),
     Share,
 }
 #[derive(Clone, Debug)]

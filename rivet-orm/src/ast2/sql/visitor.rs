@@ -241,6 +241,7 @@ impl Visitor {
     pub fn visit_locking(&mut self, lock: &Lock, wait: &Wait) -> &mut Self {
         match lock {
             Lock::Update => self.builder.push(" FOR UPDATE"),
+            Lock::UpdateOf(n) => self.builder.push(" FOR UPDATE OF ").push_quote(n),
             Lock::Share => self.builder.push(" FOR UPDATE SHARE"),
         };
         match wait {
