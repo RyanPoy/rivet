@@ -94,7 +94,7 @@ impl SelectStatement {
         self
     }
 
-    pub fn filter(mut self, c: Expr) -> Self {
+    pub fn where_(mut self, c: Expr) -> Self {
         self.where_clause.push(c);
         self
     }

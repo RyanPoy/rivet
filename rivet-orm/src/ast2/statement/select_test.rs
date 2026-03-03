@@ -455,7 +455,7 @@ fn test_where_eq_str() {
     let col = ColumnRef::new("foo");
     let stmt = SelectStatement::new()
         .from("users")
-        .filter(col.eq(Literal::from("foo")));
+        .where_(col.eq(Literal::from("foo")));
 
     let mut v = Visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
@@ -476,7 +476,7 @@ fn test_where_eq_str() {
 #[test]
 fn test_where_gt_num() {
     let col = ColumnRef::new("foo");
-    let stmt = SelectStatement::new().from("users").filter(col.gt(Literal::from(0)));
+    let stmt = SelectStatement::new().from("users").where_(col.gt(Literal::from(0)));
 
     let mut v = Visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
@@ -499,7 +499,7 @@ fn test_where_not_eq_bool() {
     let col = ColumnRef::new("foo");
     let stmt = SelectStatement::new()
         .from("users")
-        .filter(col.not_eq(Literal::from(true)));
+        .where_(col.not_eq(Literal::from(true)));
 
     let mut v = Visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
@@ -519,7 +519,7 @@ fn test_where_not_eq_bool() {
 #[test]
 fn test_where_is_none() {
     let col = ColumnRef::new("foo");
-    let stmt = SelectStatement::new().from("users").filter(col.eq(Literal::Null));
+    let stmt = SelectStatement::new().from("users").where_(col.eq(Literal::Null));
 
     let mut v = Visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
@@ -536,7 +536,7 @@ fn test_where_is_none() {
 #[test]
 fn test_where_basic_in_date() {
     let col = ColumnRef::new("foo");
-    let stmt = SelectStatement::new().from("users").filter(col.in_(vec![
+    let stmt = SelectStatement::new().from("users").where_(col.in_(vec![
         Literal::from(1),
         Literal::from("lily"),
         Literal::from(Date::new(2025, 1, 3).unwrap()),
@@ -584,7 +584,7 @@ fn test_select_for_update() {
     let col = ColumnRef::new("foo");
     let stmt = SelectStatement::new()
         .from("users")
-        .filter(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
+        .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
         .for_update(Lock::Update, Wait::DEFAULT);
 
     let mut v = Visitor::mysql();
@@ -608,7 +608,7 @@ fn test_select_for_share() {
     let col = ColumnRef::new("foo");
     let stmt = SelectStatement::new()
         .from("users")
-        .filter(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
+        .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
         .for_update(Lock::Share, Wait::DEFAULT);
 
     let mut v = Visitor::mysql();
@@ -632,7 +632,7 @@ fn test_select_for_update_nowait() {
     let col = ColumnRef::new("foo");
     let stmt = SelectStatement::new()
         .from("users")
-        .filter(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
+        .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
         .for_update(Lock::Update, Wait::NoWait);
 
     let mut v = Visitor::mysql();
@@ -656,7 +656,7 @@ fn test_select_for_update_skip() {
     let col = ColumnRef::new("foo");
     let stmt = SelectStatement::new()
         .from("users")
-        .filter(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
+        .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
         .for_update(Lock::Update, Wait::SkipLocked);
 
     let mut v = Visitor::mysql();
@@ -680,7 +680,7 @@ fn test_select_for_update_of(){
     let col = ColumnRef::new("foo");
     let stmt = SelectStatement::new()
         .from("users")
-        .filter(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
+        .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
         .for_update(Lock::UpdateOf("c".to_string()), Wait::DEFAULT);
 
     let mut v = Visitor::mysql();
@@ -704,7 +704,7 @@ fn test_select_for_update_skip_locked_and_of(){
     let col = ColumnRef::new("foo");
     let stmt = SelectStatement::new()
         .from("users")
-        .filter(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
+        .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
         .for_update(Lock::UpdateOf("f".to_string()), Wait::SkipLocked);
 
     let mut v = Visitor::mysql();
@@ -729,7 +729,7 @@ fn test_where_field_equals_where(){
     let col_foo = t.column("foo");
     let col_bar = t.column("bar");
     let col_baz = t.column("baz");
-    let stmt = SelectStatement::new().from(t).filter(col_foo.eq(Literal::Int(1))).filter(col_bar.eq(col_baz));
+    let stmt = SelectStatement::new().from(t).where_(col_foo.eq(Literal::Int(1))).where_(col_bar.eq(col_baz));
 
     let mut v = Visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
