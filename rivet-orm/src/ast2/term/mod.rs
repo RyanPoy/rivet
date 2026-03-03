@@ -1,4 +1,4 @@
-pub mod binary;
+pub mod ops;
 pub mod calendar;
 pub mod column_ref;
 pub mod distinct;

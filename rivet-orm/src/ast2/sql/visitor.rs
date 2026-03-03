@@ -1,7 +1,7 @@
 use crate::ast2::sql::builder::Builder;
 use crate::ast2::sql::dialect::{Dialect, LITE, MY, PG};
 use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::binary::{IN, NOT_IN, Op};
+use crate::ast2::term::ops::{IN, NOT_IN, Op};
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::expr::Expr;

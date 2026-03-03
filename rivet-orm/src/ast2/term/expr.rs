@@ -1,5 +1,5 @@
 use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::binary::{NOT, Op};
+use crate::ast2::term::ops::{NOT, Op};
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::func::FuncArg;
 use crate::ast2::term::literal::Literal;
