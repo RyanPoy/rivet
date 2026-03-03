@@ -1,7 +1,7 @@
 use crate::ast2::sql::builder::Builder;
 use crate::ast2::sql::dialect::{Dialect, LITE, MY, PG};
 use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::binary::Op;
+use crate::ast2::term::binary::{IN, NOT_IN, Op};
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::expr::Expr;
@@ -11,7 +11,6 @@ use crate::ast2::term::named_table::NamedTable;
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::table_ref::TableRef;
-use std::ops::Deref;
 
 pub struct Visitor {
     builder: Builder,
@@ -19,7 +18,9 @@ pub struct Visitor {
 
 impl Visitor {
     pub fn new(dialect: &'static dyn Dialect) -> Self {
-        Self { builder: Builder::new(dialect) }
+        Self {
+            builder: Builder::new(dialect),
+        }
     }
     pub fn mysql() -> Self {
         Self::new(&MY)
@@ -60,10 +61,10 @@ impl Visitor {
         let mut iter = select_stmt.where_clause.iter();
         if let Some(f) = iter.next() {
             self.builder.push(" WHERE ");
-            self.visit_expr(f);
+            self.visit_expr(f, false);
             for f in iter {
                 self.builder.push(" AND ");
-                self.visit_expr(f);
+                self.visit_expr(f, false);
             }
         }
 
@@ -87,15 +88,15 @@ impl Visitor {
             TableRef::Named { table, alias } => {
                 self.visit_named_table(table);
                 self.builder.push_alias(alias.as_deref());
-            }
+            },
             TableRef::Subquery { subquery, alias } => {
                 self.visit_subquery(subquery);
                 self.builder.push_alias(Some(alias));
-            }
+            },
             TableRef::Join { join, alias } => {
                 self.visit_join(join);
                 self.builder.push_alias(alias.as_deref());
-            }
+            },
         }
         self
     }
@@ -120,25 +121,45 @@ impl Visitor {
         match item {
             SelectItem::Wildcard => {
                 self.builder.push("*");
-            }
+            },
             SelectItem::QualifiedWildcard(t) => {
                 self.builder.push_quote(t).push("*");
-            }
+            },
             SelectItem::Expr { expr, alias } => {
-                self.visit_expr(expr);
+                self.visit_expr(expr, true);
                 self.builder.push_alias(alias.as_deref());
-            }
+            },
         }
         self
     }
 
-    pub fn visit_expr(&mut self, expr: &Expr) -> &mut Self {
+    pub fn visit_expr(&mut self, expr: &Expr, inline: bool) -> &mut Self {
         match expr {
             Expr::Column(c) => self.visit_column_ref(c),
-            Expr::Literal(l) => self.visit_literal(l),
-            Expr::Binary { left, op, right } => self.visit_expr(left).visit_op(op).visit_expr(right),
+            Expr::Literal(l) => self.visit_literal(l, inline),
+            Expr::Binary { left, op, right } => self.visit_expr(left, inline).visit_op(op).visit_expr(right, inline),
+            Expr::In { expr, list, negated } => {
+                self.visit_expr(expr, inline)
+                    .visit_op(if *negated { &NOT_IN } else { &IN })
+                    .visit_expr_list(list, inline);
+                self
+            },
             _ => self,
         }
+    }
+
+    pub fn visit_expr_list(&mut self, expr_list: &Vec<Expr>, inline: bool) -> &mut Self {
+        self.builder.push("(");
+        let mut iter = expr_list.iter();
+        if let Some(expr) = iter.next() {
+            self.visit_expr(expr, inline);
+        }
+        for expr in iter {
+            self.builder.push(", ");
+            self.visit_expr(expr, inline);
+        }
+        self.builder.push(")");
+        self
     }
 
     #[inline]
@@ -149,10 +170,10 @@ impl Visitor {
 
     pub fn visit_distinct(&mut self, distinct: &Distinct) -> &mut Self {
         match distinct {
-            Distinct::None => {}
+            Distinct::None => {},
             Distinct::Simple => {
                 self.builder.push("DISTINCT ");
-            }
+            },
             Distinct::On(cols) => {
                 if self.builder.dialect.supports_distinct_on() {
                     self.builder.push("DISTINCT ON (");
@@ -168,7 +189,7 @@ impl Visitor {
                 } else {
                     self.builder.push("DISTINCT ");
                 }
-            }
+            },
         }
         self
     }
@@ -181,36 +202,39 @@ impl Visitor {
         self
     }
 
-    pub fn visit_literal(&mut self, lit: &Literal) -> &mut Self {
-        match lit {
-            Literal::Null => {
-                self.builder.push("NULL");
-            }
-            Literal::Int(v) => {
-                self.builder.push(&v.to_string());
-            }
-            Literal::Float(v) => {
-                self.builder.push(&v.to_string());
-            }
+    pub fn visit_literal(&mut self, lit: &Literal, inline: bool) -> &mut Self {
+        if !inline && !lit.is_null() {
+            self.builder.bind(lit.clone());
+            return self;
+        }
+
+        let _: &Builder = match lit {
+            Literal::Null => self.builder.push("NULL"),
+            Literal::Int(v) => self.builder.push(&v.to_string()),
+            Literal::Float(v) => self.builder.push(&v.to_string()),
             Literal::Bool(v) => {
                 if self.builder.dialect.supports_boolean() {
-                    self.builder.push(&v.to_string());
+                    self.builder.push(&v.to_string())
                 } else if *v {
-                    self.builder.push("1");
+                    self.builder.push("1")
                 } else {
-                    self.builder.push("0");
+                    self.builder.push("0")
                 }
-            }
+            },
             Literal::String(v) => {
                 let escaped = v.replace("'", "''");
-                self.builder.push("'").push(&escaped).push("'");
-            }
+                self.builder.push("'").push(&escaped).push("'")
+            },
+            Literal::Date(v) => self.builder.push("'").push(&v.to_string()).push("'"),
+            Literal::DateTime(v) => self.builder.push("'").push(&v.to_string()).push("'"),
+            Literal::Time(v) => self.builder.push("'").push(&v.to_string()).push("'"),
         };
         self
     }
 
-    pub fn finish(&self) -> &str {
-        &self.builder.buff
+    #[inline]
+    pub fn finish(&self) -> (&str, &Vec<Literal>) {
+        (&self.builder.buff, &self.builder.binder)
     }
 
     pub fn reset(&mut self) -> &mut Self {

@@ -17,6 +17,14 @@ pub enum Expr {
     //      SELECT NULL;
     Literal(Literal),
 
+    // e.g. SELECT col in (1, 2, 3);
+    //      SELECT col not in (1, 2, 3);
+    In {
+        expr: Box<Expr>,
+        list: Vec<Expr>,
+        negated: bool,
+    },
+
     // e.g. SELECT -price FROM orders;
     //      SELECT NOT active FROM users;
     // Unary { op: UnaryOp, expr: Box<Expr> },
@@ -24,12 +32,19 @@ pub enum Expr {
     // e.g. SELECT price * quantity FROM orders;
     //      SELECT a + b FROM t;
     //      SELECT a = b FROM t;
-    Binary { left: Box<Expr>, op: Op, right: Box<Expr> },
+    Binary {
+        left: Box<Expr>,
+        op: Op,
+        right: Box<Expr>,
+    },
 
     // e.g. SELECT SUM(price) FROM orders;
     //      SELECT LOWER(name) FROM users;
     // Note: SELECT COUNT(*) FROM users; * is not a column ref. it's a FuncArg
-    Func { name: String, args: Vec<FuncArg> },
+    Func {
+        name: String,
+        args: Vec<FuncArg>,
+    },
 
     // e.g.
     // SELECT
@@ -47,7 +62,10 @@ pub enum Expr {
 
 impl Expr {
     pub fn alias(self, name: impl Into<String>) -> SelectItem {
-        SelectItem::Expr { expr: self, alias: Some(name.into()) }
+        SelectItem::Expr {
+            expr: self,
+            alias: Some(name.into()),
+        }
     }
 }
 
@@ -62,4 +80,3 @@ impl From<ColumnRef> for Expr {
         Expr::Column(value)
     }
 }
-

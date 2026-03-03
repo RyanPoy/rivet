@@ -1,3 +1,5 @@
+pub mod binary;
+pub mod calendar;
 pub mod column_ref;
 pub mod distinct;
 pub mod expr;
@@ -8,4 +10,3 @@ pub mod named_table;
 pub mod select_item;
 pub mod subquery;
 pub mod table_ref;
-pub mod binary;

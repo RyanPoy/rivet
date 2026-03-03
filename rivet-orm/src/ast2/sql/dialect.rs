@@ -1,6 +1,13 @@
+pub enum PlaceHolderStyle {
+    QuestionMark,
+    Numbered,
+}
+
 pub trait Dialect {
     fn name(&self) -> &'static str;
     fn quote_char(&self) -> &'static str;
+    fn placeholder_style(&self) -> PlaceHolderStyle;
+
     fn supports_distinct_on(&self) -> bool;
     fn supports_window_function(&self) -> bool;
     fn supports_returning(&self) -> bool;
@@ -17,6 +24,10 @@ impl Dialect for MySQL {
     #[inline]
     fn quote_char(&self) -> &'static str {
         "`"
+    }
+    #[inline]
+    fn placeholder_style(&self) -> PlaceHolderStyle {
+        PlaceHolderStyle::QuestionMark
     }
     #[inline]
     fn supports_distinct_on(&self) -> bool {
@@ -51,6 +62,10 @@ impl Dialect for PostgreSQL {
         "\""
     }
     #[inline]
+    fn placeholder_style(&self) -> PlaceHolderStyle {
+        PlaceHolderStyle::Numbered
+    }
+    #[inline]
     fn supports_distinct_on(&self) -> bool {
         true
     }
@@ -82,6 +97,10 @@ impl Dialect for Sqlite {
         "\""
     }
     #[inline]
+    fn placeholder_style(&self) -> PlaceHolderStyle {
+        PlaceHolderStyle::QuestionMark
+    }
+    #[inline]
     fn supports_distinct_on(&self) -> bool {
         false
     }
@@ -93,7 +112,6 @@ impl Dialect for Sqlite {
     fn supports_returning(&self) -> bool {
         true
     }
-
     #[inline]
     fn supports_standalone_offset(&self) -> bool {
         true

@@ -1,3 +1,6 @@
+use std::fmt;
+use std::fmt::Formatter;
+
 #[derive(Debug, thiserror::Error)]
 #[error("ValueError: {msg}, but got {value}")]
 pub struct ValueError {
@@ -32,6 +35,16 @@ impl Time {
     }
 }
 
+impl fmt::Display for Time {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:02}:{:02}:{:02}.{:06}",
+            self.hour, self.minute, self.second, self.microsecond
+        )
+    }
+}
+
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]
 pub struct Date {
     year: i32,
@@ -42,6 +55,11 @@ impl Date {
     pub fn new(year: i32, month: u8, day: u8) -> Result<Self, ValueError> {
         check_year_month_day(year, month, day)?;
         Ok(Self { year, month, day })
+    }
+}
+impl fmt::Display for Date {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}-{}-{}", self.year, self.month, self.day)
     }
 }
 
@@ -64,6 +82,12 @@ impl DateTime {
             date: Date::new(year, month, day)?,
             time: Time::new(hour, minute, second, microsecond)?,
         })
+    }
+}
+
+impl fmt::Display for DateTime {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{} {}", self.date.to_string(), self.time.to_string())
     }
 }
 
@@ -111,7 +135,7 @@ mod tests {
         assert!(Date::new(2024, 4, 31).is_err()); // 4月只有30天
         assert!(Date::new(2024, 0, 1).is_err()); // 月份0
     }
-    
+
     #[test]
     fn test_time_valid() {
         assert!(Time::new(23, 59, 59, 999_999).is_ok()); // 最大值
