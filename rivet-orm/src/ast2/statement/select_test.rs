@@ -723,33 +723,39 @@ fn test_select_for_update_skip_locked_and_of(){
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 }
 
-// #[test]
-// fn test_where_field_equals_for_multiple_tables(){
-//     stmt = (SelectStatement().from_(Name("abc"))
-//             .join(Name("efg")).on(abc__id=Name("id", "efg"))
-//             .where(abc__foo=Name("bar", "efg"))
-//             )
-//     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` JOIN `efg` ON `abc`.`id` = `efg`.`id` WHERE `abc`.`foo` = `efg`.`bar`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" JOIN "efg" ON "abc"."id" = "efg"."id" WHERE "abc"."foo" = "efg"."bar"'
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" JOIN "efg" ON "abc"."id" = "efg"."id" WHERE "abc"."foo" = "efg"."bar"'
-// }
-//
-// #[test]
-// fn test_where_field_equals_where(){
-//     stmt = SelectStatement().from_(Name("abc")).where(abc__foo=1, abc__bar=Name('baz', Name("abc").name))
-//     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE `abc`.`foo` = 1 AND `abc`.`bar` = `abc`.`baz`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE "abc"."foo" = 1 AND "abc"."bar" = "abc"."baz"'
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE "abc"."foo" = 1 AND "abc"."bar" = "abc"."baz"'
-// }
-//
+#[test]
+fn test_where_field_equals_where(){
+    let t = TableRef::from("users");
+    let col_foo = t.column("foo");
+    let col_bar = t.column("bar");
+    let col_baz = t.column("baz");
+    let stmt = SelectStatement::new().from(t).filter(col_foo.eq(Literal::Int(1))).filter(col_bar.eq(col_baz));
+
+    let mut v = Visitor::mysql();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT * FROM `users` WHERE `users`.`foo` = ? AND `users`.`bar` = `users`.`baz`");
+    assert_eq!(values.clone(), vec![Literal::from(1)]);
+
+    let mut v = Visitor::postgre();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "users"."foo" = $1 AND "users"."bar" = "users"."baz""#);
+    assert_eq!(values.clone(), vec![Literal::from(1)]);
+
+    let mut v = Visitor::sqlite();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "users"."foo" = ? AND "users"."bar" = "users"."baz""#);
+    assert_eq!(values.clone(), vec![Literal::from(1)]);
+}
+
 // #[test]
 // fn test_where_field_equals_where_not(){
-//     stmt = SelectStatement().from_(Name("abc")).where(~Binary.parse(foo=1)).where(bar=Name('baz', schema_name=Name("abc").name))
+//     let table_users = TableRef::from("users");
+//     stmt = SelectStatement::new().from(table_users).where_(~Binary.parse(foo=1)).where(bar=Name('baz', schema_name=Name("abc").name))
 //     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` WHERE NOT `foo` = 1 AND `bar` = `abc`.`baz`'
 //     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" WHERE NOT "foo" = 1 AND "bar" = "abc"."baz"'
 //     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" WHERE NOT "foo" = 1 AND "bar" = "abc"."baz"'
 // }
-//
+
 // #[test]
 // fn test_where_single_quote(){
 //     stmt = SelectStatement().from_(Name("abc")).where(foo="bar'foo")
@@ -780,6 +786,17 @@ fn test_select_for_update_skip_locked_and_of(){
 //     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`) WHERE `foo` = \'bar\''
 //     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg") WHERE "foo" = \'bar\''
 //     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg") WHERE "foo" = \'bar\''
+// }
+//
+// #[test]
+// fn test_where_field_equals_for_multiple_tables(){
+//     let stmt = SelectStatement().from_("abc")
+//             .join("efg", .on(abc__id=Name("id", "efg"))
+//             .where(abc__foo=Name("bar", "efg"))
+//             )
+//     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` JOIN `efg` ON `abc`.`id` = `efg`.`id` WHERE `abc`.`foo` = `efg`.`bar`'
+//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" JOIN "efg" ON "abc"."id" = "efg"."id" WHERE "abc"."foo" = "efg"."bar"'
+//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" JOIN "efg" ON "abc"."id" = "efg"."id" WHERE "abc"."foo" = "efg"."bar"'
 // }
 //
 // #[test]

@@ -1,27 +1,40 @@
-# --- 常用配置项 ---
+# === 基础风格 (受 Go 风格及社区最佳实践启发) ===
+edition = "2021"                     # 与 Cargo.toml 中的 edition 保持一致
+style_edition = "2024"               # 指定风格版本，让格式化结果更现代
+max_width = 120                       # 最大行宽，Go 风格常用值
+hard_tabs = false                     # 使用空格而非制表符 (Go 风格)
+tab_spaces = 4                         # 缩进空格数
+newline_style = "Unix"                # 统一换行符
 
-# 每行最大宽度。默认 100。
-# 如果你觉得嵌套比较深（比如大量的 match 语句），可以调大到 120。
-max_width = 120
+# === 核心布局：满足你之前的需求，并借鉴 Rust 官方仓库 ===
+fn_single_line = true                 # 允许单行函数，这正是你想要的！
+brace_style = "SameLineWhere"         # 函数大括号位置 (Rust 官方风格)
+control_brace_style = "AlwaysSameLine" # 控制流 if/while 等的大括号风格
+where_single_line = false              # where 从句保持多行，提高可读性
 
-# 合并派生宏。
-# 将 #[derive(Debug)] 和 #[derive(PartialEq)] 合并为 #[derive(Debug, PartialEq)]。
-merge_derives = true
+# === 导入分组 (Go 风格强调清晰分组) ===
+reorder_imports = true                 # 必须启用，才能进行重排
+imports_granularity = "Crate"          # 合并为同一个 crate 的导入
+group_imports = "StdExternalCrate"    # 按 标准库、外部crate、本地crate 分组 (官方推荐[citation:7][citation:9])
+# 效果：use 语句会像 Go 一样清晰分组，告别混乱
 
-# 使用小技巧来减少行数。
-# 设置为 "Max" 时，它会尝试将短的 block、impl 等放在一行。
-# 这对你那些简单的 eq, like 实现非常友好。
-fn_single_line = true
-use_small_heuristics = "Max"
+# === 注释与文档 (保持整洁) ===
+wrap_comments = true                   # 自动换行过长的注释
+format_code_in_doc_comments = true    # 格式化文档注释中的代码块
+normalize_comments = true               # 将块注释 `/* ... */` 转为行注释 `// ...` 如果可能[citation:9]
+comment_width = 80                     # 注释换行宽度
 
-# 整理导入（import）的顺序。
-# 设置为 true 后，会按字母顺序自动对 use 语句进行分组和排序。
-reorder_imports = true
+# === 细节一致性 (让代码更紧凑) ===
+use_field_init_shorthand = true        # 结构体初始化简写 `Struct { x }` 而非 `Struct { x: x }`
+merge_derives = false                   # 是否合并 #[derive] 属性，false 更清晰 (Rust 官方仓库设置[citation:7])
+use_try_shorthand = true                # 使用 `?` 代替 `try!` 宏[citation:9]
+trailing_comma = "Vertical"             # 多行列表末尾自动加逗号
+match_block_trailing_comma = true       # match 分支末尾加逗号
 
-# 如果 struct 字段较少，尝试放在一行。
-unstable_features = true
-struct_field_align_threshold = 40
-
-# 去掉多余的空行。
-remove_nested_parens = true
-
+# === 忽略文件 (像 .gitignore 一样) ===
+# 遵循 gitignore 语法，对自动生成的代码或第三方代码取消格式化
+ignore = [
+    "target/**",
+    "**/generated/**",
+    # "src/legacy_code.rs",  # 示例：可以单独指定不想格式化的文件
+]

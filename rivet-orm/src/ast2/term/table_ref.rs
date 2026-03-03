@@ -1,3 +1,4 @@
+use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::join::{Join, JoinType};
 use crate::ast2::term::named_table::NamedTable;
@@ -15,22 +16,43 @@ where
     T: Into<String>,
 {
     fn from(value: T) -> Self {
-        Self::Named { table: NamedTable::new(value), alias: None }
+        Self::Named {
+            table: NamedTable::new(value),
+            alias: None,
+        }
     }
 }
 
 impl From<NamedTable> for TableRef {
     fn from(value: NamedTable) -> Self {
-        Self::Named { table: value, alias: None }
+        Self::Named {
+            table: value,
+            alias: None,
+        }
     }
 }
 
 impl TableRef {
+    pub fn column(&self, name: impl Into<String>) -> ColumnRef {
+        ColumnRef {
+            qualifier: Some(self.visible_name().to_string()),
+            name: name.into(),
+        }
+    }
     pub fn alias(self, name: impl Into<String>) -> Self {
         match self {
-            Self::Named { table, .. } => Self::Named { table, alias: Some(name.into()) },
-            Self::Subquery { subquery, .. } => Self::Subquery { subquery, alias: name.into() },
-            Self::Join { join, .. } => Self::Join { join, alias: Some(name.into()) },
+            Self::Named { table, .. } => Self::Named {
+                table,
+                alias: Some(name.into()),
+            },
+            Self::Subquery { subquery, .. } => Self::Subquery {
+                subquery,
+                alias: name.into(),
+            },
+            Self::Join { join, .. } => Self::Join {
+                join,
+                alias: Some(name.into()),
+            },
         }
     }
 
@@ -43,7 +65,12 @@ impl TableRef {
     }
 
     pub fn join(self, other: impl Into<TableRef>, join_type: JoinType, on: Option<Expr>) -> Self {
-        let join = Join { left: Box::new(self), right: Box::new(other.into()), join_type, on };
+        let join = Join {
+            left: Box::new(self),
+            right: Box::new(other.into()),
+            join_type,
+            on,
+        };
         Self::Join { join, alias: None }
     }
 
