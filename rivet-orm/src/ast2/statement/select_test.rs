@@ -1,30 +1,28 @@
-use crate::ast2::sql::visitor::Visitor;
+use crate::ast2::sql::visitor;
 use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::calendar::Date;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
-use crate::ast2::term::index::Index;
 use crate::ast2::term::literal::Literal;
 use crate::ast2::term::lock::{Lock, Wait};
 use crate::ast2::term::named_table::NamedTable;
 use crate::ast2::term::table_ref::TableRef;
-use crate::orm::Col;
 
 #[test]
 fn test_select_without_from() {
     let stmt = SelectStatement::new();
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT *");
     assert!(values.is_empty());
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT *");
     assert!(values.is_empty());
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT *");
     assert!(values.is_empty());
@@ -33,12 +31,12 @@ fn test_select_without_from() {
 #[test]
 fn test_select_empty_from_single() {
     let stmt = SelectStatement::new().from("users"); // from(&str)
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users`");
 
     let stmt = SelectStatement::new().from(NamedTable::new("users")); // from(NamedTable)
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users""#.to_string());
 
@@ -46,7 +44,7 @@ fn test_select_empty_from_single() {
         table: NamedTable::new("users"),
         alias: None,
     }); // from(TableRef)
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users""#.to_string());
 }
@@ -56,15 +54,15 @@ fn test_select_empty_from_single_with_alias() {
     let t = TableRef::from("users").alias("u");
 
     let stmt = SelectStatement::new().from(t);
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users` AS `u`");
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" AS "u""#);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" AS "u""#);
 }
@@ -73,21 +71,21 @@ fn test_select_empty_from_multiple() {
     let stmt1 = SelectStatement::new().from("users").from("orders").from("products");
     let stmt2 = SelectStatement::new().from_many(vec!["users", "orders", "products"]);
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt1).finish();
     assert_eq!(sql, "SELECT * FROM `users`, `orders`, `products`");
 
     let (sql, _) = v.reset().visit_select_statement(&stmt2).finish();
     assert_eq!(sql, "SELECT * FROM `users`, `orders`, `products`");
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt1).finish();
     assert_eq!(sql, r#"SELECT * FROM "users", "orders", "products""#);
 
     let (sql, _) = v.reset().visit_select_statement(&stmt2).finish();
     assert_eq!(sql, r#"SELECT * FROM "users", "orders", "products""#);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt1).finish();
     assert_eq!(sql, r#"SELECT * FROM "users", "orders", "products""#);
 
@@ -102,18 +100,18 @@ fn test_select_empty_from_multiple_with_alias() {
     let t3 = TableRef::from("products").alias("p");
 
     let stmt = SelectStatement::new().from(t1).from(t2).from(t3);
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users` AS `u`, `orders` AS `o`, `products` AS `p`");
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
         r#"SELECT * FROM "users" AS "u", "orders" AS "o", "products" AS "p""#
     );
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
@@ -125,15 +123,15 @@ fn test_select_empty_from_multiple_with_alias() {
 fn test_select_single_column() {
     let stmt = SelectStatement::new().select("id").from("users");
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT `id` FROM `users`");
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT "id" FROM "users""#);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT "id" FROM "users""#);
 }
@@ -144,15 +142,15 @@ fn test_select_multiple_columns() {
         .select_many(vec!["id", "name", "email"])
         .from("users");
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT `id`, `name`, `email` FROM `users`");
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT "id", "name", "email" FROM "users""#);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT "id", "name", "email" FROM "users""#);
 }
@@ -166,21 +164,21 @@ fn test_select_column_with_alias() {
         .select(ColumnRef::new("id").qualifier("cards").alias("cid"))
         .select(Expr::Column(ColumnRef::new("name").qualifier("users")).alias("uname"));
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
         "SELECT `card_number`, `cards`.`id` AS `cid`, `users`.`name` AS `uname` FROM `users`, `cards`"
     );
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
         r#"SELECT "card_number", "cards"."id" AS "cid", "users"."name" AS "uname" FROM "users", "cards""#
     );
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
@@ -192,15 +190,15 @@ fn test_select_column_with_alias() {
 fn test_select_distinct_single() {
     let stmt = SelectStatement::new().from("users").select("foo").distinct();
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT DISTINCT `foo` FROM `users`");
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT DISTINCT "foo" FROM "users""#);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT DISTINCT "foo" FROM "users""#);
 }
@@ -213,15 +211,15 @@ fn test_select_distinct_multi() {
         .select("bar")
         .distinct();
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT DISTINCT `foo`, `bar` FROM `users`");
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "users""#);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "users""#);
 }
@@ -235,15 +233,15 @@ fn test_select_distinct_on_single() {
         .select(bar.clone())
         .distinct_on(vec![foo]);
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT DISTINCT `foo`, `bar` FROM `users`");
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT DISTINCT ON ("foo") "foo", "bar" FROM "users""#);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "users""#);
 }
@@ -258,15 +256,15 @@ fn test_select_distinct_on_multi() {
         .select(bar.clone())
         .distinct_on(vec![foo, bar]);
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT DISTINCT `foo`, `bar` FROM `users`");
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT DISTINCT ON ("foo", "bar") "foo", "bar" FROM "users""#);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "users""#);
 }
@@ -278,21 +276,21 @@ fn test_select_subquery() {
         .select("sq0.foo")
         .select("sq0.bar");
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
         "SELECT `sq0`.`foo`, `sq0`.`bar` FROM (SELECT * FROM `abc`) AS `sq0`"
     );
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
         r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#
     );
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
@@ -308,21 +306,21 @@ fn test_select_multiple_subqueries() {
         .from_many(vec![sq0, sq1])
         .select_many(["sq0.foo", "sq1.bar"]);
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
         "SELECT `sq0`.`foo`, `sq1`.`bar` FROM (SELECT `foo` FROM `abc`) AS `sq0`, (SELECT `bar` FROM `efg`) AS `sq1`"
     );
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
         r#"SELECT "sq0"."foo", "sq1"."bar" FROM (SELECT "foo" FROM "abc") AS "sq0", (SELECT "bar" FROM "efg") AS "sq1""#
     );
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
@@ -340,21 +338,21 @@ fn test_select_nested_subquery() {
     let sq2 = SelectStatement::new().from(sq1).select("sq1.foo").alias("sq2");
     let stmt = SelectStatement::new().from(sq2).select("sq2.foo");
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
         "SELECT `sq2`.`foo` FROM (SELECT `sq1`.`foo` FROM (SELECT `sq0`.`foo`, `sq0`.`bar` FROM (SELECT * FROM `abc`) AS `sq0`) AS `sq1`) AS `sq2`"
     );
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
         r#"SELECT "sq2"."foo" FROM (SELECT "sq1"."foo" FROM (SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0") AS "sq1") AS "sq2""#
     );
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
@@ -371,15 +369,15 @@ fn test_select_no_table() {
         .select(Literal::Bool(false))
         .select(Literal::Null);
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT 1, 2.1 AS `avg`, 'No.1', 0, NULL");
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT 1, 2.1 AS "avg", 'No.1', false, NULL"#);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT 1, 2.1 AS "avg", 'No.1', 0, NULL"#);
 }
@@ -388,15 +386,15 @@ fn test_select_no_table() {
 fn test_select_with_limit() {
     let stmt = SelectStatement::new().from("users").select("foo").limit(10);
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT `foo` FROM `users` LIMIT 10");
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT "foo" FROM "users" LIMIT 10"#);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT "foo" FROM "users" LIMIT 10"#);
 }
@@ -405,15 +403,15 @@ fn test_select_with_limit() {
 fn test_select_with_limit_zero() {
     let stmt = SelectStatement::new().from("users").select("foo").limit(0);
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT `foo` FROM `users`");
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT "foo" FROM "users""#);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT "foo" FROM "users""#);
 }
@@ -422,15 +420,15 @@ fn test_select_with_limit_zero() {
 fn test_select_with_offset_without_limit() {
     let stmt = SelectStatement::new().from("users").select("foo").offset(10);
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT `foo` FROM `users`");
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT "foo" FROM "users" OFFSET 10"#);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT "foo" FROM "users" OFFSET 10"#);
 }
@@ -439,15 +437,15 @@ fn test_select_with_offset_without_limit() {
 fn test_select_with_limit_and_offset() {
     let stmt = SelectStatement::new().from("users").select("foo").limit(10).offset(5);
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT `foo` FROM `users` LIMIT 10 OFFSET 5");
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT "foo" FROM "users" LIMIT 10 OFFSET 5"#);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT "foo" FROM "users" LIMIT 10 OFFSET 5"#);
 }
@@ -459,17 +457,17 @@ fn test_where_eq_str() {
         .from("users")
         .where_(col.eq(Literal::from("foo")));
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` = ?");
     assert_eq!(values.clone(), vec![Literal::from("foo")]);
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" = $1"#);
     assert_eq!(values.clone(), vec![Literal::from("foo")]);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" = ?"#);
     assert_eq!(values.clone(), vec![Literal::from("foo")]);
@@ -480,17 +478,17 @@ fn test_where_gt_num() {
     let col = ColumnRef::new("foo");
     let stmt = SelectStatement::new().from("users").where_(col.gt(Literal::from(0)));
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` > ?");
     assert_eq!(values.clone(), vec![Literal::from(0)]);
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" > $1"#);
     assert_eq!(values.clone(), vec![Literal::from(0)]);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" > ?"#);
     assert_eq!(values.clone(), vec![Literal::from(0)]);
@@ -503,17 +501,17 @@ fn test_where_not_eq_bool() {
         .from("users")
         .where_(col.not_eq(Literal::from(true)));
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` <> ?");
     assert_eq!(values.clone(), vec![Literal::from(true)]);
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" <> $1"#);
     assert_eq!(values.clone(), vec![Literal::from(true)]);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" <> ?"#);
     assert_eq!(values.clone(), vec![Literal::from(true)]);
@@ -523,15 +521,15 @@ fn test_where_is_none() {
     let col = ColumnRef::new("foo");
     let stmt = SelectStatement::new().from("users").where_(col.eq(Literal::Null));
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, _) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` IS NULL");
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" IS NULL"#);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" IS NULL"#);
 }
@@ -544,7 +542,7 @@ fn test_where_basic_in_date() {
         Literal::from(Date::new(2025, 1, 3).unwrap()),
     ]));
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` IN (?, ?, ?)");
     assert_eq!(
@@ -556,7 +554,7 @@ fn test_where_basic_in_date() {
         ]
     );
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" IN ($1, $2, $3)"#);
     assert_eq!(
@@ -568,7 +566,7 @@ fn test_where_basic_in_date() {
         ]
     );
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" IN (?, ?, ?)"#);
     assert_eq!(
@@ -589,17 +587,17 @@ fn test_select_for_update() {
         .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
         .for_update(Lock::Update, Wait::DEFAULT);
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE");
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE"#);
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#);
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
@@ -613,17 +611,17 @@ fn test_select_for_share() {
         .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
         .for_update(Lock::Share, Wait::DEFAULT);
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR SHARE");
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR SHARE"#);
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#);
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
@@ -637,17 +635,17 @@ fn test_select_for_update_nowait() {
         .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
         .for_update(Lock::Update, Wait::NoWait);
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE NOWAIT");
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE NOWAIT"#);
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#);
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
@@ -661,17 +659,17 @@ fn test_select_for_update_skip() {
         .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
         .for_update(Lock::Update, Wait::SkipLocked);
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE SKIP LOCKED");
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE SKIP LOCKED"#);
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#);
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
@@ -685,17 +683,17 @@ fn test_select_for_update_of() {
         .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
         .for_update(Lock::UpdateOf("c".to_string()), Wait::DEFAULT);
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE OF `c`");
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE OF "c""#);
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#);
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
@@ -709,7 +707,7 @@ fn test_select_for_update_skip_locked_and_of() {
         .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
         .for_update(Lock::UpdateOf("f".to_string()), Wait::SkipLocked);
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
@@ -717,7 +715,7 @@ fn test_select_for_update_skip_locked_and_of() {
     );
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
@@ -725,7 +723,7 @@ fn test_select_for_update_skip_locked_and_of() {
     );
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#);
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
@@ -742,7 +740,7 @@ fn test_where_field_equals_where() {
         .where_(col_foo.eq(Literal::Int(1)))
         .where_(col_bar.eq(col_baz));
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
@@ -750,7 +748,7 @@ fn test_where_field_equals_where() {
     );
     assert_eq!(values.clone(), vec![Literal::from(1)]);
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
@@ -758,7 +756,7 @@ fn test_where_field_equals_where() {
     );
     assert_eq!(values.clone(), vec![Literal::from(1)]);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
@@ -778,7 +776,7 @@ fn test_where_field_equals_where_not() {
         .where_(!col_foo.eq(Literal::from(1)))
         .where_(col_bar.eq(col_baz));
 
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
@@ -786,7 +784,7 @@ fn test_where_field_equals_where_not() {
     );
     assert_eq!(values.clone(), vec![Literal::from(1)]);
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
@@ -794,7 +792,7 @@ fn test_where_field_equals_where_not() {
     );
     assert_eq!(values.clone(), vec![Literal::from(1)]);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
@@ -819,17 +817,17 @@ fn test_select_with_force_index_and_where() {
         .select(col.clone())
         .where_(col.eq(Literal::from("bar")))
         .force_index("egg");
-    let mut v = Visitor::mysql();
+    let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, "SELECT `foo` FROM `users` FORCE INDEX (`egg`) WHERE `foo` = ?");
     assert_eq!(values.clone(), vec![Literal::from("bar")]);
 
-    let mut v = Visitor::postgre();
+    let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT "foo" FROM "users" WHERE "foo" = $1"#);
     assert_eq!(values.clone(), vec![Literal::from("bar")]);
 
-    let mut v = Visitor::sqlite();
+    let mut v = visitor::sqlite();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(sql, r#"SELECT "foo" FROM "users" INDEXED BY "egg" WHERE "foo" = ?"#);
     assert_eq!(values.clone(), vec![Literal::from("bar")]);

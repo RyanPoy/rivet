@@ -1,5 +1,5 @@
 use crate::ast2::sql::builder::Builder;
-use crate::ast2::sql::dialect::{Dialect, LITE, MY, PG};
+use crate::ast2::sql::dialect::{Dialect, MySQL, PostgreSQL, Sqlite};
 use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::alias::Alias;
 use crate::ast2::term::column_ref::ColumnRef;
@@ -15,26 +15,27 @@ use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::table_ref::TableRef;
 
-pub struct Visitor {
-    builder: Builder,
-    dialect: &'static dyn Dialect,
+pub fn mysql() -> Visitor<MySQL> {
+    Visitor::new(MySQL {})
 }
 
-impl Visitor {
-    pub fn new(dialect: &'static dyn Dialect) -> Self {
+pub fn postgre() -> Visitor<PostgreSQL> {
+    Visitor::new(PostgreSQL {})
+}
+
+pub fn sqlite() -> Visitor<Sqlite> {
+    Visitor::new(Sqlite {})
+}
+pub struct Visitor<D> {
+    builder: Builder,
+    dialect: D,
+}
+impl<D: Dialect> Visitor<D> {
+    pub fn new(dialect: D) -> Self {
         Self {
             builder: Builder::new(),
             dialect,
         }
-    }
-    pub fn mysql() -> Self {
-        Self::new(&MY)
-    }
-    pub fn postgre() -> Self {
-        Self::new(&PG)
-    }
-    pub fn sqlite() -> Self {
-        Self::new(&LITE)
     }
 
     pub fn visit_select_statement(&mut self, select_stmt: &SelectStatement) -> &mut Self {
@@ -200,7 +201,7 @@ impl Visitor {
 
     pub fn visit_literal(&mut self, lit: &Literal, inline: bool) -> &mut Self {
         if !inline && !lit.is_null() {
-            self.builder.bind(lit.clone(), self.dialect);
+            self.builder.bind(lit.clone(), &self.dialect);
             return self;
         }
 
@@ -209,7 +210,7 @@ impl Visitor {
             Literal::Int(v) => self.push(&v.to_string()),
             Literal::Float(v) => self.push(&v.to_string()),
             Literal::Bool(v) => self.push(self.dialect.bool_str(*v)),
-            Literal::String(v) => self.push("'").push(&v.replace("'", "''")).push("'"),
+            Literal::String(v) => self.push("'").push_escape(&v).push("'"),
             Literal::Date(v) => self.push("'").push(&v.to_string()).push("'"),
             Literal::DateTime(v) => self.push("'").push(&v.to_string()).push("'"),
             Literal::Time(v) => self.push("'").push(&v.to_string()).push("'"),
@@ -254,7 +255,12 @@ impl Visitor {
 
     #[inline]
     fn push(&mut self, v: &str) -> &mut Self {
-        self.builder.push(v.as_ref());
+        self.builder.push(v);
+        self
+    }
+    fn push_escape(&mut self, v: &str) -> &mut Self {
+        let v = v.replace("'", "''").replace("\\", "\\\\").replace("\"", "\"\"");
+        self.builder.push(&v);
         self
     }
 

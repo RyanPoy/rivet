@@ -7,11 +7,6 @@ pub enum PlaceHolderStyle {
     Numbered,
 }
 
-const BOOL_T: &str = "true";
-const BOOL_F: &str = "false";
-const BOOL_1: &str = "1";
-const BOOL_0: &str = "0";
-
 pub trait Dialect {
     fn quote_char(&self) -> &'static str;
     fn placeholder_style(&self) -> PlaceHolderStyle;
@@ -23,7 +18,7 @@ pub trait Dialect {
 
     fn supports_select_for_update(&self) -> bool;
     fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder);
-    fn bool_str(&self, v: bool) -> &str;
+    fn bool_str(&self, v: bool) -> &'static str;
 }
 
 pub struct MySQL;
@@ -74,8 +69,8 @@ impl Dialect for MySQL {
         }
     }
     #[inline]
-    fn bool_str(&self, v: bool) -> &str {
-        if v { BOOL_1 } else { BOOL_0 }
+    fn bool_str(&self, v: bool) -> &'static str {
+        if v { "1" } else { "0" }
     }
 }
 
@@ -112,8 +107,8 @@ impl Dialect for PostgreSQL {
     }
     fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder) {}
     #[inline]
-    fn bool_str(&self, v: bool) -> &str {
-        if v { BOOL_T } else { BOOL_F }
+    fn bool_str(&self, v: bool) -> &'static str {
+        if v { "true" } else { "false" }
     }
 }
 pub struct Sqlite;
@@ -160,11 +155,7 @@ impl Dialect for Sqlite {
         }
     }
     #[inline]
-    fn bool_str(&self, v: bool) -> &str {
-        if v { BOOL_1 } else { BOOL_0 }
+    fn bool_str(&self, v: bool) -> &'static str {
+        if v { "1" } else { "0" }
     }
 }
-
-pub static MY: MySQL = MySQL {};
-pub static PG: PostgreSQL = PostgreSQL {};
-pub static LITE: Sqlite = Sqlite {};

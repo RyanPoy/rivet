@@ -23,7 +23,7 @@ impl Builder {
         self
     }
 
-    pub fn bind(&mut self, value: Literal, dialect: &'static dyn Dialect) -> &mut Self {
+    pub fn bind(&mut self, value: Literal, dialect: &impl Dialect) -> &mut Self {
         self.binder.push(value);
         match dialect.placeholder_style() {
             PlaceHolderStyle::QuestionMark => self.buff.push_str("?"),
