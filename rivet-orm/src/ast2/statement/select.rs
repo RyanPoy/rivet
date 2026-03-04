@@ -1,6 +1,7 @@
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::expr::Expr;
+use crate::ast2::term::index::Index;
 use crate::ast2::term::lock::{Lock, Wait};
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::subquery::Subquery;
@@ -36,6 +37,7 @@ pub struct SelectStatement {
     pub limit: Option<usize>,
     pub offset: Option<usize>,
     pub locking: Option<(Lock, Wait)>,
+    pub indexes: Vec<Index>,
 }
 
 impl SelectStatement {
@@ -48,6 +50,7 @@ impl SelectStatement {
             limit: None,
             offset: None,
             locking: None,
+            indexes: Vec::new(),
         }
     }
 
@@ -98,10 +101,20 @@ impl SelectStatement {
         self.where_clause.push(c);
         self
     }
+
     pub fn for_update(mut self, lock: Lock, wait: Wait) -> Self {
         self.locking = Some((lock, wait));
         self
     }
+
+    pub fn force_index<T>(mut self, index: T) -> Self
+    where
+        T: Into<Index>,
+    {
+        self.indexes.push(index.into());
+        self
+    }
+    
     pub fn limit(mut self, n: usize) -> Self {
         if n > 0 {
             self.limit = Some(n);

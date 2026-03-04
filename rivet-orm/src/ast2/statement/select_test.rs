@@ -3,10 +3,12 @@ use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::calendar::Date;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
+use crate::ast2::term::index::Index;
 use crate::ast2::term::literal::Literal;
 use crate::ast2::term::lock::{Lock, Wait};
 use crate::ast2::term::named_table::NamedTable;
 use crate::ast2::term::table_ref::TableRef;
+use crate::orm::Col;
 
 #[test]
 fn test_select_without_from() {
@@ -809,14 +811,30 @@ fn test_where_field_equals_where_not() {
 //     assert visitors.pg.sql(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" REGEX 'r^b'"
 // }
 
-// #[test]
-// fn test_select_with_force_index_and_where(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).where(foo="bar").force_index(Name("egg"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`) WHERE `foo` = \'bar\''
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg") WHERE "foo" = \'bar\''
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg") WHERE "foo" = \'bar\''
-// }
-//
+#[test]
+fn test_select_with_force_index_and_where() {
+    let col = ColumnRef::from("foo");
+    let stmt = SelectStatement::new()
+        .from("users")
+        .select(col.clone())
+        .where_(col.eq(Literal::from("bar")))
+        .force_index("egg");
+    let mut v = Visitor::mysql();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, "SELECT `foo` FROM `users` FORCE INDEX (`egg`) WHERE `foo` = ?");
+    assert_eq!(values.clone(), vec![Literal::from("bar")]);
+
+    let mut v = Visitor::postgre();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT "foo" FROM "users" WHERE "foo" = $1"#);
+    assert_eq!(values.clone(), vec![Literal::from("bar")]);
+
+    let mut v = Visitor::sqlite();
+    let (sql, values) = v.visit_select_statement(&stmt).finish();
+    assert_eq!(sql, r#"SELECT "foo" FROM "users" INDEXED BY "egg" WHERE "foo" = ?"#);
+    assert_eq!(values.clone(), vec![Literal::from("bar")]);
+}
+
 // #[test]
 // fn test_where_field_equals_for_multiple_tables(){
 //     let stmt = SelectStatement().from_("abc")

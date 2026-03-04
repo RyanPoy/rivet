@@ -1,3 +1,6 @@
+use crate::ast2::sql::builder::Builder;
+use crate::ast2::term::index::Index;
+
 pub enum PlaceHolderStyle {
     QuestionMark,
     Numbered,
@@ -15,6 +18,8 @@ pub trait Dialect {
     fn supports_boolean(&self) -> bool;
 
     fn supports_select_for_update(&self) -> bool;
+
+    fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder);
 }
 
 pub struct MySQL;
@@ -54,6 +59,17 @@ impl Dialect for MySQL {
     #[inline]
     fn supports_select_for_update(&self) -> bool {
         true
+    }
+
+    fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder) {
+        let mut iter = indexes.iter();
+        if let Some(index) = iter.next() {
+            builder.push(" FORCE INDEX (").push_quote(&index.to_string());
+            for index in iter {
+                builder.push(", ").push_quote(&index.to_string());
+            }
+            builder.push(")");
+        }
     }
 }
 
@@ -95,6 +111,7 @@ impl Dialect for PostgreSQL {
     fn supports_select_for_update(&self) -> bool {
         true
     }
+    fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder) {}
 }
 pub struct Sqlite;
 impl Dialect for Sqlite {
@@ -133,6 +150,14 @@ impl Dialect for Sqlite {
     #[inline]
     fn supports_select_for_update(&self) -> bool {
         false
+    }
+
+    fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder) {
+        let mut iter = indexes.iter();
+        if let Some(index) = iter.next() {
+            builder.push(" INDEXED BY ");
+            builder.push_quote(&index.to_string());
+        }
     }
 }
 

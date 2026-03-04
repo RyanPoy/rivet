@@ -1,13 +1,14 @@
-pub mod ops;
 pub mod calendar;
 pub mod column_ref;
 pub mod distinct;
 pub mod expr;
 pub mod func;
+pub mod index;
 pub mod join;
 pub mod literal;
+pub mod lock;
 pub mod named_table;
+pub mod ops;
 pub mod select_item;
 pub mod subquery;
 pub mod table_ref;
-pub mod lock;

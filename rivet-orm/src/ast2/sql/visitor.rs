@@ -5,6 +5,7 @@ use crate::ast2::term::ops::{IN, NOT_IN, Op};
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::expr::Expr;
+use crate::ast2::term::index::Index;
 use crate::ast2::term::join::Join;
 use crate::ast2::term::literal::Literal;
 use crate::ast2::term::lock::{Lock, Wait};
@@ -58,6 +59,8 @@ impl Visitor {
                 self.visit_table_ref(t);
             }
         }
+
+        self.visit_indexes(&select_stmt.indexes);
 
         let mut iter = select_stmt.where_clause.iter();
         if let Some(f) = iter.next() {
@@ -260,6 +263,12 @@ impl Visitor {
 
     pub fn reset(&mut self) -> &mut Self {
         self.builder.clear();
+        self
+    }
+
+    fn visit_indexes(&mut self, indexes: &[Index]) -> &mut Self{
+        let dialect = self.builder.dialect;
+        dialect.render_force_index_hint(indexes, &mut self.builder);
         self
     }
 }
