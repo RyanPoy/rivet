@@ -1,3 +1,4 @@
+use crate::ast2::term::alias::Alias;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::table_ref::TableRef;
 
@@ -19,7 +20,7 @@ pub struct Join {
 }
 
 impl Join {
-    pub fn alias(self, alias: impl Into<String>) -> TableRef {
+    pub fn alias(self, alias: impl Into<Alias>) -> TableRef {
         TableRef::Join { join: self, alias: Some(alias.into()) }
     }
 

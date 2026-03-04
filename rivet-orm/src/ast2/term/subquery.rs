@@ -1,4 +1,5 @@
 use crate::ast2::statement::select::SelectStatement;
+use crate::ast2::term::alias::Alias;
 use crate::ast2::term::table_ref::TableRef;
 
 #[derive(Debug, Clone)]
@@ -19,7 +20,7 @@ impl From<SelectStatement> for Subquery {
 }
 
 impl Subquery {
-    pub fn alias(self, alias: impl Into<String>) -> TableRef {
+    pub fn alias(self, alias: impl Into<Alias>) -> TableRef {
         TableRef::Subquery { subquery: self, alias: alias.into() }
     }
     #[inline]

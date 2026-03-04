@@ -1,3 +1,4 @@
+use crate::ast2::term::alias::Alias;
 use crate::ast2::term::ops::{AND, EQ, GT, GTE, IN, IS, IS_NOT, LIKE, LT, LTE, NOT_EQ, NOT_IN, NOT_LIKE, OR};
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::literal::Literal;
@@ -26,7 +27,7 @@ impl ColumnRef {
         self.qualifier = Some(qualifier.into());
         self
     }
-    pub fn alias(self, name: impl Into<String>) -> SelectItem {
+    pub fn alias(self, name: impl Into<Alias>) -> SelectItem {
         SelectItem::Expr {
             expr: Expr::Column(self),
             alias: Some(name.into()),

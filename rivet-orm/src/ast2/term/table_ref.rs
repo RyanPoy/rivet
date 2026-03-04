@@ -1,3 +1,4 @@
+use crate::ast2::term::alias::Alias;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::join::{Join, JoinType};
@@ -6,9 +7,9 @@ use crate::ast2::term::subquery::Subquery;
 
 #[derive(Debug, Clone)]
 pub enum TableRef {
-    Named { table: NamedTable, alias: Option<String> },
-    Subquery { subquery: Subquery, alias: String },
-    Join { join: Join, alias: Option<String> },
+    Named { table: NamedTable, alias: Option<Alias> },
+    Subquery { subquery: Subquery, alias: Alias },
+    Join { join: Join, alias: Option<Alias> },
 }
 
 impl<T> From<T> for TableRef
@@ -39,7 +40,7 @@ impl TableRef {
             name: name.into(),
         }
     }
-    pub fn alias(self, name: impl Into<String>) -> Self {
+    pub fn alias(self, name: impl Into<Alias>) -> Self {
         match self {
             Self::Named { table, .. } => Self::Named {
                 table,
@@ -58,9 +59,9 @@ impl TableRef {
 
     pub fn visible_name(&self) -> &str {
         match self {
-            Self::Named { table, alias } => alias.as_deref().unwrap_or_else(|| table.name()),
-            Self::Subquery { subquery, alias } => alias,
-            Self::Join { join, alias } => alias.as_deref().unwrap_or_else(|| &join.visible_name()),
+            Self::Named { table, alias } => alias.as_ref().map_or(table.name(), |a| a.name()),
+            Self::Subquery { subquery, alias } => alias.name(),
+            Self::Join { join, alias } => alias.as_ref().map_or(&join.visible_name(), |a| a.name()),
         }
     }
 

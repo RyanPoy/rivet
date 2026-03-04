@@ -9,7 +9,7 @@ use crate::ast2::term::table_ref::TableRef;
 
 /// SelectStatement
 /// ├─ select_clause: Vec<SelectItem>
-/// │    ├─ SelectItem::Expr { expr: Expr, alias: Option<String> }
+/// │    ├─ SelectItem::Expr { expr: Expr, alias: Option<Alias> }
 /// │    │      ├─ Expr::Column(ColumnRef)
 /// │    │      ├─ Expr::Literal(Literal)
 /// │    │      ├─ Expr::Unary { op, expr: Box<Expr> }
@@ -22,7 +22,7 @@ use crate::ast2::term::table_ref::TableRef;
 ///      ├─ TableRef::NamedTable(NamedTable)
 ///      ├─ TableRef::DerivedTable(DerivedTable)
 ///      │      ├─ stmt: Box<SelectStatement>     ← 子查询返回表
-///      │      └─ alias: Option<String>
+///      │      └─ alias: Option<Alias>
 ///      └─ TableRef::JoinedTable(JoinedTable)
 ///             ├─ left: Box<TableRef>
 ///             ├─ right: Box<TableRef>

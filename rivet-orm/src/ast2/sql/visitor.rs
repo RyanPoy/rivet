@@ -1,6 +1,7 @@
 use crate::ast2::sql::builder::Builder;
 use crate::ast2::sql::dialect::{Dialect, LITE, MY, PG};
 use crate::ast2::statement::select::SelectStatement;
+use crate::ast2::term::alias::Alias;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::expr::Expr;
@@ -13,6 +14,7 @@ use crate::ast2::term::ops::{IN, NOT_IN, Op};
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::table_ref::TableRef;
+use std::fmt;
 
 pub struct Visitor {
     builder: Builder,
@@ -35,43 +37,13 @@ impl Visitor {
     }
 
     pub fn visit_select_statement(&mut self, select_stmt: &SelectStatement) -> &mut Self {
-        self.builder.push("SELECT ");
-
+        self.push("SELECT ");
         self.visit_distinct(&select_stmt.distinct);
-
-        let mut iter = select_stmt.select_clause.iter();
-        if let Some(item) = iter.next() {
-            self.visit_select_item(item);
-            for item in iter {
-                self.builder.push(", ");
-                self.visit_select_item(item);
-            }
-        } else {
-            self.builder.push("*");
-        }
-
-        let mut iter = select_stmt.from_clause.iter();
-        if let Some(t) = iter.next() {
-            self.builder.push(" FROM ");
-            self.visit_table_ref(t);
-            for t in iter {
-                self.builder.push(", ");
-                self.visit_table_ref(t);
-            }
-        }
+        self.visit_select_clause(&select_stmt.select_clause);
+        self.visit_from_clause(&select_stmt.from_clause);
 
         self.visit_indexes(&select_stmt.indexes);
-
-        let mut iter = select_stmt.where_clause.iter();
-        if let Some(f) = iter.next() {
-            self.builder.push(" WHERE ");
-            self.visit_expr(f, false);
-            for f in iter {
-                self.builder.push(" AND ");
-                self.visit_expr(f, false);
-            }
-        }
-
+        self.visit_where_clause(&select_stmt.where_clause);
         self.visit_limit_and_offset(select_stmt.limit, select_stmt.offset);
 
         if self.builder.dialect.supports_select_for_update() {
@@ -82,45 +54,72 @@ impl Visitor {
         self
     }
 
+    pub fn visit_where_clause(&mut self, where_clause: &Vec<Expr>) -> &mut Self {
+        let mut iter = where_clause.iter();
+        if let Some(f) = iter.next() {
+            self.push(" WHERE ");
+            self.visit_expr(f, false);
+            for f in iter {
+                self.push(" AND ");
+                self.visit_expr(f, false);
+            }
+        }
+        self
+    }
+
+    pub fn visit_select_clause(&mut self, select_clause: &Vec<SelectItem>) -> &mut Self {
+        let mut iter = select_clause.iter();
+        if let Some(item) = iter.next() {
+            self.visit_select_item(item);
+            for item in iter {
+                self.push(", ");
+                self.visit_select_item(item);
+            }
+        } else {
+            self.push("*");
+        }
+        self
+    }
+
+    pub fn visit_from_clause(&mut self, from_clause: &Vec<TableRef>) -> &mut Self {
+        let mut iter = from_clause.iter();
+        if let Some(t) = iter.next() {
+            self.push(" FROM ");
+            self.visit_table_ref(t);
+            for t in iter {
+                self.push(", ");
+                self.visit_table_ref(t);
+            }
+        }
+        self
+    }
     pub fn visit_limit_and_offset(&mut self, limit: Option<usize>, offset: Option<usize>) {
         if let Some(n) = limit {
-            self.builder.push(&format!(" LIMIT {}", n));
+            self.push(&format!(" LIMIT {}", n));
         }
         if self.builder.dialect.supports_standalone_offset() || limit.is_some() {
             if let Some(n) = offset {
-                self.builder.push(&format!(" OFFSET {}", n));
+                self.push(&format!(" OFFSET {}", n));
             }
         }
     }
 
     pub fn visit_table_ref(&mut self, table_ref: &TableRef) -> &mut Self {
         match table_ref {
-            TableRef::Named { table, alias } => {
-                self.visit_named_table(table);
-                self.builder.push_alias(alias.as_deref());
-            },
-            TableRef::Subquery { subquery, alias } => {
-                self.visit_subquery(subquery);
-                self.builder.push_alias(Some(alias));
-            },
-            TableRef::Join { join, alias } => {
-                self.visit_join(join);
-                self.builder.push_alias(alias.as_deref());
-            },
+            TableRef::Named { table, alias } => self.visit_named_table(table).visit_alias(alias),
+            TableRef::Subquery { subquery, alias } => self.visit_subquery(subquery).visit_alias(&Some(alias.clone())),
+            TableRef::Join { join, alias } => self.visit_join(join).visit_alias(alias),
         }
-        self
     }
 
     pub fn visit_named_table(&mut self, table: &NamedTable) -> &mut Self {
-        self.builder.push_quote(table.name());
-        self
+        self.push_quote(table.name())
     }
 
     pub fn visit_subquery(&mut self, subquery: &Subquery) -> &mut Self {
-        self.builder.push("(");
+        self.push("(");
         self.visit_select_statement(subquery.select_statement());
-        self.builder.push(")");
-        self
+        self.push(")")
     }
 
     pub fn visit_join(&mut self, join: &Join) -> &mut Self {
@@ -129,18 +128,10 @@ impl Visitor {
 
     pub fn visit_select_item(&mut self, item: &SelectItem) -> &mut Self {
         match item {
-            SelectItem::Wildcard => {
-                self.builder.push("*");
-            },
-            SelectItem::QualifiedWildcard(t) => {
-                self.builder.push_quote(t).push("*");
-            },
-            SelectItem::Expr { expr, alias } => {
-                self.visit_expr(expr, true);
-                self.builder.push_alias(alias.as_deref());
-            },
+            SelectItem::Wildcard => self.push("*"),
+            SelectItem::QualifiedWildcard(t) => self.push_quote(t).push("*"),
+            SelectItem::Expr { expr, alias } => self.visit_expr(expr, true).visit_alias(alias),
         }
-        self
     }
 
     pub fn visit_expr(&mut self, expr: &Expr, inline: bool) -> &mut Self {
@@ -148,68 +139,61 @@ impl Visitor {
             Expr::Column(c) => self.visit_column_ref(c),
             Expr::Literal(l) => self.visit_literal(l, inline),
             Expr::Binary { left, op, right } => self.visit_expr(left, inline).visit_op(op).visit_expr(right, inline),
-            Expr::In { expr, list, negated } => {
-                self.visit_expr(expr, inline)
-                    .visit_op(if *negated { &NOT_IN } else { &IN })
-                    .visit_expr_list(list, inline);
-                self
-            },
+            Expr::In { expr, list, negated } => self
+                .visit_expr(expr, inline)
+                .visit_op(if *negated { &NOT_IN } else { &IN })
+                .visit_expr_list(list, inline),
             Expr::Unary { op, expr } => self.visit_op(op).visit_expr(expr, inline),
             _ => panic!("不支持"),
         }
     }
 
     pub fn visit_expr_list(&mut self, expr_list: &Vec<Expr>, inline: bool) -> &mut Self {
-        self.builder.push("(");
+        self.push("(");
         let mut iter = expr_list.iter();
         if let Some(expr) = iter.next() {
             self.visit_expr(expr, inline);
         }
         for expr in iter {
-            self.builder.push(", ");
-            self.visit_expr(expr, inline);
+            self.push(", ").visit_expr(expr, inline);
         }
-        self.builder.push(")");
+        self.push(")");
         self
     }
 
     #[inline]
     pub fn visit_op(&mut self, op: &Op) -> &mut Self {
-        self.builder.push(" ").push(op.as_ref()).push(" ");
-        self
+        self.push(" ").push(op.as_ref()).push(" ")
     }
 
     pub fn visit_distinct(&mut self, distinct: &Distinct) -> &mut Self {
         match distinct {
-            Distinct::None => {},
-            Distinct::Simple => {
-                self.builder.push("DISTINCT ");
-            },
+            Distinct::None => self,
+            Distinct::Simple => self.push("DISTINCT "),
             Distinct::On(cols) => {
                 if self.builder.dialect.supports_distinct_on() {
-                    self.builder.push("DISTINCT ON (");
+                    self.push("DISTINCT ON (");
                     let mut iter = cols.iter();
                     if let Some(item) = iter.next() {
                         self.visit_column_ref(item);
                         for item in iter {
-                            self.builder.push(", ");
+                            self.push(", ");
                             self.visit_column_ref(item);
                         }
                     }
-                    self.builder.push(") ");
+                    self.push(") ")
                 } else {
-                    self.builder.push("DISTINCT ");
+                    self.push("DISTINCT ")
                 }
             },
         }
-        self
     }
 
     pub fn visit_column_ref(&mut self, col: &ColumnRef) -> &mut Self {
         if let Some(q) = &col.qualifier {
-            self.builder.push_quote(q).push(".");
+            self.push_quote(q).push(".");
         }
-        self.builder.push_quote(&col.name);
+        self.push_quote(&col.name);
         self
     }
 
@@ -219,41 +203,48 @@ impl Visitor {
             return self;
         }
 
-        let _: &Builder = match lit {
-            Literal::Null => self.builder.push("NULL"),
-            Literal::Int(v) => self.builder.push(&v.to_string()),
-            Literal::Float(v) => self.builder.push(&v.to_string()),
+        match lit {
+            Literal::Null => self.push("NULL"),
+            Literal::Int(v) => self.push(&v.to_string()),
+            Literal::Float(v) => self.push(&v.to_string()),
             Literal::Bool(v) => {
                 if self.builder.dialect.supports_boolean() {
-                    self.builder.push(&v.to_string())
+                    self.push(&v.to_string())
                 } else if *v {
-                    self.builder.push("1")
+                    self.push("1")
                 } else {
-                    self.builder.push("0")
+                    self.push("0")
                 }
             },
             Literal::String(v) => {
                 let escaped = v.replace("'", "''");
-                self.builder.push("'").push(&escaped).push("'")
+                self.push("'").push(&escaped).push("'")
             },
-            Literal::Date(v) => self.builder.push("'").push(&v.to_string()).push("'"),
-            Literal::DateTime(v) => self.builder.push("'").push(&v.to_string()).push("'"),
-            Literal::Time(v) => self.builder.push("'").push(&v.to_string()).push("'"),
-        };
+            Literal::Date(v) => self.push("'").push(&v.to_string()).push("'"),
+            Literal::DateTime(v) => self.push("'").push(&v.to_string()).push("'"),
+            Literal::Time(v) => self.push("'").push(&v.to_string()).push("'"),
+        }
+    }
+
+    fn visit_alias(&mut self, alias: &Option<Alias>) -> &mut Self {
+        if let Some(a) = alias {
+            self.push(" AS ");
+            self.push_quote(a.name());
+        }
         self
     }
+
     pub fn visit_locking(&mut self, lock: &Lock, wait: &Wait) -> &mut Self {
         match lock {
-            Lock::Update => self.builder.push(" FOR UPDATE"),
-            Lock::UpdateOf(n) => self.builder.push(" FOR UPDATE OF ").push_quote(n),
-            Lock::Share => self.builder.push(" FOR SHARE"),
+            Lock::Update => self.push(" FOR UPDATE"),
+            Lock::UpdateOf(n) => self.push(" FOR UPDATE OF ").push_quote(n),
+            Lock::Share => self.push(" FOR SHARE"),
         };
         match wait {
-            Wait::DEFAULT => &self.builder,
-            Wait::NoWait => self.builder.push(" NOWAIT"),
-            Wait::SkipLocked => self.builder.push(" SKIP LOCKED"),
-        };
-        self
+            Wait::DEFAULT => self,
+            Wait::NoWait => self.push(" NOWAIT"),
+            Wait::SkipLocked => self.push(" SKIP LOCKED"),
+        }
     }
 
     #[inline]
@@ -270,5 +261,15 @@ impl Visitor {
         let dialect = self.builder.dialect;
         dialect.render_force_index_hint(indexes, &mut self.builder);
         self
+    }
+
+    fn push(&mut self, v: impl AsRef<str>) -> &mut Self {
+        self.builder.push(v.as_ref());
+        self
+    }
+
+    fn push_quote(&mut self, v: impl AsRef<str>) -> &mut Self {
+        let char = self.builder.dialect.quote_char();
+        self.push(char).push(v).push(char)
     }
 }

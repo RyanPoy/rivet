@@ -12,3 +12,4 @@ pub mod ops;
 pub mod select_item;
 pub mod subquery;
 pub mod table_ref;
+pub mod alias;

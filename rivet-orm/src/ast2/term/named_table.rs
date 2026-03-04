@@ -1,3 +1,4 @@
+use crate::ast2::term::alias::Alias;
 use crate::ast2::term::table_ref::TableRef;
 
 #[derive(Debug, Clone)]
@@ -17,7 +18,7 @@ impl NamedTable {
         NamedTable(name.into())
     }
 
-    pub fn alias(self, alias: impl Into<String>) -> TableRef {
+    pub fn alias(self, alias: impl Into<Alias>) -> TableRef {
         TableRef::Named { table: self, alias: Some(alias.into()) }
     }
 
