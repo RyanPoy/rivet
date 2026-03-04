@@ -61,9 +61,14 @@ impl Dialect for MySQL {
     fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder) {
         let mut iter = indexes.iter();
         if let Some(index) = iter.next() {
-            builder.push(" FORCE INDEX (").push_quote(&index.to_string());
+            let char = self.quote_char();
+            builder
+                .push(" FORCE INDEX (")
+                .push(char)
+                .push(&index.to_string())
+                .push(char);
             for index in iter {
-                builder.push(", ").push_quote(&index.to_string());
+                builder.push(", ").push(char).push(&index.to_string()).push(char);
             }
             builder.push(")");
         }
@@ -146,8 +151,12 @@ impl Dialect for Sqlite {
     fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder) {
         let mut iter = indexes.iter();
         if let Some(index) = iter.next() {
-            builder.push(" INDEXED BY ");
-            builder.push_quote(&index.to_string());
+            let char = self.quote_char();
+            builder
+                .push(" INDEXED BY ")
+                .push(char)
+                .push(&index.to_string())
+                .push(char);
         }
     }
     #[inline]

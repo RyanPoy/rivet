@@ -17,12 +17,14 @@ use crate::ast2::term::table_ref::TableRef;
 
 pub struct Visitor {
     builder: Builder,
+    dialect: &'static dyn Dialect,
 }
 
 impl Visitor {
     pub fn new(dialect: &'static dyn Dialect) -> Self {
         Self {
-            builder: Builder::new(dialect),
+            builder: Builder::new(),
+            dialect,
         }
     }
     pub fn mysql() -> Self {
@@ -45,7 +47,7 @@ impl Visitor {
         self.visit_where_clause(&select_stmt.where_clause);
         self.visit_limit_and_offset(select_stmt.limit, select_stmt.offset);
 
-        if self.builder.dialect.supports_select_for_update() {
+        if self.dialect.supports_select_for_update() {
             if let Some((lock, wait)) = &select_stmt.locking {
                 self.visit_locking(lock, wait);
             }
@@ -96,7 +98,7 @@ impl Visitor {
         if let Some(n) = limit {
             self.push(&format!(" LIMIT {}", n));
         }
-        if self.builder.dialect.supports_standalone_offset() || limit.is_some() {
+        if self.dialect.supports_standalone_offset() || limit.is_some() {
             if let Some(n) = offset {
                 self.push(&format!(" OFFSET {}", n));
             }
@@ -170,7 +172,7 @@ impl Visitor {
             Distinct::None => self,
             Distinct::Simple => self.push("DISTINCT "),
             Distinct::On(cols) => {
-                if self.builder.dialect.supports_distinct_on() {
+                if self.dialect.supports_distinct_on() {
                     self.push("DISTINCT ON (");
                     let mut iter = cols.iter();
                     if let Some(item) = iter.next() {
@@ -198,7 +200,7 @@ impl Visitor {
 
     pub fn visit_literal(&mut self, lit: &Literal, inline: bool) -> &mut Self {
         if !inline && !lit.is_null() {
-            self.builder.bind(lit.clone());
+            self.builder.bind(lit.clone(), self.dialect);
             return self;
         }
 
@@ -206,7 +208,7 @@ impl Visitor {
             Literal::Null => self.push("NULL"),
             Literal::Int(v) => self.push(&v.to_string()),
             Literal::Float(v) => self.push(&v.to_string()),
-            Literal::Bool(v) => self.push(self.builder.dialect.bool_str(*v)),
+            Literal::Bool(v) => self.push(self.dialect.bool_str(*v)),
             Literal::String(v) => self.push("'").push(&v.replace("'", "''")).push("'"),
             Literal::Date(v) => self.push("'").push(&v.to_string()).push("'"),
             Literal::DateTime(v) => self.push("'").push(&v.to_string()).push("'"),
@@ -246,8 +248,7 @@ impl Visitor {
     }
 
     fn visit_indexes(&mut self, indexes: &[Index]) -> &mut Self {
-        let dialect = self.builder.dialect;
-        dialect.render_force_index_hint(indexes, &mut self.builder);
+        self.dialect.render_force_index_hint(indexes, &mut self.builder);
         self
     }
 
@@ -256,9 +257,10 @@ impl Visitor {
         self.builder.push(v.as_ref());
         self
     }
+
     #[inline]
     fn push_quote(&mut self, v: &str) -> &mut Self {
-        let char = self.builder.dialect.quote_char();
+        let char = self.dialect.quote_char();
         self.push(char).push(v).push(char)
     }
 }
