@@ -98,11 +98,11 @@ impl<D: Dialect> Visitor<D> {
     }
     pub fn visit_limit_and_offset(&mut self, limit: Option<usize>, offset: Option<usize>) {
         if let Some(n) = limit {
-            self.push(&format!(" LIMIT {}", n));
+            self.push(" LIMIT ").push(&n.to_string());
         }
         if self.dialect.supports_standalone_offset() || limit.is_some() {
             if let Some(n) = offset {
-                self.push(&format!(" OFFSET {}", n));
+                self.push(" OFFSET ").push(&n.to_string());
             }
         }
     }

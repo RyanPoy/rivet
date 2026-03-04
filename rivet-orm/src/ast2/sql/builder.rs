@@ -27,7 +27,10 @@ impl Builder {
         self.binder.push(value);
         match dialect.placeholder_style() {
             PlaceHolderStyle::QuestionMark => self.buff.push_str("?"),
-            PlaceHolderStyle::Numbered => self.buff.push_str(&format!("${}", self.binder.len())),
+            PlaceHolderStyle::Numbered => {
+                self.buff.push_str("$");
+                self.buff.push_str(&self.binder.len().to_string());
+            },
         }
         self
     }
