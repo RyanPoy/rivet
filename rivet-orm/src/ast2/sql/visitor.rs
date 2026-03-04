@@ -244,11 +244,12 @@ impl<D: Dialect> Visitor<D> {
         (&self.builder.buff, &self.builder.binder)
     }
 
+    #[inline]
     pub fn reset(&mut self) -> &mut Self {
         self.builder.clear();
         self
     }
-
+    #[inline]
     fn visit_indexes(&mut self, indexes: &[Index]) -> &mut Self {
         self.dialect.render_force_index_hint(indexes, &mut self.builder);
         self
@@ -259,8 +260,10 @@ impl<D: Dialect> Visitor<D> {
         self.builder.push(v);
         self
     }
+
+    #[inline]
     fn push_escape(&mut self, v: &str) -> &mut Self {
-        let v = v.replace("'", "''").replace("\\", "\\\\").replace("\"", "\"\"");
+        let v = v.replace("'", "''").replace("\\", "\\\\");
         self.builder.push(&v);
         self
     }
