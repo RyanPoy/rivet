@@ -7,7 +7,6 @@ pub enum PlaceHolderStyle {
 }
 
 pub trait Dialect {
-    fn name(&self) -> &'static str;
     fn quote_char(&self) -> &'static str;
     fn placeholder_style(&self) -> PlaceHolderStyle;
 
@@ -24,10 +23,6 @@ pub trait Dialect {
 
 pub struct MySQL;
 impl Dialect for MySQL {
-    #[inline]
-    fn name(&self) -> &'static str {
-        "MySQL"
-    }
     #[inline]
     fn quote_char(&self) -> &'static str {
         "`"
@@ -76,10 +71,6 @@ impl Dialect for MySQL {
 pub struct PostgreSQL;
 impl Dialect for PostgreSQL {
     #[inline]
-    fn name(&self) -> &'static str {
-        "PostgreSQL"
-    }
-    #[inline]
     fn quote_char(&self) -> &'static str {
         "\""
     }
@@ -115,10 +106,6 @@ impl Dialect for PostgreSQL {
 }
 pub struct Sqlite;
 impl Dialect for Sqlite {
-    #[inline]
-    fn name(&self) -> &'static str {
-        "Sqlite"
-    }
     #[inline]
     fn quote_char(&self) -> &'static str {
         "\""

@@ -615,12 +615,12 @@ fn test_select_for_share() {
 
     let mut v = Visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE SHARE");
+    assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR SHARE");
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
     let mut v = Visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE SHARE"#);
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR SHARE"#);
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
     let mut v = Visitor::sqlite();

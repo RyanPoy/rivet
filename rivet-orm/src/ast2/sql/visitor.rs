@@ -1,7 +1,6 @@
 use crate::ast2::sql::builder::Builder;
 use crate::ast2::sql::dialect::{Dialect, LITE, MY, PG};
 use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::ops::{IN, NOT_IN, Op};
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::expr::Expr;
@@ -10,6 +9,7 @@ use crate::ast2::term::join::Join;
 use crate::ast2::term::literal::Literal;
 use crate::ast2::term::lock::{Lock, Wait};
 use crate::ast2::term::named_table::NamedTable;
+use crate::ast2::term::ops::{IN, NOT_IN, Op};
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::table_ref::TableRef;
@@ -246,7 +246,7 @@ impl Visitor {
         match lock {
             Lock::Update => self.builder.push(" FOR UPDATE"),
             Lock::UpdateOf(n) => self.builder.push(" FOR UPDATE OF ").push_quote(n),
-            Lock::Share => self.builder.push(" FOR UPDATE SHARE"),
+            Lock::Share => self.builder.push(" FOR SHARE"),
         };
         match wait {
             Wait::DEFAULT => &self.builder,
@@ -266,7 +266,7 @@ impl Visitor {
         self
     }
 
-    fn visit_indexes(&mut self, indexes: &[Index]) -> &mut Self{
+    fn visit_indexes(&mut self, indexes: &[Index]) -> &mut Self {
         let dialect = self.builder.dialect;
         dialect.render_force_index_hint(indexes, &mut self.builder);
         self
