@@ -1,10 +1,16 @@
 use crate::ast2::sql::builder::Builder;
 use crate::ast2::term::index::Index;
+use std::sync::LazyLock;
 
 pub enum PlaceHolderStyle {
     QuestionMark,
     Numbered,
 }
+
+const BOOL_T: &str = "true";
+const BOOL_F: &str = "false";
+const BOOL_1: &str = "1";
+const BOOL_0: &str = "0";
 
 pub trait Dialect {
     fn quote_char(&self) -> &'static str;
@@ -14,11 +20,10 @@ pub trait Dialect {
     fn supports_window_function(&self) -> bool;
     fn supports_returning(&self) -> bool;
     fn supports_standalone_offset(&self) -> bool;
-    fn supports_boolean(&self) -> bool;
 
     fn supports_select_for_update(&self) -> bool;
-
     fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder);
+    fn bool_str(&self, v: bool) -> &str;
 }
 
 pub struct MySQL;
@@ -47,10 +52,7 @@ impl Dialect for MySQL {
     fn supports_standalone_offset(&self) -> bool {
         false
     }
-    #[inline]
-    fn supports_boolean(&self) -> bool {
-        false
-    }
+
     #[inline]
     fn supports_select_for_update(&self) -> bool {
         true
@@ -65,6 +67,10 @@ impl Dialect for MySQL {
             }
             builder.push(")");
         }
+    }
+    #[inline]
+    fn bool_str(&self, v: bool) -> &str {
+        if v { BOOL_1 } else { BOOL_0 }
     }
 }
 
@@ -94,15 +100,16 @@ impl Dialect for PostgreSQL {
     fn supports_standalone_offset(&self) -> bool {
         true
     }
-    #[inline]
-    fn supports_boolean(&self) -> bool {
-        true
-    }
+
     #[inline]
     fn supports_select_for_update(&self) -> bool {
         true
     }
     fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder) {}
+    #[inline]
+    fn bool_str(&self, v: bool) -> &str {
+        if v { BOOL_T } else { BOOL_F }
+    }
 }
 pub struct Sqlite;
 impl Dialect for Sqlite {
@@ -130,10 +137,7 @@ impl Dialect for Sqlite {
     fn supports_standalone_offset(&self) -> bool {
         true
     }
-    #[inline]
-    fn supports_boolean(&self) -> bool {
-        false
-    }
+
     #[inline]
     fn supports_select_for_update(&self) -> bool {
         false
@@ -145,6 +149,10 @@ impl Dialect for Sqlite {
             builder.push(" INDEXED BY ");
             builder.push_quote(&index.to_string());
         }
+    }
+    #[inline]
+    fn bool_str(&self, v: bool) -> &str {
+        if v { BOOL_1 } else { BOOL_0 }
     }
 }
 

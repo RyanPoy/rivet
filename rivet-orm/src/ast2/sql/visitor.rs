@@ -206,19 +206,8 @@ impl Visitor {
             Literal::Null => self.push("NULL"),
             Literal::Int(v) => self.push(&v.to_string()),
             Literal::Float(v) => self.push(&v.to_string()),
-            Literal::Bool(v) => {
-                if self.builder.dialect.supports_boolean() {
-                    self.push(&v.to_string())
-                } else if *v {
-                    self.push("1")
-                } else {
-                    self.push("0")
-                }
-            },
-            Literal::String(v) => {
-                let escaped = v.replace("'", "''");
-                self.push("'").push(&escaped).push("'")
-            },
+            Literal::Bool(v) => self.push(self.builder.dialect.bool_str(*v)),
+            Literal::String(v) => self.push("'").push(&v.replace("'", "''")).push("'"),
             Literal::Date(v) => self.push("'").push(&v.to_string()).push("'"),
             Literal::DateTime(v) => self.push("'").push(&v.to_string()).push("'"),
             Literal::Time(v) => self.push("'").push(&v.to_string()).push("'"),
@@ -262,11 +251,12 @@ impl Visitor {
         self
     }
 
+    #[inline]
     fn push(&mut self, v: &str) -> &mut Self {
         self.builder.push(v.as_ref());
         self
     }
-
+    #[inline]
     fn push_quote(&mut self, v: &str) -> &mut Self {
         let char = self.builder.dialect.quote_char();
         self.push(char).push(v).push(char)
