@@ -14,7 +14,6 @@ use crate::ast2::term::ops::{IN, NOT_IN, Op};
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::table_ref::TableRef;
-use std::fmt;
 
 pub struct Visitor {
     builder: Builder,
@@ -263,12 +262,12 @@ impl Visitor {
         self
     }
 
-    fn push(&mut self, v: impl AsRef<str>) -> &mut Self {
+    fn push(&mut self, v: &str) -> &mut Self {
         self.builder.push(v.as_ref());
         self
     }
 
-    fn push_quote(&mut self, v: impl AsRef<str>) -> &mut Self {
+    fn push_quote(&mut self, v: &str) -> &mut Self {
         let char = self.builder.dialect.quote_char();
         self.push(char).push(v).push(char)
     }
