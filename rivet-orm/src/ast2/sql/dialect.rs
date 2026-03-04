@@ -1,6 +1,5 @@
 use crate::ast2::sql::builder::Builder;
 use crate::ast2::term::index::Index;
-use std::sync::LazyLock;
 
 pub enum PlaceHolderStyle {
     QuestionMark,
@@ -10,9 +9,7 @@ pub enum PlaceHolderStyle {
 pub trait Dialect {
     fn quote_char(&self) -> &'static str;
     fn placeholder_style(&self) -> PlaceHolderStyle;
-
     fn supports_distinct_on(&self) -> bool;
-    fn supports_window_function(&self) -> bool;
     fn supports_returning(&self) -> bool;
     fn supports_standalone_offset(&self) -> bool;
 
@@ -35,10 +32,7 @@ impl Dialect for MySQL {
     fn supports_distinct_on(&self) -> bool {
         false
     }
-    #[inline]
-    fn supports_window_function(&self) -> bool {
-        true // 8+
-    }
+
     #[inline]
     fn supports_returning(&self) -> bool {
         false
@@ -88,10 +82,7 @@ impl Dialect for PostgreSQL {
     fn supports_distinct_on(&self) -> bool {
         true
     }
-    #[inline]
-    fn supports_window_function(&self) -> bool {
-        true
-    }
+
     #[inline]
     fn supports_returning(&self) -> bool {
         true
@@ -125,10 +116,7 @@ impl Dialect for Sqlite {
     fn supports_distinct_on(&self) -> bool {
         false
     }
-    #[inline]
-    fn supports_window_function(&self) -> bool {
-        false
-    }
+
     #[inline]
     fn supports_returning(&self) -> bool {
         true

@@ -30,6 +30,7 @@ pub struct Visitor<D> {
     builder: Builder,
     dialect: D,
 }
+
 impl<D: Dialect> Visitor<D> {
     pub fn new(dialect: D) -> Self {
         Self {
