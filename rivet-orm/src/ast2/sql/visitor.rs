@@ -240,15 +240,12 @@ impl<D: Dialect> Visitor<D> {
     }
 
     #[inline]
-    pub fn finish(&self) -> (&str, &Vec<Literal>) {
-        (&self.builder.buff, &self.builder.binder)
+    pub fn finish(&self) -> (String, Vec<Literal>) {
+        let s = self.builder.buff.clone();
+        let values = self.builder.binder.clone();
+        (s, values)
     }
 
-    #[inline]
-    pub fn reset(&mut self) -> &mut Self {
-        self.builder.clear();
-        self
-    }
     #[inline]
     fn visit_indexes(&mut self, indexes: &[Index]) -> &mut Self {
         self.dialect.render_force_index_hint(indexes, &mut self.builder);

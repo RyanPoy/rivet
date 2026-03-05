@@ -16,7 +16,6 @@ impl Builder {
             binder: Vec::new(),
         }
     }
-
     #[inline]
     pub fn push(&mut self, s: &str) -> &mut Self {
         self.buff.push_str(s);
@@ -32,12 +31,6 @@ impl Builder {
                 self.buff.push_str(&self.binder.len().to_string());
             },
         }
-        self
-    }
-
-    pub fn clear(&mut self) -> &mut Self {
-        self.buff.clear();
-        self.binder.clear();
         self
     }
 }
