@@ -678,19 +678,20 @@ fn test_select_for_update_skip() {
 #[test]
 fn test_select_for_update_of() {
     let col = ColumnRef::new("foo");
+    let t = NamedTable::new("users");
     let stmt = SelectStatement::new()
-        .from("users")
+        .from(t.clone())
         .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
-        .for_update(Lock::UpdateOf("c".to_string()), Wait::DEFAULT);
+        .for_update(Lock::UpdateOf(t), Wait::DEFAULT);
 
     let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE OF `c`");
+    assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE OF `users`");
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
     let mut v = visitor::postgre();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
-    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE OF "c""#);
+    assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE OF "users""#);
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
     let mut v = visitor::sqlite();
@@ -702,16 +703,17 @@ fn test_select_for_update_of() {
 #[test]
 fn test_select_for_update_skip_locked_and_of() {
     let col = ColumnRef::new("foo");
+    let t = NamedTable::new("users");
     let stmt = SelectStatement::new()
-        .from("users")
+        .from(t.clone())
         .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
-        .for_update(Lock::UpdateOf("f".to_string()), Wait::SkipLocked);
+        .for_update(Lock::UpdateOf(t), Wait::SkipLocked);
 
     let mut v = visitor::mysql();
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
-        "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE OF `f` SKIP LOCKED"
+        "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE OF `users` SKIP LOCKED"
     );
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 
@@ -719,7 +721,7 @@ fn test_select_for_update_skip_locked_and_of() {
     let (sql, values) = v.visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
-        r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE OF "f" SKIP LOCKED"#
+        r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE OF "users" SKIP LOCKED"#
     );
     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 

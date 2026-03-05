@@ -58,7 +58,7 @@ impl<D: Dialect> Visitor<D> {
         {
             match lock {
                 Lock::Update => self.push(" FOR UPDATE"),
-                Lock::UpdateOf(n) => self.push(" FOR UPDATE OF ").push_quote(n),
+                Lock::UpdateOf(n) => self.push(" FOR UPDATE OF ").visit_named_table(n),
                 Lock::Share => self.push(" FOR SHARE"),
             };
             match wait {
