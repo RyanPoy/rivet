@@ -1,19 +1,33 @@
 use crate::ast2::sql::builder::Builder;
 use crate::ast2::term::index::Index;
-
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PlaceHolderStyle {
     QuestionMark,
     Numbered,
 }
 
+#[derive(Clone, Debug, Copy, Default)]
+pub struct Capability {
+    pub distinct_on: bool,
+    pub returning: bool,
+    pub standalone_offset: bool,
+    pub select_for_update: bool,
+}
+impl Capability {
+    pub fn all() -> Self {
+        Capability {
+            distinct_on: true,
+            returning: true,
+            standalone_offset: true,
+            select_for_update: true,
+        }
+    }
+}
+
 pub trait Dialect {
+    fn caps(&self) -> Capability;
     fn quote_char(&self) -> &'static str;
     fn placeholder_style(&self) -> PlaceHolderStyle;
-    fn supports_distinct_on(&self) -> bool;
-    fn supports_returning(&self) -> bool;
-    fn supports_standalone_offset(&self) -> bool;
-
-    fn supports_select_for_update(&self) -> bool;
     fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder);
     fn bool_str(&self, v: bool) -> &'static str;
 }
@@ -21,30 +35,20 @@ pub trait Dialect {
 pub struct MySQL;
 impl Dialect for MySQL {
     #[inline]
+    fn caps(&self) -> Capability {
+        Capability {
+            select_for_update: true,
+            ..Capability::default()
+        }
+    }
+
+    #[inline]
     fn quote_char(&self) -> &'static str {
         "`"
     }
     #[inline]
     fn placeholder_style(&self) -> PlaceHolderStyle {
         PlaceHolderStyle::QuestionMark
-    }
-    #[inline]
-    fn supports_distinct_on(&self) -> bool {
-        false
-    }
-
-    #[inline]
-    fn supports_returning(&self) -> bool {
-        false
-    }
-    #[inline]
-    fn supports_standalone_offset(&self) -> bool {
-        false
-    }
-
-    #[inline]
-    fn supports_select_for_update(&self) -> bool {
-        true
     }
 
     fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder) {
@@ -71,6 +75,10 @@ impl Dialect for MySQL {
 pub struct PostgreSQL;
 impl Dialect for PostgreSQL {
     #[inline]
+    fn caps(&self) -> Capability {
+        Capability::all()
+    }
+    #[inline]
     fn quote_char(&self) -> &'static str {
         "\""
     }
@@ -78,32 +86,24 @@ impl Dialect for PostgreSQL {
     fn placeholder_style(&self) -> PlaceHolderStyle {
         PlaceHolderStyle::Numbered
     }
-    #[inline]
-    fn supports_distinct_on(&self) -> bool {
-        true
-    }
 
-    #[inline]
-    fn supports_returning(&self) -> bool {
-        true
-    }
-    #[inline]
-    fn supports_standalone_offset(&self) -> bool {
-        true
-    }
-
-    #[inline]
-    fn supports_select_for_update(&self) -> bool {
-        true
-    }
     fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder) {}
     #[inline]
     fn bool_str(&self, v: bool) -> &'static str {
         if v { "true" } else { "false" }
     }
 }
-pub struct Sqlite;
-impl Dialect for Sqlite {
+pub struct SQLite;
+impl Dialect for SQLite {
+    #[inline]
+    fn caps(&self) -> Capability {
+        Capability {
+            returning: true,
+            standalone_offset: true,
+            ..Capability::default()
+        }
+    }
+
     #[inline]
     fn quote_char(&self) -> &'static str {
         "\""
@@ -111,24 +111,6 @@ impl Dialect for Sqlite {
     #[inline]
     fn placeholder_style(&self) -> PlaceHolderStyle {
         PlaceHolderStyle::QuestionMark
-    }
-    #[inline]
-    fn supports_distinct_on(&self) -> bool {
-        false
-    }
-
-    #[inline]
-    fn supports_returning(&self) -> bool {
-        true
-    }
-    #[inline]
-    fn supports_standalone_offset(&self) -> bool {
-        true
-    }
-
-    #[inline]
-    fn supports_select_for_update(&self) -> bool {
-        false
     }
 
     fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder) {

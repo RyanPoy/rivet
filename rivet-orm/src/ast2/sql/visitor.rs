@@ -1,5 +1,5 @@
 use crate::ast2::sql::builder::Builder;
-use crate::ast2::sql::dialect::{Dialect, MySQL, PostgreSQL, Sqlite};
+use crate::ast2::sql::dialect::{Dialect, MySQL, PostgreSQL, SQLite};
 use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::alias::Alias;
 use crate::ast2::term::column_ref::ColumnRef;
@@ -23,8 +23,8 @@ pub fn postgre() -> Visitor<PostgreSQL> {
     Visitor::new(PostgreSQL {})
 }
 
-pub fn sqlite() -> Visitor<Sqlite> {
-    Visitor::new(Sqlite {})
+pub fn sqlite() -> Visitor<SQLite> {
+    Visitor::new(SQLite {})
 }
 pub struct Visitor<D> {
     builder: Builder,
@@ -48,11 +48,24 @@ impl<D: Dialect> Visitor<D> {
         self.visit_indexes(&select_stmt.indexes);
         self.visit_where_clause(&select_stmt.where_clause);
         self.visit_limit_and_offset(select_stmt.limit, select_stmt.offset);
+        self.visit_locking(&select_stmt.locking);
+        self
+    }
 
-        if self.dialect.supports_select_for_update() {
-            if let Some((lock, wait)) = &select_stmt.locking {
-                self.visit_locking(lock, wait);
-            }
+    pub fn visit_locking(&mut self, locking: &Option<(Lock, Wait)>) -> &mut Self {
+        if self.dialect.caps().select_for_update
+            && let Some((lock, wait)) = locking
+        {
+            match lock {
+                Lock::Update => self.push(" FOR UPDATE"),
+                Lock::UpdateOf(n) => self.push(" FOR UPDATE OF ").push_quote(n),
+                Lock::Share => self.push(" FOR SHARE"),
+            };
+            match wait {
+                Wait::DEFAULT => self.noop(),
+                Wait::NoWait => self.push(" NOWAIT"),
+                Wait::SkipLocked => self.push(" SKIP LOCKED"),
+            };
         }
         self
     }
@@ -100,7 +113,7 @@ impl<D: Dialect> Visitor<D> {
         if let Some(n) = limit {
             self.push(" LIMIT ").push(&n.to_string());
         }
-        if self.dialect.supports_standalone_offset() || limit.is_some() {
+        if self.dialect.caps().standalone_offset || limit.is_some() {
             if let Some(n) = offset {
                 self.push(" OFFSET ").push(&n.to_string());
             }
@@ -174,7 +187,7 @@ impl<D: Dialect> Visitor<D> {
             Distinct::None => self,
             Distinct::Simple => self.push("DISTINCT "),
             Distinct::On(cols) => {
-                if self.dialect.supports_distinct_on() {
+                if self.dialect.caps().distinct_on {
                     self.push("DISTINCT ON (");
                     let mut iter = cols.iter();
                     if let Some(item) = iter.next() {
@@ -226,19 +239,6 @@ impl<D: Dialect> Visitor<D> {
         self
     }
 
-    pub fn visit_locking(&mut self, lock: &Lock, wait: &Wait) -> &mut Self {
-        match lock {
-            Lock::Update => self.push(" FOR UPDATE"),
-            Lock::UpdateOf(n) => self.push(" FOR UPDATE OF ").push_quote(n),
-            Lock::Share => self.push(" FOR SHARE"),
-        };
-        match wait {
-            Wait::DEFAULT => self,
-            Wait::NoWait => self.push(" NOWAIT"),
-            Wait::SkipLocked => self.push(" SKIP LOCKED"),
-        }
-    }
-
     #[inline]
     pub fn finish(&self) -> (&str, &Vec<Literal>) {
         (&self.builder.buff, &self.builder.binder)
@@ -272,5 +272,10 @@ impl<D: Dialect> Visitor<D> {
     fn push_quote(&mut self, v: &str) -> &mut Self {
         let char = self.dialect.quote_char();
         self.push(char).push(v).push(char)
+    }
+
+    #[inline]
+    fn noop(&mut self) -> &mut Self {
+        self
     }
 }
