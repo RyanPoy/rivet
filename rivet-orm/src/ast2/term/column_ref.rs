@@ -8,7 +8,6 @@ use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct ColumnRef {
-    pub qualifier: Option<String>, // 对应 TableRef.visible_name()
     pub table_inner: Option<Arc<TableInner>>,
     pub name: String,
 }
@@ -22,14 +21,9 @@ impl From<&str> for ColumnRef {
 impl ColumnRef {
     pub fn new(name: impl Into<String>, table: Option<Arc<TableInner>>) -> Self {
         ColumnRef {
-            qualifier: None,
             name: name.into(),
             table_inner: table,
         }
-    }
-    pub fn qualifier(mut self, qualifier: impl Into<String>) -> Self {
-        self.qualifier = Some(qualifier.into());
-        self
     }
     pub fn alias(self, name: impl Into<Alias>) -> SelectItem {
         SelectItem::Expr {

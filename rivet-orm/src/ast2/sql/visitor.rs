@@ -242,16 +242,12 @@ impl<D: Dialect> Visitor<D> {
     }
 
     pub fn visit_column_ref(&mut self, col: &ColumnRef) -> &mut Self {
-        if let Some(q) = &col.qualifier {
-            self.push_quote(q).push(".");
-        }
         if let Some(table) = &col.table_inner
             && let Some(num) = self.alias_num_of(table)
         {
             self.push_quote(&format!("t{}", num)).push(".");
         }
-        self.push_quote(&col.name);
-        self
+        self.push_quote(&col.name)
     }
 
     pub fn visit_literal(&mut self, lit: &Literal, inline: bool) -> &mut Self {

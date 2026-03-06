@@ -9,28 +9,22 @@ pub enum SelectItem {
     Wildcard,                  // SELECT * FROM users t;
     QualifiedWildcard(String), // SELECT t.* FROM users t;
 }
-286
+
 impl From<&str> for SelectItem {
     fn from(value: &str) -> Self {
         if value == "*" {
-            SelectItem::Wildcard
-        } else if value.ends_with(".*") {
-            SelectItem::QualifiedWildcard(value[..value.len() - 2].to_string())
-        } else {
-            let col = match value.split_once(".") {
-                Some((q, n)) => ColumnRef {
-                    qualifier: Some(q.to_string()),
-                    name: n.to_string(),
-                    table_inner: None,
-                },
-                None => ColumnRef {
-                    qualifier: None,
-                    name: value.to_string(),
-                    table_inner: None,
-                },
-            };
-            SelectItem::from(col)
+            return SelectItem::Wildcard;
         }
+        if value.ends_with(".*") {
+            return SelectItem::QualifiedWildcard(value[..value.len() - 2].to_string());
+        }
+
+        let (name, alias) = match value.split_once(".") {
+            Some((prefix, name)) => (name, Some(Alias::new(prefix.to_string()))),
+            None => (value, None),
+        };
+        let expr = Expr::from(ColumnRef::from(name));
+        SelectItem::Expr { expr, alias }
     }
 }
 

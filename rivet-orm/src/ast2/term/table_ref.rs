@@ -45,7 +45,6 @@ impl From<NamedTable> for TableRef {
 impl TableRef {
     pub fn column(&self, name: impl Into<String>) -> ColumnRef {
         ColumnRef {
-            qualifier: self.alias.clone().map(|e| e.name().to_string()),
             name: name.into(),
             table_inner: Some(self.inner.clone()),
         }
