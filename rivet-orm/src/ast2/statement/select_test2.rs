@@ -14,7 +14,10 @@ fn test_select() {
     let id = u.column("id");
     let username = u.column("username");
     let stmt = SelectStatement::new()
-        .from(u.clone())
+        .from(&u)
+        .from("teachers")
+        .from(["cards", "departments"])
+        .from(vec!["classes", "grades"])
         .select(&id)
         .select(&username)
         .select([u.column("age"), u.column("password")])
@@ -25,7 +28,7 @@ fn test_select() {
     let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
-        "SELECT `t1`.`id`, `t1`.`username`, `t1`.`age`, `t1`.`password`, `t1`.`gender`, `t1`.`score` FROM `users` AS `t1` WHERE `t1`.`username` = ? AND `t1`.`username` = ?"
+        "SELECT `t1`.`id`, `t1`.`username`, `t1`.`age`, `t1`.`password`, `t1`.`gender`, `t1`.`score` FROM `users` AS `t1`, `teachers` AS `t2`, `cards` AS `t3`, `departments` AS `t4`, `classes` AS `t5`, `grades` AS `t6` WHERE `t1`.`username` = ? AND `t1`.`username` = ?"
             .to_string()
     );
     assert_eq!(values, ["foo".into(), "bar".into()]);
@@ -33,7 +36,7 @@ fn test_select() {
     let (sql, values) = visitor::postgre().visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
-        r#"SELECT "t1"."id", "t1"."username", "t1"."age", "t1"."password", "t1"."gender", "t1"."score" FROM "users" AS "t1" WHERE "t1"."username" = $1 AND "t1"."username" = $2"#
+        r#"SELECT "t1"."id", "t1"."username", "t1"."age", "t1"."password", "t1"."gender", "t1"."score" FROM "users" AS "t1", "teachers" AS "t2", "cards" AS "t3", "departments" AS "t4", "classes" AS "t5", "grades" AS "t6" WHERE "t1"."username" = $1 AND "t1"."username" = $2"#
             .to_string()
     );
     assert_eq!(values, vec!["foo".into(), "bar".into()]);
@@ -41,7 +44,7 @@ fn test_select() {
     let (sql, values) = visitor::sqlite().visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
-        r#"SELECT "t1"."id", "t1"."username", "t1"."age", "t1"."password", "t1"."gender", "t1"."score" FROM "users" AS "t1" WHERE "t1"."username" = ? AND "t1"."username" = ?"#
+        r#"SELECT "t1"."id", "t1"."username", "t1"."age", "t1"."password", "t1"."gender", "t1"."score" FROM "users" AS "t1", "teachers" AS "t2", "cards" AS "t3", "departments" AS "t4", "classes" AS "t5", "grades" AS "t6" WHERE "t1"."username" = ? AND "t1"."username" = ?"#
             .to_string()
     );
     assert_eq!(values, vec!["foo".into(), "bar".into()]);

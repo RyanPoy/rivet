@@ -93,6 +93,23 @@ pub trait IntoTableRefs {
     fn into_table_refs(self) -> Vec<TableRef>;
 }
 
+impl IntoTableRefs for TableRef {
+    fn into_table_refs(self) -> Vec<TableRef> {
+        vec![self]
+    }
+}
+impl IntoTableRefs for &TableRef {
+    fn into_table_refs(self) -> Vec<TableRef> {
+        vec![self.clone()]
+    }
+}
+
+impl IntoTableRefs for &str {
+    fn into_table_refs(self) -> Vec<TableRef> {
+        vec![self.into()]
+    }
+}
+
 impl<T> IntoTableRefs for Vec<T>
 where
     T: Into<TableRef>,
@@ -108,14 +125,5 @@ where
 {
     fn into_table_refs(self) -> Vec<TableRef> {
         self.into_iter().map(Into::into).collect()
-    }
-}
-
-impl<T> IntoTableRefs for T
-where
-    T: Into<TableRef>,
-{
-    fn into_table_refs(self) -> Vec<TableRef> {
-        vec![self.into()]
     }
 }
