@@ -282,7 +282,13 @@ impl<D: Dialect> Visitor<D> {
 
     #[inline]
     pub fn finish(&self) -> (String, Vec<Literal>) {
+<<<<<<< HEAD
         (self.builder.buff.clone(), self.builder.binder.clone())
+=======
+        let s = self.builder.buff.clone();
+        let values = self.builder.binder.clone();
+        (s, values)
+>>>>>>> c1d279ee0ccd59e69c5fb330410c08a2180cfc37
     }
 
     #[inline]
