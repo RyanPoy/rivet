@@ -9,7 +9,7 @@ pub enum SelectItem {
     Wildcard,                  // SELECT * FROM users t;
     QualifiedWildcard(String), // SELECT t.* FROM users t;
 }
-
+286
 impl From<&str> for SelectItem {
     fn from(value: &str) -> Self {
         if value == "*" {
