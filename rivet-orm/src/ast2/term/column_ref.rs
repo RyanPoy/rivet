@@ -32,7 +32,7 @@ impl ColumnRef {
         }
     }
 
-    pub fn eq<T>(self, rhs: T) -> Expr
+    pub fn eq<T>(&self, rhs: T) -> Expr
     where
         T: Into<Expr>,
     {
@@ -42,7 +42,7 @@ impl ColumnRef {
             _ => EQ,
         };
         Expr::Binary {
-            left: Box::new(Expr::Column(self)),
+            left: Box::new(Expr::Column(self.clone())),
             op,
             right: Box::new(right),
         }

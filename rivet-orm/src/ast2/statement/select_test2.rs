@@ -14,33 +14,40 @@ fn test_select() {
     let id = u.column("id");
     let username = u.column("username");
     let stmt = SelectStatement::new()
-        .from(u)
-        .select(id)
-        .select(username.clone())
-        .where_(username.eq("foo"));
+        .from(u.clone())
+        .select(&id)
+        .select(&username)
+        .select([u.column("age"), u.column("password")])
+        .select(vec![u.column("gender"), u.column("score")])
+        .where_(username.eq("foo"))
+        .where_(username.eq("bar"));
 
     let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
-        "SELECT `t1`.`id`, `t1`.`username` FROM `users` AS `t1` WHERE `t1`.`username` = ?".to_string()
+        "SELECT `t1`.`id`, `t1`.`username`, `t1`.`age`, `t1`.`password`, `t1`.`gender`, `t1`.`score` FROM `users` AS `t1` WHERE `t1`.`username` = ? AND `t1`.`username` = ?"
+            .to_string()
     );
-    assert_eq!(values, ["foo".into()]);
+    assert_eq!(values, ["foo".into(), "bar".into()]);
 
     let (sql, values) = visitor::postgre().visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
-        r#"SELECT "t1"."id", "t1"."username" FROM "users" AS "t1" WHERE "t1"."username" = $1"#.to_string()
+        r#"SELECT "t1"."id", "t1"."username", "t1"."age", "t1"."password", "t1"."gender", "t1"."score" FROM "users" AS "t1" WHERE "t1"."username" = $1 AND "t1"."username" = $2"#
+            .to_string()
     );
-    assert_eq!(values, vec!["foo".into()]);
+    assert_eq!(values, vec!["foo".into(), "bar".into()]);
 
     let (sql, values) = visitor::sqlite().visit_select_statement(&stmt).finish();
     assert_eq!(
         sql,
-        r#"SELECT "t1"."id", "t1"."username" FROM "users" AS "t1" WHERE "t1"."username" = ?"#.to_string()
+        r#"SELECT "t1"."id", "t1"."username", "t1"."age", "t1"."password", "t1"."gender", "t1"."score" FROM "users" AS "t1" WHERE "t1"."username" = ? AND "t1"."username" = ?"#
+            .to_string()
     );
-    assert_eq!(values, vec!["foo".into()]);
+    assert_eq!(values, vec!["foo".into(), "bar".into()]);
 }
-//def test_select_extend{
+// #[test]
+// fn test_select_extend(){
 //         query = User.select(User.c.id, User.c.username)
 //         self.assertSQL(query, (
 //             'SELECT "t1"."id", "t1"."username" FROM "users" AS "t1"'), [])
@@ -55,9 +62,9 @@ fn test_select() {
 //             'SELECT "t1"."username", "t1"."is_admin", "t1"."is_active", '
 //             '"t1"."id" FROM "users" AS "t1"'), [])
 //
-//
-//}
-//def test_selected_columns{
+// }
+//#[test]
+// fn test_selected_columns() {
 //         query = (User
 //                  .select(User.c.id, User.c.username, fn.COUNT(Tweet.c.id))
 //                  .join(Tweet, JOIN.LEFT_OUTER,
@@ -82,7 +89,8 @@ fn test_select() {
 //
 //
 //}
-//def test_select_explicit_columns{
+//#[test]
+// fn test_select_explicit_columns() {
 //         query = (Person
 //                  .select()
 //                  .where(Person.dob < datetime.date(1980, 1, 1)))
@@ -93,7 +101,8 @@ fn test_select() {
 //
 //
 //}
-//def test_select_in_list_of_values{
+//#[test]
+// fn test_select_in_list_of_values() {
 //         names_vals = [
 //             ['charlie', 'huey'],
 //             ('charlie', 'huey'),
@@ -121,7 +130,8 @@ fn test_select() {
 //
 //
 //}
-//def test_select_subselect_function{
+//#[test]
+// fn test_select_subselect_function() {
 //         # For functions whose only argument is a subquery, we do not need to
 //         # include additional parentheses -- in fact, some databases will report
 //         # a syntax error if we do.
@@ -148,7 +158,8 @@ fn test_select() {
 //
 //
 //}
-//def test_subquery_in_select_sql{
+//#[test]
+// fn test_subquery_in_select_sql() {
 //         subq = User.select(User.c.id).where(User.c.username == 'huey')
 //         query = Tweet.select(Tweet.c.content,
 //                              Tweet.c.user_id.in_(subq).alias('is_huey'))
@@ -168,7 +179,8 @@ fn test_select() {
 //
 //
 //}
-//def test_subquery_in_select_expression_sql{
+//#[test]
+// fn test_subquery_in_select_expression_sql() {
 //         Point = Table('point', ('x', 'y'))
 //         PA = Point.alias('pa')
 //
@@ -185,7 +197,8 @@ fn test_select() {
 //
 //
 //}
-//def test_star{
+//#[test]
+// fn test_star() {
 //         query = User.select(User.__star__)
 //         self.assertSQL(query, ('SELECT "t1".* FROM "users" AS "t1"'), [])
 //
@@ -207,7 +220,8 @@ fn test_select() {
 //
 //
 //}
-//def test_from_clause{
+//#[test]
+// fn test_from_clause() {
 //         query = (Note
 //                  .select(Note.content, Person.name)
 //                  .from_(Note, Person)
@@ -221,7 +235,8 @@ fn test_select() {
 //
 //
 //}
-//def test_from_query{
+//#[test]
+// fn test_from_query() {
 //         inner = Person.select(Person.name)
 //         query = (Person
 //                  .select(Person.name)
@@ -243,7 +258,8 @@ fn test_select() {
 //
 //
 //}
-//def test_join_explicit_columns{
+//#[test]
+// fn test_join_explicit_columns() {
 //         query = (Note
 //                  .select(Note.content)
 //                  .join(Person, on=(Note.person_id == Person.id))
@@ -258,7 +274,8 @@ fn test_select() {
 //
 //
 //}
-//def test_multi_join{
+//#[test]
+// fn test_multi_join() {
 //         Like = Table('likes')
 //         LikeUser = User.alias('lu')
 //         query = (Like
@@ -279,7 +296,8 @@ fn test_select() {
 //
 //
 //}
-//def test_correlated_subquery{
+//#[test]
+// fn test_correlated_subquery() {
 //         Employee = Table('employee', ['id', 'name', 'salary', 'dept'])
 //         EA = Employee.alias('e2')
 //         query = (Employee
@@ -297,7 +315,8 @@ fn test_select() {
 //
 //
 //}
-//def test_multiple_where{
+//#[test]
+// fn test_multiple_where() {
 //         """Ensure multiple calls to WHERE are AND-ed together."""
 //         query = (Person
 //                  .select(Person.name)
@@ -311,7 +330,8 @@ fn test_select() {
 //
 //
 //}
-//def test_orwhere{
+//#[test]
+// fn test_orwhere() {
 //         query = (Person
 //                  .select(Person.name)
 //                  .orwhere(Person.dob > datetime.date(1980, 1, 1))
@@ -324,7 +344,8 @@ fn test_select() {
 //
 //
 //}
-//def test_limit{
+//#[test]
+// fn test_limit() {
 //         base = User.select(User.c.id)
 //         self.assertSQL(base.limit(None), (
 //             'SELECT "t1"."id" FROM "users" AS "t1"'), [])
@@ -349,7 +370,8 @@ fn test_select() {
 //
 //
 //}
-//def test_simple_join{
+//#[test]
+// fn test_simple_join() {
 //         query = (User
 //                  .select(
 //                      User.c.id,
@@ -365,7 +387,8 @@ fn test_select() {
 //
 //
 //}
-//def test_subquery{
+//#[test]
+// fn test_subquery() {
 //         inner = (Tweet
 //                  .select(fn.COUNT(Tweet.c.id).alias('ct'))
 //                  .where(Tweet.c.user == User.c.id))
@@ -381,7 +404,8 @@ fn test_select() {
 //
 //
 //}
-//def test_subquery_in_expr{
+//#[test]
+// fn test_subquery_in_expr() {
 //         Team = Table('team')
 //         Challenge = Table('challenge')
 //         subq = Team.select(fn.COUNT(Team.c.id) + 1)
@@ -395,7 +419,8 @@ fn test_select() {
 //
 //
 //}
-//def test_user_defined_alias{
+//#[test]
+// fn test_user_defined_alias() {
 //         UA = User.alias('alt')
 //         query = (User
 //                  .select(User.c.id, User.c.username, UA.c.nuggz)
@@ -409,7 +434,8 @@ fn test_select() {
 //
 //
 //}
-//def test_simple_cte{
+//#[test]
+// fn test_simple_cte() {
 //         cte = User.select(User.c.id).cte('user_ids')
 //         query = (User
 //                  .select(User.c.username)
@@ -422,7 +448,8 @@ fn test_select() {
 //
 //
 //}
-//def test_two_ctes{
+//#[test]
+// fn test_two_ctes() {
 //         c1 = User.select(User.c.id).cte('user_ids')
 //         c2 = User.select(User.c.username).cte('user_names')
 //         query = (User
@@ -440,7 +467,8 @@ fn test_select() {
 //
 //
 //}
-//def test_select_from_cte{
+//#[test]
+// fn test_select_from_cte() {
 //         # Use the "select_from()" helper on the CTE object.
 //         cte = User.select(User.c.username).cte('user_cte')
 //         query = cte.select_from(cte.c.username).order_by(cte.c.username)
@@ -465,7 +493,8 @@ fn test_select() {
 //
 //
 //}
-//def test_materialize_cte{
+//#[test]
+// fn test_materialize_cte() {
 //         cases = (
 //             (True, 'MATERIALIZED '),
 //             (False, 'NOT MATERIALIZED '),
@@ -483,7 +512,8 @@ fn test_select() {
 //
 //
 //}
-//def test_fibonacci_cte{
+//#[test]
+// fn test_fibonacci_cte() {
 //         q1 = Select(columns=(
 //             Value(1).alias('n'),
 //             Value(0).alias('fib_n'),
@@ -513,7 +543,8 @@ fn test_select() {
 //
 //
 //}
-//def test_cte_with_count{
+//#[test]
+// fn test_cte_with_count() {
 //         cte = User.select(User.c.id).cte('user_ids')
 //         query = (User
 //                  .select(User.c.username)
@@ -529,7 +560,8 @@ fn test_select() {
 //
 //
 //}
-//def test_cte_subquery_in_expression{
+//#[test]
+// fn test_cte_subquery_in_expression() {
 //         Order = Table('order', ('id', 'description'))
 //         Item = Table('item', ('id', 'order_id', 'description'))
 //
@@ -554,7 +586,8 @@ fn test_select() {
 //
 //
 //}
-//def test_multi_update_cte{
+//#[test]
+// fn test_multi_update_cte() {
 //         data = [(i, 'u%sx' % i) for i in range(1, 3)]
 //         vl = ValuesList(data)
 //         cte = vl.select().cte('uv', columns=('id', 'username'))
@@ -628,7 +661,8 @@ fn test_select() {
 //
 //
 //}
-//def test_data_modifying_cte_update{
+//#[test]
+// fn test_data_modifying_cte_update() {
 //         Product = Table('products', ('id', 'name', 'price'))
 //         Archive = Table('archive', ('id', 'name', 'price'))
 //
@@ -690,7 +724,8 @@ fn test_select() {
 //
 //
 //}
-//def test_complex_select{
+//#[test]
+// fn test_complex_select() {
 //         Order = Table('orders', columns=(
 //             'region',
 //             'amount',
@@ -769,7 +804,8 @@ fn test_select() {
 //
 //
 //}
-//def test_compound_operations{
+//#[test]
+// fn test_compound_operations() {
 //         admin = (User
 //                  .select(User.c.username, Value('admin').alias('role'))
 //                  .where(User.c.is_admin == True))
@@ -799,7 +835,8 @@ fn test_select() {
 //
 //
 //}
-//def test_compound_parentheses_handling{
+//#[test]
+// fn test_compound_parentheses_handling() {
 //         admin = (User
 //                  .select(User.c.username, Value('admin').alias('role'))
 //                  .where(User.c.is_admin == True)
@@ -862,7 +899,8 @@ fn test_select() {
 //
 //
 //}
-//def test_compound_select_order_limit{
+//#[test]
+// fn test_compound_select_order_limit() {
 //         A = Table('a', ('col_a',))
 //         B = Table('b', ('col_b',))
 //         C = Table('c', ('col_c',))
@@ -887,7 +925,8 @@ fn test_select() {
 //
 //
 //}
-//def test_compound_select_as_subquery{
+//#[test]
+// fn test_compound_select_as_subquery() {
 //         A = Table('a', ('col_a',))
 //         B = Table('b', ('col_b',))
 //         q1 = A.select(A.col_a.alias('foo'))
@@ -906,7 +945,8 @@ fn test_select() {
 //
 //
 //}
-//def test_join_on_query{
+//#[test]
+// fn test_join_on_query() {
 //         inner = User.select(User.c.id).alias('j1')
 //         query = (Tweet
 //                  .select(Tweet.c.content)
@@ -928,7 +968,8 @@ fn test_select() {
 //
 //
 //}
-//def test_all_clauses{
+//#[test]
+// fn test_all_clauses() {
 //         count = fn.COUNT(Tweet.c.id).alias('ct')
 //         query = (User
 //                  .select(User.c.username, count)
@@ -950,7 +991,8 @@ fn test_select() {
 //
 //
 //}
-//def test_order_by_collate{
+//#[test]
+// fn test_order_by_collate() {
 //         query = (User
 //                  .select(User.c.username)
 //                  .order_by(User.c.username.asc(collation='binary')))
@@ -985,7 +1027,8 @@ fn test_select() {
 //
 //
 //}
-//def test_in_value_representation{
+//#[test]
+// fn test_in_value_representation() {
 //         query = (User
 //                  .select(User.c.id)
 //                  .where(User.c.username.in_(['foo', 'bar', 'baz'])))
@@ -1012,7 +1055,8 @@ fn test_select() {
 //
 //
 //}
-//def test_tuple_comparison_subquery{
+//#[test]
+// fn test_tuple_comparison_subquery() {
 //         PA = Person.alias('pa')
 //         subquery = (PA
 //                     .select(PA.name, PA.id)
@@ -1029,7 +1073,8 @@ fn test_select() {
 //
 //
 //}
-//def test_empty_in{
+//#[test]
+// fn test_empty_in() {
 //         query = User.select(User.c.id).where(User.c.username.in_([]))
 //         self.assertSQL(query, (
 //             'SELECT "t1"."id" FROM "users" AS "t1" '
@@ -1056,7 +1101,8 @@ fn test_select() {
 //
 //
 //}
-//def test_where_convert_to_is_null{
+//#[test]
+// fn test_where_convert_to_is_null() {
 //         Note = Table('notes', ('id', 'content', 'user_id'))
 //         query = Note.select().where(Note.user_id == None)
 //         self.assertSQL(query, (
@@ -1065,7 +1111,8 @@ fn test_select() {
 //
 //
 //}
-//def test_like_escape{
+//#[test]
+// fn test_like_escape() {
 //         T = Table('tbl', ('key',))
 //         def assertLike(expr, expected):
 //             query = T.select().where(expr)
@@ -1097,7 +1144,8 @@ fn test_select() {
 //
 //
 //}
-//def test_like_expr{
+//#[test]
+// fn test_like_expr() {
 //         query = User.select(User.c.id).where(User.c.username.like('%foo%'))
 //         self.assertSQL(query, (
 //             'SELECT "t1"."id" FROM "users" AS "t1" '
@@ -1110,7 +1158,8 @@ fn test_select() {
 //
 //
 //}
-//def test_field_ops{
+//#[test]
+// fn test_field_ops() {
 //         query = User.select(User.c.id).where(User.c.username.regexp('[a-z]+'))
 //         self.assertSQL(query, (
 //             'SELECT "t1"."id" FROM "users" AS "t1" '
@@ -1137,7 +1186,8 @@ fn test_select() {
 //     @requires_sqlite
 //
 //}
-//def test_replace_sqlite{
+//#[test]
+// fn test_replace_sqlite() {
 //         query = User.replace({
 //             User.c.username: 'charlie',
 //             User.c.superuser: False})
@@ -1148,7 +1198,8 @@ fn test_select() {
 //     @requires_mysql
 //
 //}
-//def test_replace_mysql{
+//#[test]
+// fn test_replace_mysql() {
 //         query = User.replace({
 //             User.c.username: 'charlie',
 //             User.c.superuser: False})
@@ -1158,7 +1209,8 @@ fn test_select() {
 //
 //
 //}
-//def test_insert_list{
+//#[test]
+// fn test_insert_list() {
 //         data = [
 //             {Person.name: 'charlie'},
 //             {Person.name: 'huey'},
@@ -1170,7 +1222,8 @@ fn test_select() {
 //
 //
 //}
-//def test_insert_list_with_columns{
+//#[test]
+// fn test_insert_list_with_columns() {
 //         data = [(i,) for i in ('charlie', 'huey', 'zaizee')]
 //         query = Person.insert(data, columns=[Person.name])
 //         self.assertSQL(query, (
@@ -1185,7 +1238,8 @@ fn test_select() {
 //
 //
 //}
-//def test_insert_list_infer_columns{
+//#[test]
+// fn test_insert_list_infer_columns() {
 //         data = [('p1', '1980-01-01'), ('p2', '1980-02-02')]
 //         self.assertSQL(Person.insert(data), (
 //             'INSERT INTO "person" ("name", "dob") VALUES (?, ?), (?, ?)'),
@@ -1207,7 +1261,8 @@ fn test_select() {
 //
 //
 //}
-//def test_insert_query{
+//#[test]
+// fn test_insert_query() {
 //         source = User.select(User.c.username).where(User.c.admin == False)
 //         query = Person.insert(source, columns=[Person.name])
 //         self.assertSQL(query, (
@@ -1217,7 +1272,8 @@ fn test_select() {
 //
 //
 //}
-//def test_insert_query_cte{
+//#[test]
+// fn test_insert_query_cte() {
 //         cte = User.select(User.c.username).cte('foo')
 //         source = cte.select(cte.c.username)
 //         query = Person.insert(source, columns=[Person.name]).with_cte(cte)
@@ -1228,7 +1284,8 @@ fn test_select() {
 //
 //
 //}
-//def test_insert_single_value_query{
+//#[test]
+// fn test_insert_single_value_query() {
 //         query = Person.select(Person.id).where(Person.name == 'huey')
 //         insert = Note.insert({
 //             Note.person_id: query,
@@ -1240,7 +1297,8 @@ fn test_select() {
 //
 //
 //}
-//def test_insert_returning{
+//#[test]
+// fn test_insert_returning() {
 //         query = (Person
 //                  .insert({
 //                      Person.name: 'zaizee',
@@ -1261,7 +1319,8 @@ fn test_select() {
 //
 //
 //}
-//def test_empty{
+//#[test]
+// fn test_empty() {
 //         class Empty(TestModel): pass
 //         query = Empty.insert()
 //         if isinstance(db, MySQLDatabase):
@@ -1276,7 +1335,8 @@ fn test_select() {
 // class TestUpdateQuery(BaseTestCase):
 //
 //}
-//def test_update_query{
+//#[test]
+// fn test_update_query() {
 //         query = (User
 //                  .update({
 //                      User.c.username: 'nuggie',
@@ -1292,7 +1352,8 @@ fn test_select() {
 //
 //
 //}
-//def test_update_subquery{
+//#[test]
+// fn test_update_subquery() {
 //         count = fn.COUNT(Tweet.c.id).alias('ct')
 //         subquery = (User
 //                     .select(User.c.id, count)
@@ -1318,7 +1379,8 @@ fn test_select() {
 //
 //
 //}
-//def test_update_value_subquery{
+//#[test]
+// fn test_update_value_subquery() {
 //         subquery = (Tweet
 //                     .select(fn.MAX(Tweet.c.id))
 //                     .where(Tweet.c.user_id == User.c.id))
@@ -1333,7 +1395,8 @@ fn test_select() {
 //
 //
 //}
-//def test_update_from{
+//#[test]
+// fn test_update_from() {
 //         data = [(1, 'u1-x'), (2, 'u2-x')]
 //         vl = ValuesList(data, columns=('id', 'username'), alias='tmp')
 //         query = (User
@@ -1358,7 +1421,8 @@ fn test_select() {
 //
 //
 //}
-//def test_update_returning{
+//#[test]
+// fn test_update_returning() {
 //         query = (User
 //                  .update({User.c.is_admin: True})
 //                  .where(User.c.username == 'charlie')
@@ -1377,7 +1441,8 @@ fn test_select() {
 // class TestDeleteQuery(BaseTestCase):
 //
 //}
-//def test_delete_query{
+//#[test]
+// fn test_delete_query() {
 //         query = (User
 //                  .delete()
 //                  .where(User.c.username != 'charlie')
@@ -1388,7 +1453,8 @@ fn test_select() {
 //
 //
 //}
-//def test_delete_subquery{
+//#[test]
+// fn test_delete_subquery() {
 //         count = fn.COUNT(Tweet.c.id).alias('ct')
 //         subquery = (User
 //                     .select(User.c.id, count)
@@ -1409,7 +1475,8 @@ fn test_select() {
 //
 //
 //}
-//def test_delete_cte{
+//#[test]
+// fn test_delete_cte() {
 //         cte = (User
 //                .select(User.c.id)
 //                .where(User.c.admin == True)
@@ -1455,7 +1522,8 @@ fn test_select() {
 // class TestWindowFunctions(BaseTestCase):
 //
 //}
-//def test_partition_unordered{
+//#[test]
+// fn test_partition_unordered() {
 //         partition = [Register.category]
 //         query = (Register
 //                  .select(
@@ -1470,7 +1538,8 @@ fn test_select() {
 //
 //
 //}
-//def test_ordered_unpartitioned{
+//#[test]
+// fn test_ordered_unpartitioned() {
 //         query = (Register
 //                  .select(
 //                      Register.value,
@@ -1481,7 +1550,8 @@ fn test_select() {
 //
 //
 //}
-//def test_ordered_partitioned{
+//#[test]
+// fn test_ordered_partitioned() {
 //         query = Register.select(
 //             Register.value,
 //             fn.SUM(Register.value).over(
@@ -1505,7 +1575,8 @@ fn test_select() {
 //
 //
 //}
-//def test_frame{
+//#[test]
+// fn test_frame() {
 //         query = (Register
 //                  .select(
 //                      Register.value,
@@ -1534,7 +1605,8 @@ fn test_select() {
 //
 //
 //}
-//def test_frame_types{
+//#[test]
+// fn test_frame_types() {
 //         def assertFrame(over_kwargs, expected):
 //             query = Register.select(
 //                 Register.value,
@@ -1605,7 +1677,8 @@ fn test_select() {
 //
 //
 //}
-//def test_running_total{
+//#[test]
+// fn test_running_total() {
 //         EventLog = Table('evtlog', ('id', 'timestamp', 'data'))
 //
 //         w = fn.SUM(EventLog.timestamp).over(order_by=[EventLog.timestamp])
@@ -1632,7 +1705,8 @@ fn test_select() {
 //
 //
 //}
-//def test_named_window{
+//#[test]
+// fn test_named_window() {
 //         window = Window(partition_by=[Register.category])
 //         query = (Register
 //                  .select(
@@ -1664,7 +1738,8 @@ fn test_select() {
 //
 //
 //}
-//def test_multiple_windows{
+//#[test]
+// fn test_multiple_windows() {
 //         w1 = Window(partition_by=[Register.category]).alias('w1')
 //         w2 = Window(order_by=[Register.value]).alias('w2')
 //         query = (Register
@@ -1681,7 +1756,8 @@ fn test_select() {
 //
 //
 //}
-//def test_alias_window{
+//#[test]
+// fn test_alias_window() {
 //         w = Window(order_by=Register.value).alias('wx')
 //         query = Register.select(Register.value, fn.RANK().over(w)).window(w)
 //
@@ -1695,7 +1771,8 @@ fn test_select() {
 //
 //
 //}
-//def test_reuse_window{
+//#[test]
+// fn test_reuse_window() {
 //         EventLog = Table('evt', ('id', 'timestamp', 'key'))
 //         window = Window(partition_by=[EventLog.key],
 //                         order_by=[EventLog.timestamp])
@@ -1718,7 +1795,8 @@ fn test_select() {
 //
 //
 //}
-//def test_filter_clause{
+//#[test]
+// fn test_filter_clause() {
 //         condsum = fn.SUM(Register.value).filter(Register.value > 1).over(
 //             order_by=[Register.id], partition_by=[Register.category],
 //             start=Window.preceding(1))
@@ -1734,7 +1812,8 @@ fn test_select() {
 //
 //
 //}
-//def test_window_in_orderby{
+//#[test]
+// fn test_window_in_orderby() {
 //         Register = Table('register', ['id', 'value'])
 //         w = Window(partition_by=[Register.value], order_by=[Register.id])
 //         query = (Register
@@ -1757,7 +1836,8 @@ fn test_select() {
 //
 //
 //}
-//def test_window_extends{
+//#[test]
+// fn test_window_extends() {
 //         Tbl = Table('tbl', ('b', 'c'))
 //         w1 = Window(partition_by=[Tbl.b], alias='win1')
 //         w2 = Window(extends=w1, order_by=[Tbl.c], alias='win2')
@@ -1781,7 +1861,8 @@ fn test_select() {
 //
 //
 //}
-//def test_window_ranged{
+//#[test]
+// fn test_window_ranged() {
 //         Tbl = Table('tbl', ('a', 'b'))
 //         query = (Tbl
 //                  .select(Tbl.a, fn.SUM(Tbl.b).over(
@@ -1820,7 +1901,8 @@ fn test_select() {
 //
 //
 //}
-//def test_window_frametypes{
+//#[test]
+// fn test_window_frametypes() {
 //         Tbl = Table('tbl', ('b', 'c'))
 //         fts = (('as_range', Window.RANGE, 'RANGE'),
 //                ('as_rows', Window.ROWS, 'ROWS'),
@@ -1840,7 +1922,8 @@ fn test_select() {
 //
 //
 //}
-//def test_window_frame_exclusion{
+//#[test]
+// fn test_window_frame_exclusion() {
 //         Tbl = Table('tbl', ('b', 'c'))
 //         fts = ((Window.CURRENT_ROW, 'CURRENT ROW'),
 //                (Window.TIES, 'TIES'),
@@ -1860,7 +1943,8 @@ fn test_select() {
 //
 //
 //}
-//def test_filter_window{
+//#[test]
+// fn test_filter_window() {
 //         # Example derived from sqlite window test 5.1.3.2.
 //         Tbl = Table('tbl', ('a', 'c'))
 //         win = Window(partition_by=fn.COALESCE(Tbl.a, ''),
@@ -1887,7 +1971,8 @@ fn test_select() {
 //
 //
 //}
-//def test_values_list{
+//#[test]
+// fn test_values_list() {
 //         vl = ValuesList(self._data)
 //
 //         query = vl.select(SQL('*'))
@@ -1897,7 +1982,8 @@ fn test_select() {
 //
 //
 //}
-//def test_values_list_named_columns{
+//#[test]
+// fn test_values_list_named_columns() {
 //         vl = ValuesList(self._data).columns('idx', 'name')
 //         query = (vl
 //                  .select(vl.c.idx, vl.c.name)
@@ -1909,7 +1995,8 @@ fn test_select() {
 //
 //
 //}
-//def test_named_values_list{
+//#[test]
+// fn test_named_values_list() {
 //         vl = ValuesList(self._data, ['idx', 'name']).alias('vl')
 //         query = (vl
 //                  .select(vl.c.idx, vl.c.name)
@@ -1921,7 +2008,8 @@ fn test_select() {
 //
 //
 //}
-//def test_docs_examples{
+//#[test]
+// fn test_docs_examples() {
 //         data = [(1, 'first'), (2, 'second')]
 //         vl = ValuesList(data, columns=('idx', 'name'))
 //         query = (vl
@@ -1958,7 +2046,8 @@ fn test_select() {
 // class TestCaseFunction(BaseTestCase):
 //
 //}
-//def test_case_function{
+//#[test]
+// fn test_case_function() {
 //         NameNum = Table('nn', ('name', 'number'))
 //
 //         query = (NameNum
@@ -1985,7 +2074,8 @@ fn test_select() {
 //
 //
 //}
-//def test_case_subquery{
+//#[test]
+// fn test_case_subquery() {
 //         Name = Table('n', ('id', 'name',))
 //         case = Case(None, [(Name.id.in_(Name.select(Name.id)), 1)], 0)
 //         q = Name.select(fn.SUM(case))
@@ -2013,7 +2103,8 @@ fn test_select() {
 // class TestSelectFeatures(BaseTestCase):
 //
 //}
-//def test_reselect{
+//#[test]
+// fn test_reselect() {
 //         query = Person.select(Person.name)
 //         self.assertSQL(query, 'SELECT "t1"."name" FROM "person" AS "t1"', [])
 //
@@ -2024,7 +2115,8 @@ fn test_select() {
 //
 //
 //}
-//def test_distinct_on{
+//#[test]
+// fn test_distinct_on() {
 //         query = (Note
 //                  .select(Person.name, Note.content)
 //                  .join(Person, on=(Note.person_id == Person.id))
@@ -2046,21 +2138,24 @@ fn test_select() {
 //
 //
 //}
-//def test_distinct{
+//#[test]
+// fn test_distinct() {
 //         query = Person.select(Person.name).distinct()
 //         self.assertSQL(query,
 //                        'SELECT DISTINCT "t1"."name" FROM "person" AS "t1"', [])
 //
 //
 //}
-//def test_distinct_count{
+//#[test]
+// fn test_distinct_count() {
 //         query = Person.select(fn.COUNT(Person.name.distinct()))
 //         self.assertSQL(query, (
 //             'SELECT COUNT(DISTINCT "t1"."name") FROM "person" AS "t1"'), [])
 //
 //
 //}
-//def test_filtered_count{
+//#[test]
+// fn test_filtered_count() {
 //         filtered_count = (fn.COUNT(Person.name)
 //                           .filter(Person.dob < datetime.date(2000, 1, 1)))
 //         query = Person.select(fn.COUNT(Person.name), filtered_count)
@@ -2071,7 +2166,8 @@ fn test_select() {
 //
 //
 //}
-//def test_ordered_aggregate{
+//#[test]
+// fn test_ordered_aggregate() {
 //         agg = fn.array_agg(Person.name).order_by(Person.id.desc())
 //         self.assertSQL(Person.select(agg.alias('names')), (
 //             'SELECT array_agg("t1"."name" ORDER BY "t1"."id" DESC) AS "names" '
@@ -2096,7 +2192,8 @@ fn test_select() {
 //
 //
 //}
-//def test_for_update{
+//#[test]
+// fn test_for_update() {
 //         query = (Person
 //                  .select()
 //                  .where(Person.name == 'charlie')
@@ -2116,7 +2213,8 @@ fn test_select() {
 //
 //
 //}
-//def test_for_update_nested{
+//#[test]
+// fn test_for_update_nested() {
 //         PA = Person.alias('pa')
 //         subq = PA.select(PA.id).where(PA.name == 'charlie').for_update()
 //         query = (Person
@@ -2131,7 +2229,8 @@ fn test_select() {
 //
 //
 //}
-//def test_for_update_options{
+//#[test]
+// fn test_for_update_options() {
 //         query = (Person
 //                  .select(Person.id)
 //                  .where(Person.name == 'huey')
@@ -2166,7 +2265,8 @@ fn test_select() {
 //
 //
 //}
-//def test_parentheses{
+//#[test]
+// fn test_parentheses() {
 //         query = (Person
 //                  .select(fn.MAX(
 //                      fn.IFNULL(1, 10) * 151,
@@ -2190,7 +2290,8 @@ fn test_select() {
 // class TestExpressionSQL(BaseTestCase):
 //
 //}
-//def test_parentheses_functions{
+//#[test]
+// fn test_parentheses_functions() {
 //         expr = (User.c.income + 100)
 //         expr2 = expr * expr
 //         query = User.select(fn.sum(expr), fn.avg(expr2))
@@ -2207,21 +2308,24 @@ fn test_select() {
 //
 //
 //}
-//def test_replace{
+//#[test]
+// fn test_replace() {
 //         query = Person.insert(name='huey').on_conflict('replace')
 //         self.assertSQL(query, (
 //             'INSERT OR REPLACE INTO "person" ("name") VALUES (?)'), ['huey'])
 //
 //
 //}
-//def test_ignore{
+//#[test]
+// fn test_ignore() {
 //         query = Person.insert(name='huey').on_conflict('ignore')
 //         self.assertSQL(query, (
 //             'INSERT OR IGNORE INTO "person" ("name") VALUES (?)'), ['huey'])
 //
 //
 //}
-//def test_update_not_supported{
+//#[test]
+// fn test_update_not_supported() {
 //         query = Person.insert(name='huey').on_conflict(
 //             preserve=(Person.dob,),
 //             update={Person.name: Person.name.concat(' (updated)')})
@@ -2234,27 +2338,31 @@ fn test_select() {
 //
 //
 //}
-//def setUp{
+//#[test]
+// fn setUp() {
 //         super(TestOnConflictMySQL, self).setUp()
 //         self.database.server_version = None
 //
 //
 //}
-//def test_replace{
+//#[test]
+// fn test_replace() {
 //         query = Person.insert(name='huey').on_conflict('replace')
 //         self.assertSQL(query, (
 //             'REPLACE INTO "person" ("name") VALUES (?)'), ['huey'])
 //
 //
 //}
-//def test_ignore{
+//#[test]
+// fn test_ignore() {
 //         query = Person.insert(name='huey').on_conflict('ignore')
 //         self.assertSQL(query, (
 //             'INSERT IGNORE INTO "person" ("name") VALUES (?)'), ['huey'])
 //
 //
 //}
-//def test_update{
+//#[test]
+// fn test_update() {
 //         dob = datetime.date(2010, 1, 1)
 //         query = (Person
 //                  .insert(name='huey', dob=dob)
@@ -2277,7 +2385,8 @@ fn test_select() {
 //
 //
 //}
-//def test_update_use_value_mariadb{
+//#[test]
+// fn test_update_use_value_mariadb() {
 //         # Verify that we use "VALUE" (not "VALUES") for MariaDB 10.3.3.
 //         dob = datetime.date(2010, 1, 1)
 //         query = (Person
@@ -2297,7 +2406,8 @@ fn test_select() {
 //
 //
 //}
-//def test_where_not_supported{
+//#[test]
+// fn test_where_not_supported() {
 //         query = Person.insert(name='huey').on_conflict(
 //             preserve=(Person.dob,),
 //             where=(Person.name == 'huey'))
@@ -2310,7 +2420,8 @@ fn test_select() {
 //
 //
 //}
-//def test_ignore{
+//#[test]
+// fn test_ignore() {
 //         query = Person.insert(name='huey').on_conflict('ignore')
 //         self.assertSQL(query, (
 //             'INSERT INTO "person" ("name") VALUES (?) '
@@ -2318,21 +2429,24 @@ fn test_select() {
 //
 //
 //}
-//def test_conflict_target_required{
+//#[test]
+// fn test_conflict_target_required() {
 //         query = Person.insert(name='huey').on_conflict(preserve=(Person.dob,))
 //         with self.assertRaisesCtx(ValueError):
 //             self.database.get_sql_context().parse(query)
 //
 //
 //}
-//def test_conflict_resolution_required{
+//#[test]
+// fn test_conflict_resolution_required() {
 //         query = Person.insert(name='huey').on_conflict(conflict_target='name')
 //         with self.assertRaisesCtx(ValueError):
 //             self.database.get_sql_context().parse(query)
 //
 //
 //}
-//def test_conflict_update_excluded{
+//#[test]
+// fn test_conflict_update_excluded() {
 //         KV = Table('kv', ('key', 'value', 'extra'), _database=self.database)
 //
 //         query = (KV.insert(key='k1', value='v1', extra=1)
@@ -2347,7 +2461,8 @@ fn test_select() {
 //
 //
 //}
-//def test_conflict_target_or_constraint{
+//#[test]
+// fn test_conflict_target_or_constraint() {
 //         KV = Table('kv', ('key', 'value', 'extra'), _database=self.database)
 //
 //         query = (KV.insert(key='k1', value='v1', extra='e1')
@@ -2373,7 +2488,8 @@ fn test_select() {
 //
 //
 //}
-//def test_update{
+//#[test]
+// fn test_update() {
 //         dob = datetime.date(2010, 1, 1)
 //         query = (Person
 //                  .insert(name='huey', dob=dob)
@@ -2414,7 +2530,8 @@ fn test_select() {
 //
 //
 //}
-//def test_conflict_target_partial_index{
+//#[test]
+// fn test_conflict_target_partial_index() {
 //         KVE = Table('kve', ('key', 'value', 'extra'))
 //         data = [('k1', 1, 2), ('k2', 2, 3)]
 //         columns = [KVE.key, KVE.value, KVE.extra]
@@ -2441,7 +2558,8 @@ fn test_select() {
 // class TestIndex(BaseTestCase):
 //
 //}
-//def test_simple_index{
+//#[test]
+// fn test_simple_index() {
 //         pidx = Index('person_name', Person, (Person.name,), unique=True)
 //         self.assertSQL(pidx, (
 //             'CREATE UNIQUE INDEX "person_name" ON "person" ("name")'), [])
@@ -2453,7 +2571,8 @@ fn test_select() {
 //
 //
 //}
-//def test_advanced_index{
+//#[test]
+// fn test_advanced_index() {
 //         Article = Table('article')
 //         aidx = Index('foo_idx', Article, (
 //             Article.c.status,
@@ -2477,7 +2596,8 @@ fn test_select() {
 //
 //
 //}
-//def test_str_cols{
+//#[test]
+// fn test_str_cols() {
 //         uidx = Index('users_info', User, ('username DESC', 'id'))
 //         self.assertSQL(uidx, (
 //             'CREATE INDEX "users_info" ON "users" (username DESC, id)'), [])
@@ -2486,7 +2606,8 @@ fn test_select() {
 // class TestSqlToString(BaseTestCase):
 //
 //}
-//def _test_sql_to_string(self, _param):
+//de#[test]
+// fn _test_sql_to_string(self, _param)() :
 //         class FakeDB(SqliteDatabase):
 //             param = _param
 //
@@ -2521,10 +2642,12 @@ fn test_select() {
 //
 //
 //}
-//def test_sql_to_string_qmark{
+//#[test]
+// fn test_sql_to_string_qmark() {
 //         self._test_sql_to_string('?')
 //
 //
 //}
-//def test_sql_to_string_default{
+//#[test]
+// fn test_sql_to_string_default() {
 //         self._test_sql_to_string('%s')

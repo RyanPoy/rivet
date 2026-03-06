@@ -3,7 +3,7 @@ use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::index::Index;
 use crate::ast2::term::lock::{Lock, Wait};
-use crate::ast2::term::select_item::SelectItem;
+use crate::ast2::term::select_item::{IntoSelectItems, SelectItem};
 use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::table_ref::TableRef;
 
@@ -82,18 +82,10 @@ impl SelectStatement {
 
     pub fn select<C>(mut self, c: C) -> Self
     where
-        C: Into<SelectItem>,
+        C: IntoSelectItems,
     {
-        self.select_clause.push(c.into());
-        self
-    }
-
-    pub fn select_many<C, I>(mut self, cs: I) -> Self
-    where
-        C: Into<SelectItem>,
-        I: IntoIterator<Item = C>,
-    {
-        self.select_clause.extend(cs.into_iter().map(|c| c.into()));
+        let items = c.into_select_items();
+        self.select_clause.extend(items);
         self
     }
 
@@ -114,7 +106,7 @@ impl SelectStatement {
         self.indexes.push(index.into());
         self
     }
-    
+
     pub fn limit(mut self, n: usize) -> Self {
         if n > 0 {
             self.limit = Some(n);
