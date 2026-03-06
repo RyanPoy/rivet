@@ -19,11 +19,8 @@ pub enum TableInner {
     Join(Join),
 }
 
-impl<T> From<T> for TableRef
-where
-    T: Into<String>,
-{
-    fn from(value: T) -> Self {
+impl From<&str> for TableRef {
+    fn from(value: &str) -> Self {
         let inner = TableInner::Named(NamedTable::new(value));
         Self {
             inner: Arc::new(inner),
@@ -89,5 +86,36 @@ impl TableRef {
     }
     pub fn cross_join(self, other: impl Into<TableRef>, on: Option<Expr>) -> Self {
         self.join(other, JoinType::Cross, on)
+    }
+}
+
+pub trait IntoTableRefs {
+    fn into_table_refs(self) -> Vec<TableRef>;
+}
+
+impl<T> IntoTableRefs for Vec<T>
+where
+    T: Into<TableRef>,
+{
+    fn into_table_refs(self) -> Vec<TableRef> {
+        self.into_iter().map(Into::into).collect()
+    }
+}
+
+impl<T, const N: usize> IntoTableRefs for [T; N]
+where
+    T: Into<TableRef>,
+{
+    fn into_table_refs(self) -> Vec<TableRef> {
+        self.into_iter().map(Into::into).collect()
+    }
+}
+
+impl<T> IntoTableRefs for T
+where
+    T: Into<TableRef>,
+{
+    fn into_table_refs(self) -> Vec<TableRef> {
+        vec![self.into()]
     }
 }

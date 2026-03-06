@@ -5,7 +5,7 @@ use crate::ast2::term::index::Index;
 use crate::ast2::term::lock::{Lock, Wait};
 use crate::ast2::term::select_item::{IntoSelectItems, SelectItem};
 use crate::ast2::term::subquery::Subquery;
-use crate::ast2::term::table_ref::TableRef;
+use crate::ast2::term::table_ref::{IntoTableRefs, TableRef};
 
 /// SelectStatement
 /// ├─ select_clause: Vec<SelectItem>
@@ -65,18 +65,9 @@ impl SelectStatement {
 
     pub fn from<T>(mut self, t: T) -> Self
     where
-        T: Into<TableRef>,
+        T: IntoTableRefs,
     {
-        self.from_clause.push(t.into());
-        self
-    }
-
-    pub fn from_many<T, I>(mut self, ts: I) -> Self
-    where
-        T: Into<TableRef>,
-        I: IntoIterator<Item = T>,
-    {
-        self.from_clause.extend(ts.into_iter().map(|t| t.into()));
+        self.from_clause.extend(t.into_table_refs());
         self
     }
 
@@ -84,8 +75,7 @@ impl SelectStatement {
     where
         C: IntoSelectItems,
     {
-        let items = c.into_select_items();
-        self.select_clause.extend(items);
+        self.select_clause.extend(c.into_select_items());
         self
     }
 
