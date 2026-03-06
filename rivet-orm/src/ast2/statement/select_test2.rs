@@ -1,5 +1,7 @@
 use crate::ast2::sql::visitor;
 use crate::ast2::statement::select::SelectStatement;
+use crate::ast2::term::calendar::Date;
+use crate::ast2::term::literal::Literal;
 use crate::ast2::term::table_ref::TableRef;
 
 // User = Table('users')
@@ -8,6 +10,22 @@ use crate::ast2::term::table_ref::TableRef;
 // Note = Table('note', ['id', 'person_id', 'content'])
 //
 // class TestSelectQuery(BaseTestCase):
+#[macro_export]
+macro_rules! assert_sql {
+    ($actual:expr, $expected:expr) => {
+        assert_eq!($actual, $expected.to_string());
+    };
+}
+#[macro_export]
+macro_rules! assert_values {
+    ($actual:expr, [$($expected:expr),*]) => {
+        // 将传入的字面量列表转换成 Vec<Value> 进行比较
+        // Expr 或 Value 类型实现了 From
+        let expected_values: Vec<Literal> = vec![$($expected.into()),*];
+        assert_eq!($actual, expected_values);
+    };
+}
+
 #[test]
 fn test_select() {
     let u = TableRef::from("users");
@@ -26,47 +44,42 @@ fn test_select() {
         .where_(username.eq("bar"));
 
     let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
-    assert_eq!(
+    assert_sql!(
         sql,
         "SELECT `t1`.`id`, `t1`.`username`, `t1`.`age`, `t1`.`password`, `t1`.`gender`, `t1`.`score` FROM `users` AS `t1`, `teachers` AS `t2`, `cards` AS `t3`, `departments` AS `t4`, `classes` AS `t5`, `grades` AS `t6` WHERE `t1`.`username` = ? AND `t1`.`username` = ?"
-            .to_string()
     );
-    assert_eq!(values, ["foo".into(), "bar".into()]);
+    assert_values!(values, ["foo", "bar"]);
 
     let (sql, values) = visitor::postgre().visit_select_statement(&stmt).finish();
-    assert_eq!(
+    assert_sql!(
         sql,
         r#"SELECT "t1"."id", "t1"."username", "t1"."age", "t1"."password", "t1"."gender", "t1"."score" FROM "users" AS "t1", "teachers" AS "t2", "cards" AS "t3", "departments" AS "t4", "classes" AS "t5", "grades" AS "t6" WHERE "t1"."username" = $1 AND "t1"."username" = $2"#
-            .to_string()
     );
-    assert_eq!(values, vec!["foo".into(), "bar".into()]);
+    assert_values!(values, ["foo", "bar"]);
 
     let (sql, values) = visitor::sqlite().visit_select_statement(&stmt).finish();
-    assert_eq!(
+    assert_sql!(
         sql,
         r#"SELECT "t1"."id", "t1"."username", "t1"."age", "t1"."password", "t1"."gender", "t1"."score" FROM "users" AS "t1", "teachers" AS "t2", "cards" AS "t3", "departments" AS "t4", "classes" AS "t5", "grades" AS "t6" WHERE "t1"."username" = ? AND "t1"."username" = ?"#
-            .to_string()
     );
-    assert_eq!(values, vec!["foo".into(), "bar".into()]);
+    assert_values!(values, ["foo", "bar"]);
 }
+#[test]
+fn test_select_extend() {
+    let table = TableRef::from("users");
+    let stmt = SelectStatement::new().from(&table);
+    let stmt = stmt.select([table.column("id"), table.column("username")]);
+    let stmt = stmt.select(vec![table.column("is_active"), table.column("is_admin")]);
+
+    let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
+    assert_sql!(
+        sql,
+        "SELECT `t1`.`id`, `t1`.`username`, `t1`.`is_active`, `t1`.`is_admin` FROM `users` AS `t1`"
+    );
+    assert_values!(values, []);
+}
+
 // #[test]
-// fn test_select_extend(){
-//         query = User.select(User.c.id, User.c.username)
-//         self.assertSQL(query, (
-//             'SELECT "t1"."id", "t1"."username" FROM "users" AS "t1"'), [])
-//
-//         query = query.select(User.c.username, User.c.is_admin)
-//         self.assertSQL(query, (
-//             'SELECT "t1"."username", "t1"."is_admin" FROM "users" AS "t1"'),
-//             [])
-//
-//         query = query.select_extend(User.c.is_active, User.c.id)
-//         self.assertSQL(query, (
-//             'SELECT "t1"."username", "t1"."is_admin", "t1"."is_active", '
-//             '"t1"."id" FROM "users" AS "t1"'), [])
-//
-// }
-//#[test]
 // fn test_selected_columns() {
 //         query = (User
 //                  .select(User.c.id, User.c.username, fn.COUNT(Tweet.c.id))
@@ -89,50 +102,49 @@ fn test_select() {
 //         c_username, = query.selected_columns
 //         self.assertEqual(c_username.name, 'username')
 //         self.assertTrue(c_username.source is User)
-//
-//
-//}
-//#[test]
-// fn test_select_explicit_columns() {
-//         query = (Person
-//                  .select()
-//                  .where(Person.dob < datetime.date(1980, 1, 1)))
-//         self.assertSQL(query, (
-//             'SELECT "t1"."id", "t1"."name", "t1"."dob" '
-//             'FROM "person" AS "t1" '
-//             'WHERE ("t1"."dob" < ?)'), [datetime.date(1980, 1, 1)])
-//
-//
-//}
-//#[test]
-// fn test_select_in_list_of_values() {
-//         names_vals = [
-//             ['charlie', 'huey'],
-//             ('charlie', 'huey'),
-//             set(('charlie', 'huey')),
-//             frozenset(('charlie', 'huey'))]
-//
-//         for names in names_vals:
-//             query = (Person
-//                      .select()
-//                      .where(Person.name.in_(names)))
-//             sql, params = Context().sql(query).query()
-//             self.assertEqual(sql, (
-//                 'SELECT "t1"."id", "t1"."name", "t1"."dob" '
-//                 'FROM "person" AS "t1" '
-//                 'WHERE ("t1"."name" IN (?, ?))'))
-//             self.assertEqual(sorted(params), ['charlie', 'huey'])
-//
-//         query = (Person
-//                  .select()
-//                  .where(Person.id.in_(range(1, 10, 2))))
-//         self.assertSQL(query, (
-//             'SELECT "t1"."id", "t1"."name", "t1"."dob" '
-//             'FROM "person" AS "t1" '
-//             'WHERE ("t1"."id" IN (?, ?, ?, ?, ?))'), [1, 3, 5, 7, 9])
-//
-//
-//}
+// }
+
+#[test]
+fn test_select_explicit_columns() {
+    let table = TableRef::from("person");
+    let stmt = SelectStatement::new()
+        .from(&table)
+        .select(vec![table.column("id"), table.column("name"), table.column("dob")])
+        .where_(table.column("dob").lt(Date::new(1980, 1, 1).unwrap()));
+    let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
+    assert_sql!(
+        sql,
+        "SELECT `t1`.`id`, `t1`.`name`, `t1`.`dob` FROM `person` AS `t1` WHERE `t1`.`dob` < ?"
+    );
+    assert_values!(values, [Date::new(1980, 1, 1).unwrap()]);
+}
+
+#[test]
+fn test_select_in_list_of_values() {
+    let table = TableRef::from("person");
+    let stmt = SelectStatement::new()
+        .from(&table)
+        .select([table.column("id"), table.column("name"), table.column("dob")])
+        .where_(table.column("name").in_(["charlie", "huey"]));
+
+    let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
+    assert_sql!(
+        sql,
+        "SELECT `t1`.`id`, `t1`.`name`, `t1`.`dob` FROM `person` AS `t1` WHERE `t1`.`name` IN (?, ?)"
+    );
+    assert_values!(values, ["charlie", "huey"]);
+
+    let stmt = SelectStatement::new()
+        .from(&table)
+        .select([table.column("id"), table.column("name"), table.column("dob")])
+        .where_(table.column("id").in_([1, 10, 2]));
+    let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
+    assert_sql!(
+        sql,
+        "SELECT `t1`.`id`, `t1`.`name`, `t1`.`dob` FROM `person` AS `t1` WHERE `t1`.`id` IN (?, ?, ?)"
+    );
+    assert_values!(values, [1, 10, 2]);
+}
 //#[test]
 // fn test_select_subselect_function() {
 //         # For functions whose only argument is a subquery, we do not need to
