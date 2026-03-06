@@ -1,26 +1,30 @@
 use crate::ast2::term::alias::Alias;
-use crate::ast2::term::ops::{AND, EQ, GT, GTE, IN, IS, IS_NOT, LIKE, LT, LTE, NOT_EQ, NOT_IN, NOT_LIKE, OR};
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::literal::Literal;
+use crate::ast2::term::ops::{AND, EQ, GT, GTE, IN, IS, IS_NOT, LIKE, LT, LTE, NOT_EQ, NOT_IN, NOT_LIKE, OR};
 use crate::ast2::term::select_item::SelectItem;
+use crate::ast2::term::table_ref::TableInner;
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct ColumnRef {
     pub qualifier: Option<String>, // 对应 TableRef.visible_name()
+    pub table_inner: Option<Arc<TableInner>>,
     pub name: String,
 }
 
 impl From<&str> for ColumnRef {
     fn from(value: &str) -> Self {
-        Self::new(value)
+        Self::new(value, None)
     }
 }
 
 impl ColumnRef {
-    pub fn new(name: impl Into<String>) -> Self {
+    pub fn new(name: impl Into<String>, table: Option<Arc<TableInner>>) -> Self {
         ColumnRef {
             qualifier: None,
             name: name.into(),
+            table_inner: table,
         }
     }
     pub fn qualifier(mut self, qualifier: impl Into<String>) -> Self {

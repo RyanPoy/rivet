@@ -21,10 +21,12 @@ impl From<&str> for SelectItem {
                 Some((q, n)) => ColumnRef {
                     qualifier: Some(q.to_string()),
                     name: n.to_string(),
+                    table_inner: None,
                 },
                 None => ColumnRef {
                     qualifier: None,
                     name: value.to_string(),
+                    table_inner: None,
                 },
             };
             SelectItem::from(col)

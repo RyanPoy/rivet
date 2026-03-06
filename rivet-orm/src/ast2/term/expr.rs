@@ -1,9 +1,9 @@
 use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::alias::Alias;
-use crate::ast2::term::ops::{NOT, Op};
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::func::FuncArg;
 use crate::ast2::term::literal::Literal;
+use crate::ast2::term::ops::{NOT, Op};
 use crate::ast2::term::select_item::SelectItem;
 
 #[derive(Debug, Clone)]
@@ -83,9 +83,12 @@ impl std::ops::Not for Expr {
     }
 }
 
-impl From<Literal> for Expr {
-    fn from(literal: Literal) -> Self {
-        Expr::Literal(literal)
+impl<T> From<T> for Expr
+where
+    T: Into<Literal>,
+{
+    fn from(value: T) -> Self {
+        Expr::Literal(value.into())
     }
 }
 

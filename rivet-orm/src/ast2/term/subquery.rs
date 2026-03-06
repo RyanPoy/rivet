@@ -1,6 +1,7 @@
 use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::alias::Alias;
-use crate::ast2::term::table_ref::TableRef;
+use crate::ast2::term::table_ref::{TableInner, TableRef};
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct Subquery(Box<SelectStatement>);
@@ -21,8 +22,14 @@ impl From<SelectStatement> for Subquery {
 
 impl Subquery {
     pub fn alias(self, alias: impl Into<Alias>) -> TableRef {
-        TableRef::Subquery { subquery: self, alias: alias.into() }
+        let inner = TableInner::Subquery(self);
+
+        TableRef {
+            inner: Arc::new(inner),
+            alias: Some(alias.into()),
+        }
     }
+
     #[inline]
     pub fn select_statement(&self) -> &SelectStatement {
         &self.0

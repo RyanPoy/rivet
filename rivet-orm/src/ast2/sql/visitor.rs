@@ -13,7 +13,9 @@ use crate::ast2::term::named_table::NamedTable;
 use crate::ast2::term::ops::{IN, NOT_IN, Op};
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::subquery::Subquery;
-use crate::ast2::term::table_ref::TableRef;
+use crate::ast2::term::table_ref::{TableInner, TableRef};
+use std::collections::HashMap;
+use std::sync::Arc;
 
 pub fn mysql() -> Visitor<MySQL> {
     Visitor::new(MySQL {})
@@ -26,9 +28,11 @@ pub fn postgre() -> Visitor<PostgreSQL> {
 pub fn sqlite() -> Visitor<SQLite> {
     Visitor::new(SQLite {})
 }
+
 pub struct Visitor<D> {
     builder: Builder,
     dialect: D,
+    alias_mapping: HashMap<usize, usize>,
 }
 
 impl<D: Dialect> Visitor<D> {
@@ -36,10 +40,33 @@ impl<D: Dialect> Visitor<D> {
         Self {
             builder: Builder::new(),
             dialect,
+            alias_mapping: HashMap::new(),
         }
+    }
+    fn register_tables(&mut self, tables: &[TableRef]) -> &mut Self {
+        fn inner_register(mapping: &mut HashMap<usize, usize>, tables: &[TableRef]) {
+            let mut n = 1;
+            for table_ref in tables {
+                let addr = Arc::as_ptr(&table_ref.inner) as usize;
+                if !mapping.contains_key(&addr) {
+                    mapping.insert(addr, n);
+                    n += 1;
+                }
+            }
+        }
+        self.alias_mapping.clear();
+        inner_register(&mut self.alias_mapping, tables);
+        self
+    }
+
+    fn alias_num_of(&self, table_inner: &Arc<TableInner>) -> Option<&usize> {
+        let addr = Arc::as_ptr(table_inner) as usize;
+        self.alias_mapping.get(&addr)
     }
 
     pub fn visit_select_statement(&mut self, select_stmt: &SelectStatement) -> &mut Self {
+        self.register_tables(&select_stmt.from_clause);
+
         self.push("SELECT ");
         self.visit_distinct(&select_stmt.distinct);
         self.visit_select_clause(&select_stmt.select_clause);
@@ -121,10 +148,19 @@ impl<D: Dialect> Visitor<D> {
     }
 
     pub fn visit_table_ref(&mut self, table_ref: &TableRef) -> &mut Self {
-        match table_ref {
-            TableRef::Named { table, alias } => self.visit_named_table(table).visit_alias(alias),
-            TableRef::Subquery { subquery, alias } => self.visit_subquery(subquery).visit_alias(&Some(alias.clone())),
-            TableRef::Join { join, alias } => self.visit_join(join).visit_alias(alias),
+        match &table_ref.inner.as_ref() {
+            TableInner::Named(table) => self.visit_named_table(table).visit_alias(&table_ref.alias),
+            TableInner::Subquery(subquery) => self.visit_subquery(subquery).visit_alias(&table_ref.alias),
+            TableInner::Join(join) => self.visit_join(join).visit_alias(&table_ref.alias),
+        };
+
+        if let Some(a) = &table_ref.alias {
+            self.visit_alias(&table_ref.alias)
+        } else if let Some(num) = self.alias_num_of(&table_ref.inner) {
+            let alias = Alias::new(format!("t{}", num));
+            self.visit_alias(&Some(alias))
+        } else {
+            self
         }
     }
 
@@ -208,6 +244,11 @@ impl<D: Dialect> Visitor<D> {
     pub fn visit_column_ref(&mut self, col: &ColumnRef) -> &mut Self {
         if let Some(q) = &col.qualifier {
             self.push_quote(q).push(".");
+        }
+        if let Some(table) = &col.table_inner
+            && let Some(num) = self.alias_num_of(table)
+        {
+            self.push_quote(&format!("t{}", num)).push(".");
         }
         self.push_quote(&col.name);
         self

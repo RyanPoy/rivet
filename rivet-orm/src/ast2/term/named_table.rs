@@ -1,5 +1,6 @@
 use crate::ast2::term::alias::Alias;
-use crate::ast2::term::table_ref::TableRef;
+use crate::ast2::term::table_ref::{TableInner, TableRef};
+use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct NamedTable(String);
@@ -19,7 +20,11 @@ impl NamedTable {
     }
 
     pub fn alias(self, alias: impl Into<Alias>) -> TableRef {
-        TableRef::Named { table: self, alias: Some(alias.into()) }
+        let inner = TableInner::Named(self);
+        TableRef {
+            inner: Arc::new(inner),
+            alias: Some(alias.into()),
+        }
     }
 
     #[inline]

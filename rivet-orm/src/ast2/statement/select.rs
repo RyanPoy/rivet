@@ -135,3 +135,7 @@ impl SelectStatement {
 #[cfg(test)]
 #[path = "./select_test.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "./select_test2.rs"]
+mod select_tests;
