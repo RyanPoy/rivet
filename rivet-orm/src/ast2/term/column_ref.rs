@@ -26,10 +26,7 @@ impl ColumnRef {
         }
     }
     pub fn alias(self, name: impl Into<Alias>) -> SelectItem {
-        SelectItem::Expr {
-            expr: Expr::Column(self),
-            alias: Some(name.into()),
-        }
+        SelectItem::Expr(Expr::Column(self), Some(name.into()))
     }
 
     pub fn eq<T>(&self, rhs: T) -> Expr
@@ -90,7 +87,6 @@ impl ColumnRef {
     where
         T: Into<Expr>,
     {
-
         Expr::Binary {
             left: Box::new(Expr::Column(self.clone())),
             op: LT,

@@ -5,7 +5,7 @@ use crate::ast2::term::literal::Literal;
 
 #[derive(Clone, Debug)]
 pub enum SelectItem {
-    Expr { expr: Expr, alias: Option<Alias> },
+    Expr(Expr, Option<Alias>),
     Wildcard,                  // SELECT * FROM users t;
     QualifiedWildcard(String), // SELECT t.* FROM users t;
 }
@@ -15,12 +15,12 @@ macro_rules! impl_from_for_select_item {
         $(
             impl From<$t> for SelectItem {
                 fn from(value: $t) -> Self {
-                    SelectItem::Expr { expr: Expr::$variant(value), alias: None, }
+                    SelectItem::Expr(Expr::$variant(value), None)
                 }
             }
             impl From<&$t> for SelectItem {
                 fn from(value: &$t) -> Self {
-                    SelectItem::Expr { expr: Expr::$variant(value.clone()), alias: None, }
+                    SelectItem::Expr(Expr::$variant(value.clone()), None)
                 }
             }
         )*
@@ -46,22 +46,19 @@ impl From<&str> for SelectItem {
             None => (value, None),
         };
         let expr = Expr::from(ColumnRef::from(name));
-        SelectItem::Expr { expr, alias }
+        SelectItem::Expr(expr, alias)
     }
 }
 
 impl From<Expr> for SelectItem {
     fn from(expr: Expr) -> Self {
-        SelectItem::Expr { expr, alias: None }
+        SelectItem::Expr(expr, None)
     }
 }
 
 impl From<&Expr> for SelectItem {
     fn from(expr: &Expr) -> Self {
-        SelectItem::Expr {
-            expr: expr.clone(),
-            alias: None,
-        }
+        SelectItem::Expr(expr.clone(), None)
     }
 }
 

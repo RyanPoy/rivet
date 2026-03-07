@@ -66,10 +66,7 @@ pub enum Expr {
 
 impl Expr {
     pub fn alias(self, name: impl Into<Alias>) -> SelectItem {
-        SelectItem::Expr {
-            expr: self,
-            alias: Some(name.into()),
-        }
+        SelectItem::Expr(self, Some(name.into()))
     }
 }
 impl std::ops::Not for Expr {

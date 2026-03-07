@@ -12,7 +12,7 @@ use crate::ast2::term::lock::{Lock, Wait};
 use crate::ast2::term::ops::{IN, NOT_IN, Op};
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::subquery::Subquery;
-use crate::ast2::term::table::{TableInner, Table};
+use crate::ast2::term::table::{Table, TableInner};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -177,7 +177,7 @@ impl<D: Dialect> Visitor<D> {
         match item {
             SelectItem::Wildcard => self.push("*"),
             SelectItem::QualifiedWildcard(t) => self.push_quote(t).push("*"),
-            SelectItem::Expr { expr, alias } => self.visit_expr(expr, true).visit_alias(alias),
+            SelectItem::Expr(expr, alias) => self.visit_expr(expr, true).visit_alias(alias),
         }
     }
 
