@@ -3,7 +3,7 @@ use crate::ast2::term::expr::Expr;
 use crate::ast2::term::literal::Literal;
 use crate::ast2::term::ops::{AND, EQ, GT, GTE, IN, IS, IS_NOT, LIKE, LT, LTE, NOT_EQ, NOT_IN, NOT_LIKE, OR};
 use crate::ast2::term::select_item::SelectItem;
-use crate::ast2::term::table_ref::TableInner;
+use crate::ast2::term::table::TableInner;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]

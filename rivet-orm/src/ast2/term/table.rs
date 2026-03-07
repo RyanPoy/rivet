@@ -2,44 +2,37 @@ use crate::ast2::term::alias::Alias;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::join::{Join, JoinType};
-use crate::ast2::term::named_table::NamedTable;
 use crate::ast2::term::subquery::Subquery;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
-pub struct TableRef {
+pub struct Table {
     pub inner: Arc<TableInner>,
     pub alias: Option<Alias>,
 }
 
 #[derive(Debug, Clone)]
 pub enum TableInner {
-    Named(NamedTable),
+    Named(String),
     Subquery(Subquery),
     Join(Join),
 }
 
-impl From<&str> for TableRef {
+impl From<&str> for Table {
     fn from(value: &str) -> Self {
-        let inner = TableInner::Named(NamedTable::new(value));
+        Self::named(value)
+    }
+}
+
+impl Table {
+    pub fn named(value: impl Into<String>) -> Self {
+        let inner = TableInner::Named(value.into());
         Self {
             inner: Arc::new(inner),
             alias: None,
         }
     }
-}
 
-impl From<NamedTable> for TableRef {
-    fn from(value: NamedTable) -> Self {
-        let inner = TableInner::Named(value);
-        Self {
-            inner: Arc::new(inner),
-            alias: None,
-        }
-    }
-}
-
-impl TableRef {
     pub fn column(&self, name: impl Into<String>) -> ColumnRef {
         ColumnRef {
             name: name.into(),
@@ -59,7 +52,7 @@ impl TableRef {
         }
     }
 
-    pub fn join(self, other: impl Into<TableRef>, join_type: JoinType, on: Option<Expr>) -> Self {
+    pub fn join(self, other: impl Into<Table>, join_type: JoinType, on: Option<Expr>) -> Self {
         let inner = TableInner::Join(Join {
             left: Box::new(self),
             right: Box::new(other.into()),
@@ -72,58 +65,58 @@ impl TableRef {
         }
     }
 
-    pub fn inner_join(self, other: impl Into<TableRef>, on: Option<Expr>) -> Self {
+    pub fn inner_join(self, other: impl Into<Table>, on: Option<Expr>) -> Self {
         self.join(other, JoinType::Inner, on)
     }
-    pub fn left_join(self, other: impl Into<TableRef>, on: Option<Expr>) -> Self {
+    pub fn left_join(self, other: impl Into<Table>, on: Option<Expr>) -> Self {
         self.join(other, JoinType::Left, on)
     }
-    pub fn right_join(self, other: impl Into<TableRef>, on: Option<Expr>) -> Self {
+    pub fn right_join(self, other: impl Into<Table>, on: Option<Expr>) -> Self {
         self.join(other, JoinType::Right, on)
     }
-    pub fn full_join(self, other: impl Into<TableRef>, on: Option<Expr>) -> Self {
+    pub fn full_join(self, other: impl Into<Table>, on: Option<Expr>) -> Self {
         self.join(other, JoinType::Full, on)
     }
-    pub fn cross_join(self, other: impl Into<TableRef>, on: Option<Expr>) -> Self {
+    pub fn cross_join(self, other: impl Into<Table>, on: Option<Expr>) -> Self {
         self.join(other, JoinType::Cross, on)
     }
 }
 
 pub trait IntoTableRefs {
-    fn into_table_refs(self) -> Vec<TableRef>;
+    fn into_table_refs(self) -> Vec<Table>;
 }
 
-impl IntoTableRefs for TableRef {
-    fn into_table_refs(self) -> Vec<TableRef> {
+impl IntoTableRefs for Table {
+    fn into_table_refs(self) -> Vec<Table> {
         vec![self]
     }
 }
-impl IntoTableRefs for &TableRef {
-    fn into_table_refs(self) -> Vec<TableRef> {
+impl IntoTableRefs for &Table {
+    fn into_table_refs(self) -> Vec<Table> {
         vec![self.clone()]
     }
 }
 
 impl IntoTableRefs for &str {
-    fn into_table_refs(self) -> Vec<TableRef> {
+    fn into_table_refs(self) -> Vec<Table> {
         vec![self.into()]
     }
 }
 
 impl<T> IntoTableRefs for Vec<T>
 where
-    T: Into<TableRef>,
+    T: Into<Table>,
 {
-    fn into_table_refs(self) -> Vec<TableRef> {
+    fn into_table_refs(self) -> Vec<Table> {
         self.into_iter().map(Into::into).collect()
     }
 }
 
 impl<T, const N: usize> IntoTableRefs for [T; N]
 where
-    T: Into<TableRef>,
+    T: Into<Table>,
 {
-    fn into_table_refs(self) -> Vec<TableRef> {
+    fn into_table_refs(self) -> Vec<Table> {
         self.into_iter().map(Into::into).collect()
     }
 }

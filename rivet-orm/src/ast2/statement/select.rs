@@ -5,7 +5,7 @@ use crate::ast2::term::index::Index;
 use crate::ast2::term::lock::{Lock, Wait};
 use crate::ast2::term::select_item::{IntoSelectItems, SelectItem};
 use crate::ast2::term::subquery::Subquery;
-use crate::ast2::term::table_ref::{IntoTableRefs, TableRef};
+use crate::ast2::term::table::{IntoTableRefs, Table};
 
 /// SelectStatement
 /// ├─ select_clause: Vec<SelectItem>
@@ -32,7 +32,7 @@ use crate::ast2::term::table_ref::{IntoTableRefs, TableRef};
 pub struct SelectStatement {
     pub distinct: Distinct,
     pub select_clause: Vec<SelectItem>,
-    pub from_clause: Vec<TableRef>,
+    pub from_clause: Vec<Table>,
     pub where_clause: Vec<Expr>,
     pub limit: Option<usize>,
     pub offset: Option<usize>,
@@ -109,7 +109,7 @@ impl SelectStatement {
         self
     }
 
-    pub fn alias(self, name: &str) -> TableRef {
+    pub fn alias(self, name: &str) -> Table {
         Subquery::from(self).alias(name)
     }
 }

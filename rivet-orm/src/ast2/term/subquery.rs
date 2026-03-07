@@ -1,6 +1,6 @@
 use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::alias::Alias;
-use crate::ast2::term::table_ref::{TableInner, TableRef};
+use crate::ast2::term::table::{TableInner, Table};
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -21,10 +21,10 @@ impl From<SelectStatement> for Subquery {
 }
 
 impl Subquery {
-    pub fn alias(self, alias: impl Into<Alias>) -> TableRef {
+    pub fn alias(self, alias: impl Into<Alias>) -> Table {
         let inner = TableInner::Subquery(self);
 
-        TableRef {
+        Table {
             inner: Arc::new(inner),
             alias: Some(alias.into()),
         }

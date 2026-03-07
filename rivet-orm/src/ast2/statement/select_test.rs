@@ -5,9 +5,8 @@ use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::literal::Literal;
 use crate::ast2::term::lock::{Lock, Wait};
-use crate::ast2::term::named_table::NamedTable;
-use crate::ast2::term::table_ref::TableRef;
-use rivet::ast2::term::table_ref::TableInner;
+use crate::ast2::term::table::Table;
+use rivet::ast2::term::table::TableInner;
 use std::sync::Arc;
 //
 // #[test]

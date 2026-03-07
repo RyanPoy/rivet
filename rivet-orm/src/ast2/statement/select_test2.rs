@@ -2,7 +2,7 @@ use crate::ast2::sql::visitor;
 use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::calendar::Date;
 use crate::ast2::term::literal::Literal;
-use crate::ast2::term::table_ref::TableRef;
+use crate::ast2::term::table::Table;
 
 // User = Table('users')
 // Tweet = Table('tweets')
@@ -28,18 +28,18 @@ macro_rules! assert_values {
 
 #[test]
 fn test_select() {
-    let u = TableRef::from("users");
-    let id = u.column("id");
-    let username = u.column("username");
+    let users = Table::named("users");
+    let id = users.column("id");
+    let username = users.column("username");
     let stmt = SelectStatement::new()
-        .from(&u)
+        .from(&users)
         .from("teachers")
         .from(["cards", "departments"])
         .from(vec!["classes", "grades"])
         .select(&id)
         .select(&username)
-        .select([u.column("age"), u.column("password")])
-        .select(vec![u.column("gender"), u.column("score")])
+        .select([users.column("age"), users.column("password")])
+        .select(vec![users.column("gender"), users.column("score")])
         .where_(username.eq("foo"))
         .where_(username.eq("bar"));
 
@@ -66,10 +66,10 @@ fn test_select() {
 }
 #[test]
 fn test_select_extend() {
-    let table = TableRef::from("users");
-    let stmt = SelectStatement::new().from(&table);
-    let stmt = stmt.select([table.column("id"), table.column("username")]);
-    let stmt = stmt.select(vec![table.column("is_active"), table.column("is_admin")]);
+    let users = Table::named("users");
+    let stmt = SelectStatement::new().from(&users);
+    let stmt = stmt.select([users.column("id"), users.column("username")]);
+    let stmt = stmt.select(vec![users.column("is_active"), users.column("is_admin")]);
 
     let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
     assert_sql!(
@@ -81,6 +81,9 @@ fn test_select_extend() {
 
 // #[test]
 // fn test_selected_columns() {
+//     let users = TableRef::named("users");
+//     let tweets = TableRef::named("id");
+//     let stmt = SelectStatement::new().select([])
 //         query = (User
 //                  .select(User.c.id, User.c.username, fn.COUNT(Tweet.c.id))
 //                  .join(Tweet, JOIN.LEFT_OUTER,
@@ -106,11 +109,11 @@ fn test_select_extend() {
 
 #[test]
 fn test_select_explicit_columns() {
-    let table = TableRef::from("person");
+    let person = Table::named("person");
     let stmt = SelectStatement::new()
-        .from(&table)
-        .select(vec![table.column("id"), table.column("name"), table.column("dob")])
-        .where_(table.column("dob").lt(Date::new(1980, 1, 1).unwrap()));
+        .from(&person)
+        .select(vec![person.column("id"), person.column("name"), person.column("dob")])
+        .where_(person.column("dob").lt(Date::new(1980, 1, 1).unwrap()));
     let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
     assert_sql!(
         sql,
@@ -121,11 +124,11 @@ fn test_select_explicit_columns() {
 
 #[test]
 fn test_select_in_list_of_values() {
-    let table = TableRef::from("person");
+    let person = Table::named("person");
     let stmt = SelectStatement::new()
-        .from(&table)
-        .select([table.column("id"), table.column("name"), table.column("dob")])
-        .where_(table.column("name").in_(["charlie", "huey"]));
+        .from(&person)
+        .select([person.column("id"), person.column("name"), person.column("dob")])
+        .where_(person.column("name").in_(["charlie", "huey"]));
 
     let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
     assert_sql!(
@@ -135,9 +138,9 @@ fn test_select_in_list_of_values() {
     assert_values!(values, ["charlie", "huey"]);
 
     let stmt = SelectStatement::new()
-        .from(&table)
-        .select([table.column("id"), table.column("name"), table.column("dob")])
-        .where_(table.column("id").in_([1, 10, 2]));
+        .from(&person)
+        .select([person.column("id"), person.column("name"), person.column("dob")])
+        .where_(person.column("id").in_([1, 10, 2]));
     let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
     assert_sql!(
         sql,
@@ -1006,8 +1009,10 @@ fn test_select_in_list_of_values() {
 //
 //
 //}
-//#[test]
+// #[test]
 // fn test_order_by_collate() {
+//     let users = TableRef::named("users");
+//     let stmt = SelectStatement::new().select(users.column("username")).order_by(user.column("username"), )
 //         query = (User
 //                  .select(User.c.username)
 //                  .order_by(User.c.username.asc(collation='binary')))
@@ -1016,7 +1021,7 @@ fn test_select_in_list_of_values() {
 //             'ORDER BY "t1"."username" ASC COLLATE binary'), [])
 //
 //
-//}
+// }
 // def test_order_by_nulls{
 //         query = (User
 //                  .select(User.c.username)

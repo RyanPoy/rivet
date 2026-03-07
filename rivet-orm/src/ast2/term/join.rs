@@ -1,6 +1,6 @@
 use crate::ast2::term::alias::Alias;
 use crate::ast2::term::expr::Expr;
-use crate::ast2::term::table_ref::{TableInner, TableRef};
+use crate::ast2::term::table::{TableInner, Table};
 use std::sync::Arc;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -14,16 +14,16 @@ pub enum JoinType {
 
 #[derive(Debug, Clone)]
 pub struct Join {
-    pub left: Box<TableRef>,
+    pub left: Box<Table>,
     pub join_type: JoinType,
-    pub right: Box<TableRef>,
+    pub right: Box<Table>,
     pub on: Option<Expr>,
 }
 
 impl Join {
-    pub fn alias(self, alias: impl Into<Alias>) -> TableRef {
+    pub fn alias(self, alias: impl Into<Alias>) -> Table {
         let inner = TableInner::Join(self);
-        TableRef {
+        Table {
             inner: Arc::new(inner),
             alias: Some(alias.into()),
         }

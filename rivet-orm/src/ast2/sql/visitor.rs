@@ -9,11 +9,10 @@ use crate::ast2::term::index::Index;
 use crate::ast2::term::join::Join;
 use crate::ast2::term::literal::Literal;
 use crate::ast2::term::lock::{Lock, Wait};
-use crate::ast2::term::named_table::NamedTable;
 use crate::ast2::term::ops::{IN, NOT_IN, Op};
 use crate::ast2::term::select_item::SelectItem;
 use crate::ast2::term::subquery::Subquery;
-use crate::ast2::term::table_ref::{TableInner, TableRef};
+use crate::ast2::term::table::{TableInner, Table};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -43,8 +42,8 @@ impl<D: Dialect> Visitor<D> {
             alias_mapping: HashMap::new(),
         }
     }
-    fn register_tables(&mut self, tables: &[TableRef]) -> &mut Self {
-        fn inner_register(mapping: &mut HashMap<usize, usize>, tables: &[TableRef]) {
+    fn register_tables(&mut self, tables: &[Table]) -> &mut Self {
+        fn inner_register(mapping: &mut HashMap<usize, usize>, tables: &[Table]) {
             let mut n = 1;
             for table_ref in tables {
                 let addr = Arc::as_ptr(&table_ref.inner) as usize;
@@ -85,7 +84,7 @@ impl<D: Dialect> Visitor<D> {
         {
             match lock {
                 Lock::Update => self.push(" FOR UPDATE"),
-                Lock::UpdateOf(n) => self.push(" FOR UPDATE OF ").visit_named_table(n),
+                Lock::UpdateOf(n) => self.push(" FOR UPDATE OF ").push_quote(n),
                 Lock::Share => self.push(" FOR SHARE"),
             };
             match wait {
@@ -124,7 +123,7 @@ impl<D: Dialect> Visitor<D> {
         self
     }
 
-    pub fn visit_from_clause(&mut self, from_clause: &Vec<TableRef>) -> &mut Self {
+    pub fn visit_from_clause(&mut self, from_clause: &Vec<Table>) -> &mut Self {
         let mut iter = from_clause.iter();
         if let Some(t) = iter.next() {
             self.push(" FROM ");
@@ -147,9 +146,9 @@ impl<D: Dialect> Visitor<D> {
         }
     }
 
-    pub fn visit_table_ref(&mut self, table_ref: &TableRef) -> &mut Self {
+    pub fn visit_table_ref(&mut self, table_ref: &Table) -> &mut Self {
         match &table_ref.inner.as_ref() {
-            TableInner::Named(table) => self.visit_named_table(table).visit_alias(&table_ref.alias),
+            TableInner::Named(name) => self.push_quote(name).visit_alias(&table_ref.alias),
             TableInner::Subquery(subquery) => self.visit_subquery(subquery).visit_alias(&table_ref.alias),
             TableInner::Join(join) => self.visit_join(join).visit_alias(&table_ref.alias),
         };
@@ -162,10 +161,6 @@ impl<D: Dialect> Visitor<D> {
         } else {
             self
         }
-    }
-
-    pub fn visit_named_table(&mut self, table: &NamedTable) -> &mut Self {
-        self.push_quote(table.name())
     }
 
     pub fn visit_subquery(&mut self, subquery: &Subquery) -> &mut Self {
