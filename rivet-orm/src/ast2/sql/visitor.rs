@@ -175,8 +175,13 @@ impl<D: Dialect> Visitor<D> {
 
     pub fn visit_select_item(&mut self, item: &SelectItem) -> &mut Self {
         match item {
-            SelectItem::Wildcard => self.push("*"),
-            SelectItem::QualifiedWildcard(t) => self.push_quote(t).push("*"),
+            SelectItem::All(None) => self.push("*"),
+            SelectItem::All(Some(table)) => {
+                if let Some(num) = self.alias_num_of(table) {
+                    self.push_quote(&format!("t{}", num)).push(".");
+                }
+                self.push("*")
+            },
             SelectItem::Expr(expr, alias) => self.visit_expr(expr, true).visit_alias(alias),
         }
     }

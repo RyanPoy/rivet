@@ -2,12 +2,13 @@ use crate::ast2::term::alias::Alias;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::literal::Literal;
+use crate::ast2::term::table::TableInner;
+use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub enum SelectItem {
     Expr(Expr, Option<Alias>),
-    Wildcard,                  // SELECT * FROM users t;
-    QualifiedWildcard(String), // SELECT t.* FROM users t;
+    All(Option<Arc<TableInner>>),
 }
 
 macro_rules! impl_from_for_select_item {
@@ -35,12 +36,8 @@ impl_from_for_select_item!(
 impl From<&str> for SelectItem {
     fn from(value: &str) -> Self {
         if value == "*" {
-            return SelectItem::Wildcard;
+            return SelectItem::All(None);
         }
-        if value.ends_with(".*") {
-            return SelectItem::QualifiedWildcard(value[..value.len() - 2].to_string());
-        }
-
         let (name, alias) = match value.split_once(".") {
             Some((prefix, name)) => (name, Some(Alias::new(prefix.to_string()))),
             None => (value, None),
