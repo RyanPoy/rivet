@@ -2159,14 +2159,17 @@ fn test_multiple_where() {
 //
 //
 //}
-//#[test]
-// fn test_distinct() {
-//         query = Person.select(Person.name).distinct()
-//         self.assertSQL(query,
-//                        'SELECT DISTINCT "t1"."name" FROM "person" AS "t1"', [])
-//
-//
-//}
+#[test]
+fn test_distinct() {
+    let person = Table::new("person");
+    let stmt = SelectStatement::new()
+        .from(&person)
+        .select(person.column("name"))
+        .distinct();
+    let (sql, params) = visitor::mysql().visit_select_statement(&stmt).finish();
+    assert_sql!(sql, "SELECT DISTINCT `t1`.`name` FROM `person` AS `t1`");
+    assert_params!(params, []);
+}
 //#[test]
 // fn test_distinct_count() {
 //         query = Person.select(fn.COUNT(Person.name.distinct()))
