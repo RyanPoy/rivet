@@ -1,6 +1,6 @@
 use crate::ast2::sql::visitor;
 use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::calendar::Date;
+use crate::ast2::term::calendar::{Date, DateTime};
 use crate::ast2::term::literal::Literal;
 use crate::ast2::term::table::Table;
 
@@ -17,7 +17,7 @@ macro_rules! assert_sql {
     };
 }
 #[macro_export]
-macro_rules! assert_values {
+macro_rules! assert_params {
     ($actual:expr, [$($expected:expr),*]) => {
         // 将传入的字面量列表转换成 Vec<Value> 进行比较
         // Expr 或 Value 类型实现了 From
@@ -28,7 +28,7 @@ macro_rules! assert_values {
 
 #[test]
 fn test_select() {
-    let users = Table::named("users");
+    let users = Table::new("users");
     let id = users.column("id");
     let username = users.column("username");
     let stmt = SelectStatement::new()
@@ -43,40 +43,40 @@ fn test_select() {
         .where_(username.eq("foo"))
         .where_(username.eq("bar"));
 
-    let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
+    let (sql, params) = visitor::mysql().visit_select_statement(&stmt).finish();
     assert_sql!(
         sql,
         "SELECT `t1`.`id`, `t1`.`username`, `t1`.`age`, `t1`.`password`, `t1`.`gender`, `t1`.`score` FROM `users` AS `t1`, `teachers` AS `t2`, `cards` AS `t3`, `departments` AS `t4`, `classes` AS `t5`, `grades` AS `t6` WHERE `t1`.`username` = ? AND `t1`.`username` = ?"
     );
-    assert_values!(values, ["foo", "bar"]);
+    assert_params!(params, ["foo", "bar"]);
 
-    let (sql, values) = visitor::postgre().visit_select_statement(&stmt).finish();
+    let (sql, params) = visitor::postgre().visit_select_statement(&stmt).finish();
     assert_sql!(
         sql,
         r#"SELECT "t1"."id", "t1"."username", "t1"."age", "t1"."password", "t1"."gender", "t1"."score" FROM "users" AS "t1", "teachers" AS "t2", "cards" AS "t3", "departments" AS "t4", "classes" AS "t5", "grades" AS "t6" WHERE "t1"."username" = $1 AND "t1"."username" = $2"#
     );
-    assert_values!(values, ["foo", "bar"]);
+    assert_params!(params, ["foo", "bar"]);
 
-    let (sql, values) = visitor::sqlite().visit_select_statement(&stmt).finish();
+    let (sql, params) = visitor::sqlite().visit_select_statement(&stmt).finish();
     assert_sql!(
         sql,
         r#"SELECT "t1"."id", "t1"."username", "t1"."age", "t1"."password", "t1"."gender", "t1"."score" FROM "users" AS "t1", "teachers" AS "t2", "cards" AS "t3", "departments" AS "t4", "classes" AS "t5", "grades" AS "t6" WHERE "t1"."username" = ? AND "t1"."username" = ?"#
     );
-    assert_values!(values, ["foo", "bar"]);
+    assert_params!(params, ["foo", "bar"]);
 }
 #[test]
 fn test_select_extend() {
-    let users = Table::named("users");
+    let users = Table::new("users");
     let stmt = SelectStatement::new().from(&users);
     let stmt = stmt.select([users.column("id"), users.column("username")]);
     let stmt = stmt.select(vec![users.column("is_active"), users.column("is_admin")]);
 
-    let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
+    let (sql, params) = visitor::mysql().visit_select_statement(&stmt).finish();
     assert_sql!(
         sql,
         "SELECT `t1`.`id`, `t1`.`username`, `t1`.`is_active`, `t1`.`is_admin` FROM `users` AS `t1`"
     );
-    assert_values!(values, []);
+    assert_params!(params, []);
 }
 
 // #[test]
@@ -109,44 +109,44 @@ fn test_select_extend() {
 
 #[test]
 fn test_select_explicit_columns() {
-    let person = Table::named("person");
+    let person = Table::new("person");
     let stmt = SelectStatement::new()
         .from(&person)
         .select(vec![person.column("id"), person.column("name"), person.column("dob")])
         .where_(person.column("dob").lt(Date::new(1980, 1, 1).unwrap()));
-    let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
+    let (sql, params) = visitor::mysql().visit_select_statement(&stmt).finish();
     assert_sql!(
         sql,
         "SELECT `t1`.`id`, `t1`.`name`, `t1`.`dob` FROM `person` AS `t1` WHERE `t1`.`dob` < ?"
     );
-    assert_values!(values, [Date::new(1980, 1, 1).unwrap()]);
+    assert_params!(params, [Date::new(1980, 1, 1).unwrap()]);
 }
 
 #[test]
 fn test_select_in_list_of_values() {
-    let person = Table::named("person");
+    let person = Table::new("person");
     let stmt = SelectStatement::new()
         .from(&person)
         .select([person.column("id"), person.column("name"), person.column("dob")])
         .where_(person.column("name").in_(["charlie", "huey"]));
 
-    let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
+    let (sql, params) = visitor::mysql().visit_select_statement(&stmt).finish();
     assert_sql!(
         sql,
         "SELECT `t1`.`id`, `t1`.`name`, `t1`.`dob` FROM `person` AS `t1` WHERE `t1`.`name` IN (?, ?)"
     );
-    assert_values!(values, ["charlie", "huey"]);
+    assert_params!(params, ["charlie", "huey"]);
 
     let stmt = SelectStatement::new()
         .from(&person)
         .select([person.column("id"), person.column("name"), person.column("dob")])
         .where_(person.column("id").in_([1, 10, 2]));
-    let (sql, values) = visitor::mysql().visit_select_statement(&stmt).finish();
+    let (sql, params) = visitor::mysql().visit_select_statement(&stmt).finish();
     assert_sql!(
         sql,
         "SELECT `t1`.`id`, `t1`.`name`, `t1`.`dob` FROM `person` AS `t1` WHERE `t1`.`id` IN (?, ?, ?)"
     );
-    assert_values!(values, [1, 10, 2]);
+    assert_params!(params, [1, 10, 2]);
 }
 //#[test]
 // fn test_select_subselect_function() {
@@ -333,21 +333,22 @@ fn test_select_in_list_of_values() {
 //
 //
 //}
-//#[test]
-// fn test_multiple_where() {
-//         """Ensure multiple calls to WHERE are AND-ed together."""
-//         query = (Person
-//                  .select(Person.name)
-//                  .where(Person.dob < datetime.date(1980, 1, 1))
-//                  .where(Person.dob > datetime.date(1950, 1, 1)))
-//         self.assertSQL(query, (
-//             'SELECT "t1"."name" '
-//             'FROM "person" AS "t1" '
-//             'WHERE (("t1"."dob" < ?) AND ("t1"."dob" > ?))'),
-//             [datetime.date(1980, 1, 1), datetime.date(1950, 1, 1)])
-//
-//
-//}
+#[test]
+fn test_multiple_where() {
+    let person = Table::new("person");
+    let dob = person.column("dob");
+    let stmt = SelectStatement::new()
+        .from(&person)
+        .select(person.column("name"))
+        .where_(dob.lt(Date::new(1980, 1, 1).unwrap()))
+        .where_(dob.gt(Date::new(1950, 1, 1).unwrap()));
+    let (sql, params) = visitor::mysql().visit_select_statement(&stmt).finish();
+    assert_sql!(
+        sql,
+        "SELECT `t1`.`name` FROM `person` AS `t1` WHERE `t1`.`dob` < ? AND `t1`.`dob` > ?"
+    );
+    assert_params!(params, [Date::new(1980, 1, 1).unwrap(), Date::new(1950, 1, 1).unwrap()]);
+}
 //#[test]
 // fn test_orwhere() {
 //         query = (Person

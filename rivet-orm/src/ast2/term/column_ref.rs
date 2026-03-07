@@ -86,12 +86,13 @@ impl ColumnRef {
         }
     }
 
-    pub fn lt<T>(self, rhs: T) -> Expr
+    pub fn lt<T>(&self, rhs: T) -> Expr
     where
         T: Into<Expr>,
     {
+
         Expr::Binary {
-            left: Box::new(Expr::Column(self)),
+            left: Box::new(Expr::Column(self.clone())),
             op: LT,
             right: Box::new(rhs.into()),
         }

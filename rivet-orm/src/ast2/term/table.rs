@@ -20,12 +20,12 @@ pub enum TableInner {
 
 impl From<&str> for Table {
     fn from(value: &str) -> Self {
-        Self::named(value)
+        Self::new(value)
     }
 }
 
 impl Table {
-    pub fn named(value: impl Into<String>) -> Self {
+    pub fn new(value: impl Into<String>) -> Self {
         let inner = TableInner::Named(value.into());
         Self {
             inner: Arc::new(inner),
