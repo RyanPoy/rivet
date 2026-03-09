@@ -1,5 +1,4 @@
 use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::alias::Alias;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::func::{Func, FuncArg};
 use crate::ast2::term::literal::Literal;
@@ -62,8 +61,8 @@ pub enum Expr {
 }
 
 impl Expr {
-    pub fn alias(self, name: impl Into<Alias>) -> SelectItem {
-        SelectItem::Expr(self, Some(name.into()))
+    pub fn alias(self, alias: impl Into<String>) -> SelectItem {
+        SelectItem::Expr(self, Some(alias.into()))
     }
 
     pub fn distinct(self) -> FuncArg {

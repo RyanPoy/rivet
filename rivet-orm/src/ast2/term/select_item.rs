@@ -1,4 +1,3 @@
-use crate::ast2::term::alias::Alias;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::literal::Literal;
@@ -7,7 +6,7 @@ use std::sync::Arc;
 
 #[derive(Clone, Debug)]
 pub enum SelectItem {
-    Expr(Expr, Option<Alias>),
+    Expr(Expr, Option<String>),
     All(Option<Arc<TableInner>>),
 }
 
@@ -39,7 +38,7 @@ impl From<&str> for SelectItem {
             return SelectItem::All(None);
         }
         let (name, alias) = match value.split_once(".") {
-            Some((prefix, name)) => (name, Some(Alias::new(prefix.to_string()))),
+            Some((prefix, name)) => (name, Some(prefix.to_string())),
             None => (value, None),
         };
         let expr = Expr::from(ColumnRef::from(name));

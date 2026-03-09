@@ -1,4 +1,3 @@
-use crate::ast2::term::alias::Alias;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::func::FuncArg;
 use crate::ast2::term::literal::Literal;
@@ -26,8 +25,8 @@ impl ColumnRef {
             table_inner: table,
         }
     }
-    pub fn alias(self, name: impl Into<Alias>) -> SelectItem {
-        SelectItem::Expr(Expr::Column(self), Some(name.into()))
+    pub fn alias(self, alias: impl Into<String>) -> SelectItem {
+        SelectItem::Expr(Expr::Column(self), Some(alias.into()))
     }
 
     pub fn distinct(self) -> FuncArg {

@@ -1,7 +1,6 @@
 use crate::ast2::sql::builder::Builder;
 use crate::ast2::sql::dialect::{Dialect, MySQL, PostgreSQL, SQLite};
 use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::alias::Alias;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::expr::Expr;
@@ -31,7 +30,7 @@ pub fn sqlite() -> Visitor<SQLite> {
 pub struct Visitor<D> {
     builder: Builder,
     dialect: D,
-    alias_mapping: HashMap<usize, (usize, Option<Alias>)>,
+    alias_mapping: HashMap<usize, (usize, Option<String>)>,
 }
 
 impl<D: Dialect> Visitor<D> {
@@ -110,13 +109,13 @@ impl<D: Dialect> Visitor<D> {
         };
     }
 
-    fn alias_of(&self, table_inner: &Arc<TableInner>) -> Option<Alias> {
+    fn alias_of(&self, table_inner: &Arc<TableInner>) -> Option<String> {
         let addr = Arc::as_ptr(table_inner) as usize;
         if let Some((num, alias)) = self.alias_mapping.get(&addr) {
             if let Some(a) = alias {
                 alias.clone()
             } else {
-                Some(Alias::new(format!("t{}", num)))
+                Some(format!("t{}", num))
             }
         } else {
             None
@@ -226,7 +225,7 @@ impl<D: Dialect> Visitor<D> {
             SelectItem::All(Some(table)) => {
                 let alias = self.alias_of(table);
                 if let Some(alias) = alias {
-                    self.push_quote(alias.name()).push(".");
+                    self.push_quote(&alias).push(".");
                 }
                 self.push("*")
             },
@@ -320,7 +319,7 @@ impl<D: Dialect> Visitor<D> {
         if let Some(table) = &col.table_inner {
             let alias = self.alias_of(table);
             if let Some(alias) = alias {
-                self.push_quote(alias.name()).push(".");
+                self.push_quote(&alias).push(".");
             }
         }
         self.push_quote(&col.name)
@@ -344,10 +343,10 @@ impl<D: Dialect> Visitor<D> {
         }
     }
 
-    fn visit_alias(&mut self, alias: &Option<Alias>) -> &mut Self {
+    fn visit_alias(&mut self, alias: &Option<String>) -> &mut Self {
         if let Some(a) = alias {
             self.push(" AS ");
-            self.push_quote(a.name());
+            self.push_quote(a);
         }
         self
     }
