@@ -12,7 +12,6 @@ use crate::ast2::term::literal::Literal;
 use crate::ast2::term::lock::{Lock, Wait};
 use crate::ast2::term::ops::{IN, NOT_IN, Op};
 use crate::ast2::term::select_item::SelectItem;
-use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::table::{Table, TableInner};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -69,7 +68,7 @@ impl<D: Dialect> Visitor<D> {
                 for arg in &func.args {
                     match arg {
                         FuncArg::Expr { expr, .. } => self.register_table_from_expr(expr),
-                        FuncArg::Subquery(sq) => self.register_tables(sq.select_statement()),
+                        FuncArg::Subquery(sq) => self.register_tables(sq),
                         FuncArg::Wildcard => {},
                     }
                 }
@@ -101,7 +100,7 @@ impl<D: Dialect> Visitor<D> {
                 }
             },
             TableInner::Subquery(sq) => {
-                self.register_tables(&sq.select_statement());
+                self.register_tables(sq);
             },
             TableInner::Join(join) => {
                 // 递归处理 Join 的左右两边
@@ -210,17 +209,11 @@ impl<D: Dialect> Visitor<D> {
     pub fn visit_table(&mut self, table: &Table) -> &mut Self {
         match &table.inner.as_ref() {
             TableInner::Named(name) => self.push_quote(name),
-            TableInner::Subquery(subquery) => self.visit_subquery(subquery),
+            TableInner::Subquery(subquery) => self.push("(").visit_select_statement(subquery).push(")"),
             TableInner::Join(join) => self.visit_join(join),
         };
         let alias = self.alias_of(&table.inner);
         self.visit_alias(&alias)
-    }
-
-    pub fn visit_subquery(&mut self, subquery: &Subquery) -> &mut Self {
-        self.push("(");
-        self.visit_select_statement(subquery.select_statement());
-        self.push(")")
     }
 
     pub fn visit_join(&mut self, join: &Join) -> &mut Self {
@@ -278,7 +271,7 @@ impl<D: Dialect> Visitor<D> {
                 self.visit_expr(expr, inline)
             },
             FuncArg::Wildcard => self.push("*"),
-            FuncArg::Subquery(sq) => self.visit_select_statement(sq.select_statement()),
+            FuncArg::Subquery(sq) => self.visit_select_statement(sq),
         }
     }
 

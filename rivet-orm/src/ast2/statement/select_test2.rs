@@ -7,14 +7,6 @@ use crate::ast2::term::table::Table;
 use crate::coalesce;
 use crate::sequel::ast::Column;
 
-pub  struct User {
-    table: Table,
-    id: Column,
-}
-
-pub struct Tweet {
-
-}
 // User = Table('users')
 // Tweet = Table('tweets')
 // Person = Table('person', ['id', 'name', 'dob'], primary_key='id')

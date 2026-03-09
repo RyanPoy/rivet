@@ -1,9 +1,8 @@
+use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::alias::Alias;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::join::{Join, JoinType};
-use crate::ast2::term::subquery::Subquery;
-use std::cell::RefCell;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -15,13 +14,22 @@ pub struct Table {
 #[derive(Debug, Clone)]
 pub enum TableInner {
     Named(String),
-    Subquery(Subquery),
+    Subquery(Box<SelectStatement>),
     Join(Join),
 }
 
 impl From<&str> for Table {
     fn from(value: &str) -> Self {
         Self::new(value)
+    }
+}
+impl From<SelectStatement> for Table {
+    fn from(value: SelectStatement) -> Self {
+        let inner = TableInner::Subquery(Box::new(value));
+        Self {
+            inner: Arc::new(inner),
+            alias: None,
+        }
     }
 }
 

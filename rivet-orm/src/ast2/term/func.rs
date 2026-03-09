@@ -1,18 +1,12 @@
 use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
-use crate::ast2::term::subquery::Subquery;
 
-#[derive(Debug, Clone)]
-pub struct Func {
-    pub name: String,
-    pub args: Vec<FuncArg>,
-}
 #[derive(Debug, Clone)]
 pub enum FuncArg {
     Wildcard,
     Expr { expr: Expr, distinct: bool },
-    Subquery(Subquery),
+    Subquery(Box<SelectStatement>),
 }
 
 impl From<ColumnRef> for FuncArg {
@@ -32,10 +26,15 @@ impl From<Expr> for FuncArg {
 
 impl From<SelectStatement> for FuncArg {
     fn from(stmt: SelectStatement) -> Self {
-        FuncArg::Subquery(Subquery::from(stmt))
+        FuncArg::Subquery(Box::from(stmt))
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct Func {
+    pub name: String,
+    pub args: Vec<FuncArg>,
+}
 pub fn func(name: impl Into<String>, args: Vec<impl Into<FuncArg>>) -> Expr {
     let func = Func {
         name: name.into(),
@@ -57,10 +56,11 @@ macro_rules! define_math_functions {
 }
 define_math_functions!(sum, avg, sqrt, abs, upper, lower, max, min, ceil, floor);
 #[inline]
-pub fn exists(arg: impl Into<Subquery>) -> Expr {
-    let arg = FuncArg::Subquery(arg.into());
+pub fn exists(arg: impl Into<SelectStatement>) -> Expr {
+    let arg = FuncArg::from(arg.into());
     func("EXISTS", vec![arg])
 }
+
 #[macro_export]
 macro_rules! coalesce {
     ($($arg:expr),*) => {

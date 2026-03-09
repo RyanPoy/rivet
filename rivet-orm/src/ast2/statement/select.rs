@@ -4,7 +4,6 @@ use crate::ast2::term::expr::Expr;
 use crate::ast2::term::index::Index;
 use crate::ast2::term::lock::{Lock, Wait};
 use crate::ast2::term::select_item::{IntoSelectItems, SelectItem};
-use crate::ast2::term::subquery::Subquery;
 use crate::ast2::term::table::{IntoTableRefs, Table};
 
 /// SelectStatement
@@ -110,7 +109,7 @@ impl SelectStatement {
     }
 
     pub fn alias(self, name: &str) -> Table {
-        Subquery::from(self).alias(name)
+        Table::from(self).alias(name)
     }
 }
 

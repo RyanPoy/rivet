@@ -10,5 +10,4 @@ pub mod literal;
 pub mod lock;
 pub mod ops;
 pub mod select_item;
-pub mod subquery;
 pub mod table;
