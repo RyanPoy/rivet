@@ -1,7 +1,4 @@
-use crate::ast2::term::alias::Alias;
 use crate::ast2::term::calendar::{Date, DateTime, Time};
-use crate::ast2::term::expr::Expr;
-use crate::ast2::term::select_item::SelectItem;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
@@ -16,9 +13,6 @@ pub enum Literal {
 }
 
 impl Literal {
-    pub fn alias(self, name: impl Into<Alias>) -> SelectItem {
-        Expr::Literal(self).alias(name)
-    }
     pub fn is_null(&self) -> bool {
         match &self {
             Self::Null => true,

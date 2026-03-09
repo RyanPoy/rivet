@@ -1,4 +1,3 @@
-pub mod alias;
 pub mod calendar;
 pub mod column_ref;
 pub mod distinct;

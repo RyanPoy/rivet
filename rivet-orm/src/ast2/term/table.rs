@@ -1,5 +1,4 @@
 use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::alias::Alias;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::join::{Join, JoinType};
@@ -8,7 +7,7 @@ use std::sync::Arc;
 #[derive(Debug, Clone)]
 pub struct Table {
     pub inner: Arc<TableInner>,
-    pub alias: Option<Alias>,
+    pub alias: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -57,13 +56,13 @@ impl Table {
         names.into_iter().map(|e| self.column(e)).collect()
     }
     pub fn alias(mut self, name: impl Into<String>) -> Self {
-        self.alias = Some(Alias::new(name.into()));
+        self.alias = Some(name.into());
         self
     }
 
     pub fn visible_name_or(&self, default: usize) -> String {
         if let Some(alias) = &self.alias {
-            alias.name().to_string()
+            alias.clone()
         } else {
             format!("t{}", default)
         }

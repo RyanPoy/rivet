@@ -1,4 +1,3 @@
-use crate::ast2::term::alias::Alias;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::func::FuncArg;
 use crate::ast2::term::literal::Literal;
@@ -9,8 +8,8 @@ use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct ColumnRef {
-    pub table_inner: Option<Arc<TableInner>>,
     pub name: String,
+    pub table_inner: Option<Arc<TableInner>>,
 }
 
 impl From<&str> for ColumnRef {
@@ -26,8 +25,11 @@ impl ColumnRef {
             table_inner: table,
         }
     }
-    pub fn alias(self, name: impl Into<Alias>) -> SelectItem {
-        SelectItem::Expr(Expr::Column(self), Some(name.into()))
+    pub fn alias(self, alias: impl Into<String>) -> SelectItem {
+        SelectItem {
+            expr: Expr::Column(self),
+            alias: Some(alias.into()),
+        }
     }
 
     pub fn distinct(self) -> FuncArg {

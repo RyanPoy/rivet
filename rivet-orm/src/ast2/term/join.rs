@@ -1,4 +1,3 @@
-use crate::ast2::term::alias::Alias;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::table::{Table, TableInner};
 use std::sync::Arc;
@@ -21,7 +20,7 @@ pub struct Join {
 }
 
 impl Join {
-    pub fn alias(self, alias: impl Into<Alias>) -> Table {
+    pub fn alias(self, alias: impl Into<String>) -> Table {
         let inner = TableInner::Join(self);
         Table {
             inner: Arc::new(inner),
