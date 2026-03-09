@@ -3,6 +3,7 @@ use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::join::{Join, JoinType};
 use crate::ast2::term::subquery::Subquery;
+use std::cell::RefCell;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]

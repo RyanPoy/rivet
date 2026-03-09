@@ -5,6 +5,7 @@ use crate::ast2::term::alias::Alias;
 use crate::ast2::term::column_ref::ColumnRef;
 use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::expr::Expr;
+use crate::ast2::term::func::{Func, FuncArg};
 use crate::ast2::term::index::Index;
 use crate::ast2::term::join::Join;
 use crate::ast2::term::literal::Literal;
@@ -31,7 +32,7 @@ pub fn sqlite() -> Visitor<SQLite> {
 pub struct Visitor<D> {
     builder: Builder,
     dialect: D,
-    alias_mapping: HashMap<usize, usize>,
+    alias_mapping: HashMap<usize, (usize, Option<Alias>)>,
 }
 
 impl<D: Dialect> Visitor<D> {
@@ -42,29 +43,89 @@ impl<D: Dialect> Visitor<D> {
             alias_mapping: HashMap::new(),
         }
     }
-    fn register_tables(&mut self, tables: &[Table]) -> &mut Self {
-        fn inner_register(mapping: &mut HashMap<usize, usize>, tables: &[Table]) {
-            let mut n = 1;
-            for table_ref in tables {
-                let addr = Arc::as_ptr(&table_ref.inner) as usize;
-                if !mapping.contains_key(&addr) {
-                    mapping.insert(addr, n);
-                    n += 1;
-                }
+
+    fn register_tables(&mut self, stmt: &SelectStatement) {
+        // 1. 处理 FROM 子句（这是产生新别名的主要地方）
+        for table in &stmt.from_clause {
+            self.register_table_inner(&table);
+        }
+
+        // 2. 处理 SELECT 子句中的子查询
+        for item in &stmt.select_clause {
+            if let SelectItem::Expr(expr, _) = item {
+                self.register_table_from_expr(expr);
             }
         }
-        self.alias_mapping.clear();
-        inner_register(&mut self.alias_mapping, tables);
-        self
+
+        // 3. 处理 WHERE 子句中的子查询 (测试用例中的 EXISTS 在这里)
+        // if let Some(where_expr) = &stmt.where_clause {
+        //     self.register_table_from_expr(where_expr);
+        // }
+    }
+    fn register_table_from_expr(&mut self, expr: &Expr) {
+        match expr {
+            Expr::Subquery(sq) => self.register_tables(sq),
+            Expr::Func(func) => {
+                for arg in &func.args {
+                    match arg {
+                        FuncArg::Expr { expr, .. } => self.register_table_from_expr(expr),
+                        FuncArg::Subquery(sq) => self.register_tables(sq.select_statement()),
+                        FuncArg::Wildcard => {},
+                    }
+                }
+            },
+            Expr::Binary { left, right, .. } => {
+                self.register_table_from_expr(left);
+                self.register_table_from_expr(right);
+            },
+            Expr::Unary { expr, .. } => self.register_table_from_expr(expr),
+            Expr::In { expr, list, .. } => {
+                self.register_table_from_expr(expr);
+                for e in list {
+                    self.register_table_from_expr(e);
+                }
+            },
+            _ => {},
+        }
+    }
+    fn register_table_inner(&mut self, table: &Table) {
+        let inner = &table.inner;
+        let alias = &table.alias;
+
+        match &inner.as_ref() {
+            TableInner::Named(name) => {
+                let addr = Arc::as_ptr(inner) as usize;
+                if !self.alias_mapping.contains_key(&addr) {
+                    let n = self.alias_mapping.len() + 1;
+                    self.alias_mapping.insert(addr, (n, alias.clone()));
+                }
+            },
+            TableInner::Subquery(sq) => {
+                self.register_tables(&sq.select_statement());
+            },
+            TableInner::Join(join) => {
+                // 递归处理 Join 的左右两边
+                self.register_table_inner(&join.left);
+                self.register_table_inner(&join.right);
+            },
+        };
     }
 
-    fn alias_num_of(&self, table_inner: &Arc<TableInner>) -> Option<&usize> {
+    fn alias_of(&self, table_inner: &Arc<TableInner>) -> Option<Alias> {
         let addr = Arc::as_ptr(table_inner) as usize;
-        self.alias_mapping.get(&addr)
+        if let Some((num, alias)) = self.alias_mapping.get(&addr) {
+            if let Some(a) = alias {
+                alias.clone()
+            } else {
+                Some(Alias::new(format!("t{}", num)))
+            }
+        } else {
+            None
+        }
     }
 
     pub fn visit_select_statement(&mut self, select_stmt: &SelectStatement) -> &mut Self {
-        self.register_tables(&select_stmt.from_clause);
+        self.register_tables(&select_stmt);
 
         self.push("SELECT ");
         self.visit_distinct(&select_stmt.distinct);
@@ -127,10 +188,10 @@ impl<D: Dialect> Visitor<D> {
         let mut iter = from_clause.iter();
         if let Some(t) = iter.next() {
             self.push(" FROM ");
-            self.visit_table_ref(t);
+            self.visit_table(t);
             for t in iter {
                 self.push(", ");
-                self.visit_table_ref(t);
+                self.visit_table(t);
             }
         }
         self
@@ -146,21 +207,14 @@ impl<D: Dialect> Visitor<D> {
         }
     }
 
-    pub fn visit_table_ref(&mut self, table_ref: &Table) -> &mut Self {
-        match &table_ref.inner.as_ref() {
-            TableInner::Named(name) => self.push_quote(name).visit_alias(&table_ref.alias),
-            TableInner::Subquery(subquery) => self.visit_subquery(subquery).visit_alias(&table_ref.alias),
-            TableInner::Join(join) => self.visit_join(join).visit_alias(&table_ref.alias),
+    pub fn visit_table(&mut self, table: &Table) -> &mut Self {
+        match &table.inner.as_ref() {
+            TableInner::Named(name) => self.push_quote(name),
+            TableInner::Subquery(subquery) => self.visit_subquery(subquery),
+            TableInner::Join(join) => self.visit_join(join),
         };
-
-        if let Some(a) = &table_ref.alias {
-            self.visit_alias(&table_ref.alias)
-        } else if let Some(num) = self.alias_num_of(&table_ref.inner) {
-            let alias = Alias::new(format!("t{}", num));
-            self.visit_alias(&Some(alias))
-        } else {
-            self
-        }
+        let alias = self.alias_of(&table.inner);
+        self.visit_alias(&alias)
     }
 
     pub fn visit_subquery(&mut self, subquery: &Subquery) -> &mut Self {
@@ -177,8 +231,9 @@ impl<D: Dialect> Visitor<D> {
         match item {
             SelectItem::All(None) => self.push("*"),
             SelectItem::All(Some(table)) => {
-                if let Some(num) = self.alias_num_of(table) {
-                    self.push_quote(&format!("t{}", num)).push(".");
+                let alias = self.alias_of(table);
+                if let Some(alias) = alias {
+                    self.push_quote(alias.name()).push(".");
                 }
                 self.push("*")
             },
@@ -196,7 +251,34 @@ impl<D: Dialect> Visitor<D> {
                 .visit_op(if *negated { &NOT_IN } else { &IN })
                 .visit_expr_list(list, inline),
             Expr::Unary { op, expr } => self.visit_op(op).visit_expr(expr, inline),
-            _ => panic!("不支持"),
+            Expr::Func(f) => self.visit_func(f, inline),
+            Expr::Subquery(sq) => self.visit_select_statement(sq),
+        }
+    }
+
+    pub fn visit_func(&mut self, f: &Func, inline: bool) -> &mut Self {
+        self.push(&f.name).push("(");
+        let mut iter = f.args.iter();
+        if let Some(arg) = iter.next() {
+            self.visit_func_arg(arg, inline);
+            for arg in iter {
+                self.push(", ");
+                self.visit_func_arg(arg, inline);
+            }
+        }
+        self.push(")")
+    }
+
+    pub fn visit_func_arg(&mut self, arg: &FuncArg, inline: bool) -> &mut Self {
+        match arg {
+            FuncArg::Expr { expr, distinct } => {
+                if *distinct {
+                    self.push("DISTINCT ");
+                }
+                self.visit_expr(expr, inline)
+            },
+            FuncArg::Wildcard => self.push("*"),
+            FuncArg::Subquery(sq) => self.visit_select_statement(sq.select_statement()),
         }
     }
 
@@ -242,10 +324,11 @@ impl<D: Dialect> Visitor<D> {
     }
 
     pub fn visit_column_ref(&mut self, col: &ColumnRef) -> &mut Self {
-        if let Some(table) = &col.table_inner
-            && let Some(num) = self.alias_num_of(table)
-        {
-            self.push_quote(&format!("t{}", num)).push(".");
+        if let Some(table) = &col.table_inner {
+            let alias = self.alias_of(table);
+            if let Some(alias) = alias {
+                self.push_quote(alias.name()).push(".");
+            }
         }
         self.push_quote(&col.name)
     }

@@ -1,18 +1,10 @@
 use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::alias::Alias;
-use crate::ast2::term::table::{TableInner, Table};
+use crate::ast2::term::table::{Table, TableInner};
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct Subquery(Box<SelectStatement>);
-//
-// impl Deref for Subquery {
-//     type Target = SelectStatement;
-//
-//     fn deref(&self) -> &Self::Target {
-//         &self.0
-//     }
-// }
 
 impl From<SelectStatement> for Subquery {
     fn from(statement: SelectStatement) -> Self {

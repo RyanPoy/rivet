@@ -1,5 +1,6 @@
 use crate::ast2::term::alias::Alias;
 use crate::ast2::term::expr::Expr;
+use crate::ast2::term::func::FuncArg;
 use crate::ast2::term::literal::Literal;
 use crate::ast2::term::ops::{AND, EQ, GT, GTE, IN, IS, IS_NOT, LIKE, LT, LTE, NOT_EQ, NOT_IN, NOT_LIKE, OR};
 use crate::ast2::term::select_item::SelectItem;
@@ -27,6 +28,10 @@ impl ColumnRef {
     }
     pub fn alias(self, name: impl Into<Alias>) -> SelectItem {
         SelectItem::Expr(Expr::Column(self), Some(name.into()))
+    }
+
+    pub fn distinct(self) -> FuncArg {
+        Expr::Column(self).distinct()
     }
 
     pub fn eq<T>(&self, rhs: T) -> Expr

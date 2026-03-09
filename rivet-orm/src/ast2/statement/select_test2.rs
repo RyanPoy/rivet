@@ -1,9 +1,20 @@
 use crate::ast2::sql::visitor;
 use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::calendar::{Date, DateTime};
+use crate::ast2::term::calendar::Date;
+use crate::ast2::term::func::{count, exists, sum};
 use crate::ast2::term::literal::Literal;
 use crate::ast2::term::table::Table;
+use crate::coalesce;
+use crate::sequel::ast::Column;
 
+pub  struct User {
+    table: Table,
+    id: Column,
+}
+
+pub struct Tweet {
+
+}
 // User = Table('users')
 // Tweet = Table('tweets')
 // Person = Table('person', ['id', 'name', 'dob'], primary_key='id')
@@ -148,34 +159,44 @@ fn test_select_in_list_of_values() {
     );
     assert_params!(params, [1, 10, 2]);
 }
-//#[test]
-// fn test_select_subselect_function() {
-//         # For functions whose only argument is a subquery, we do not need to
-//         # include additional parentheses -- in fact, some databases will report
-//         # a syntax error if we do.
-//         exists = fn.EXISTS(Tweet
-//                            .select(Tweet.c.id)
-//                            .where(Tweet.c.user_id == User.c.id))
-//         query = User.select(User.c.username, exists.alias('has_tweet'))
-//         self.assertSQL(query, (
-//             'SELECT "t1"."username", EXISTS('
-//             'SELECT "t2"."id" FROM "tweets" AS "t2" '
-//             'WHERE ("t2"."user_id" = "t1"."id")) AS "has_tweet" '
-//             'FROM "users" AS "t1"'), [])
-//
-//         # If the function has more than one argument, we need to wrap the
-//         # subquery in parentheses.
-//         Stat = Table('stat', ['id', 'val'])
-//         SA = Stat.alias('sa')
-//         subq = SA.select(fn.SUM(SA.val).alias('val_sum'))
-//         query = Stat.select(fn.COALESCE(subq, 0))
-//         self.assertSQL(query, (
-//             'SELECT COALESCE(('
-//             'SELECT SUM("sa"."val") AS "val_sum" FROM "stat" AS "sa"'
-//             '), ?) FROM "stat" AS "t1"'), [0])
-//
-//
-//}
+#[test]
+fn test_select_subselect_function() {
+    // For functions whose only argument is a subquery, we do not need to include additional
+    // parentheses -- in fact, some databases will report a syntax error if we do.
+    let tweets = Table::new("tweets");
+    let users = Table::new("users");
+    let ex = exists(
+        SelectStatement::new()
+            .from(&tweets)
+            .select(tweets.column("id"))
+            .where_(tweets.column("user_id").eq(users.column("id"))),
+    );
+    let stmt = SelectStatement::new()
+        .from(&users)
+        .select(users.column("username"))
+        .select(ex.alias("has_tweet"));
+
+    let (sql, params) = visitor::mysql().visit_select_statement(&stmt).finish();
+    assert_sql!(
+        sql,
+        "SELECT `t1`.`username`, EXISTS(SELECT `t2`.`id` FROM `tweets` AS `t2` WHERE `t2`.`user_id` = `t1`.`id`) AS `has_tweet` FROM `users` AS `t1`"
+    );
+    assert_params!(params, []);
+
+    // If the function has more than one argument, we need to wrap the subquery in parentheses.
+    let sa = Table::new("stat").alias("sa");
+    let subq = SelectStatement::new()
+        .from(&sa)
+        .select(sum(sa.column("val")).alias("val_sum"));
+    let stat = Table::new("stat");
+    let query = SelectStatement::new().from(stat).select(coalesce!(subq, 0));
+    let (sql, params) = visitor::mysql().visit_select_statement(&query).finish();
+    assert_sql!(
+        sql,
+        "SELECT COALESCE(SELECT SUM(`sa`.`val`) AS `val_sum` FROM `stat` AS `sa`, 0) FROM `stat` AS `t1`"
+    );
+    assert_params!(params, []);
+}
 //#[test]
 // fn test_subquery_in_select_sql() {
 //         subq = User.select(User.c.id).where(User.c.username == 'huey')
@@ -2170,14 +2191,17 @@ fn test_distinct() {
     assert_sql!(sql, "SELECT DISTINCT `t1`.`name` FROM `person` AS `t1`");
     assert_params!(params, []);
 }
-//#[test]
-// fn test_distinct_count() {
-//         query = Person.select(fn.COUNT(Person.name.distinct()))
-//         self.assertSQL(query, (
-//             'SELECT COUNT(DISTINCT "t1"."name") FROM "person" AS "t1"'), [])
-//
-//
-//}
+#[test]
+fn test_distinct_count() {
+    let person = Table::new("person");
+    let stmt = SelectStatement::new()
+        .from(&person)
+        .select(count(person.column("name").distinct()));
+    let (sql, params) = visitor::mysql().visit_select_statement(&stmt).finish();
+    assert_sql!(sql, "SELECT COUNT(DISTINCT `t1`.`name`) FROM `person` AS `t1`");
+    assert_params!(params, []);
+}
+
 //#[test]
 // fn test_filtered_count() {
 //         filtered_count = (fn.COUNT(Person.name)

@@ -1,7 +1,7 @@
 use crate::ast2::statement::select::SelectStatement;
 use crate::ast2::term::alias::Alias;
 use crate::ast2::term::column_ref::ColumnRef;
-use crate::ast2::term::func::FuncArg;
+use crate::ast2::term::func::{Func, FuncArg};
 use crate::ast2::term::literal::Literal;
 use crate::ast2::term::ops::{NOT, Op};
 use crate::ast2::term::select_item::SelectItem;
@@ -45,10 +45,7 @@ pub enum Expr {
     // e.g. SELECT SUM(price) FROM orders;
     //      SELECT LOWER(name) FROM users;
     // Note: SELECT COUNT(*) FROM users; * is not a column ref. it's a FuncArg
-    Func {
-        name: String,
-        args: Vec<FuncArg>,
-    },
+    Func(Func),
 
     // e.g.
     // SELECT
@@ -67,6 +64,18 @@ pub enum Expr {
 impl Expr {
     pub fn alias(self, name: impl Into<Alias>) -> SelectItem {
         SelectItem::Expr(self, Some(name.into()))
+    }
+
+    pub fn distinct(self) -> FuncArg {
+        FuncArg::Expr {
+            expr: self,
+            distinct: true,
+        }
+    }
+}
+impl From<SelectStatement> for Expr {
+    fn from(stmt: SelectStatement) -> Self {
+        Self::Subquery(Box::new(stmt))
     }
 }
 impl std::ops::Not for Expr {

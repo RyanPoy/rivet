@@ -1,6 +1,6 @@
 use crate::ast2::term::alias::Alias;
 use crate::ast2::term::expr::Expr;
-use crate::ast2::term::table::{TableInner, Table};
+use crate::ast2::term::table::{Table, TableInner};
 use std::sync::Arc;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
