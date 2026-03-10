@@ -1,5 +1,10 @@
+<<<<<<< HEAD:rivet-orm/src/sequel/term/join.rs
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::table::{Table, TableInner};
+=======
+use crate::ast2::term::expr::Expr;
+use crate::ast2::term::table::{Table, TableInner};
+>>>>>>> 8774772226ca2687befa563f5ff2fc9ff202e17c:rivet-orm/src/ast2/term/join.rs
 use std::sync::Arc;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
