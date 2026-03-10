@@ -1,4 +1,6 @@
 use crate::sequel::term::calendar::{Date, DateTime, Time};
+use crate::sequel::term::expr::Expr;
+use crate::sequel::term::select_item::SelectItem;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
@@ -13,6 +15,9 @@ pub enum Literal {
 }
 
 impl Literal {
+    pub fn alias(self, alias: impl Into<String>) -> SelectItem {
+        Expr::Literal(self).alias(alias)
+    }
     pub fn is_null(&self) -> bool {
         match &self {
             Self::Null => true,

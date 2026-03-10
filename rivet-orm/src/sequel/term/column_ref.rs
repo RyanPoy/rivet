@@ -4,6 +4,7 @@ use crate::sequel::term::literal::Literal;
 use crate::sequel::term::ops::{AND, EQ, GT, GTE, IN, IS, IS_NOT, LIKE, LT, LTE, NOT_EQ, NOT_IN, NOT_LIKE, OR};
 use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::TableInner;
+
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]

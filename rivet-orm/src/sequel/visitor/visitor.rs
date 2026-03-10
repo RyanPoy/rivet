@@ -1,5 +1,3 @@
-use crate::sequel::visitor::builder::Builder;
-use crate::sequel::visitor::dialect::{Dialect, MySQL, PostgreSQL, SQLite};
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::column_ref::ColumnRef;
 use crate::sequel::term::distinct::Distinct;
@@ -12,6 +10,8 @@ use crate::sequel::term::lock::{Lock, Wait};
 use crate::sequel::term::ops::{IN, NOT_IN, Op};
 use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::{Table, TableInner};
+use crate::sequel::visitor::builder::Builder;
+use crate::sequel::visitor::dialect::{Dialect, MySQL, PostgreSQL, SQLite};
 use std::collections::HashMap;
 use std::sync::Arc;
 
