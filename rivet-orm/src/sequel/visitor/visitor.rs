@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD:rivet-orm/src/sequel/visitor/visitor.rs
-use crate::sequel::visitor::builder::Builder;
-use crate::sequel::visitor::dialect::{Dialect, MySQL, PostgreSQL, SQLite};
->>>>>>> abcaf035f24c82033536ed8d63703aa1a1b8ef1d
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::column_ref::ColumnRef;
 use crate::sequel::term::distinct::Distinct;
@@ -16,27 +10,8 @@ use crate::sequel::term::lock::{Lock, Wait};
 use crate::sequel::term::ops::{IN, NOT_IN, Op};
 use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::{Table, TableInner};
-<<<<<<< HEAD
 use crate::sequel::visitor::builder::Builder;
 use crate::sequel::visitor::dialect::{Dialect, MySQL, PostgreSQL, SQLite};
-=======
-=======
-use crate::ast2::sql::builder::Builder;
-use crate::ast2::sql::dialect::{Dialect, MySQL, PostgreSQL, SQLite};
-use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::column_ref::ColumnRef;
-use crate::ast2::term::distinct::Distinct;
-use crate::ast2::term::expr::Expr;
-use crate::ast2::term::func::{Func, FuncArg};
-use crate::ast2::term::index::Index;
-use crate::ast2::term::join::Join;
-use crate::ast2::term::literal::Literal;
-use crate::ast2::term::lock::{Lock, Wait};
-use crate::ast2::term::ops::{IN, NOT_IN, Op};
-use crate::ast2::term::select_item::SelectItem;
-use crate::ast2::term::table::{Table, TableInner};
->>>>>>> 8774772226ca2687befa563f5ff2fc9ff202e17c:rivet-orm/src/ast2/sql/visitor.rs
->>>>>>> abcaf035f24c82033536ed8d63703aa1a1b8ef1d
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -239,23 +214,7 @@ impl<D: Dialect> Visitor<D> {
 
     pub fn visit_select_item(&mut self, item: &SelectItem) -> &mut Self {
         match item {
-<<<<<<< HEAD
             SelectItem { expr, alias } => self.visit_expr(expr, true).visit_alias(alias),
-=======
-<<<<<<< HEAD:rivet-orm/src/sequel/visitor/visitor.rs
-            SelectItem { expr, alias } => self.visit_expr(expr, true).visit_alias(alias),
-=======
-            SelectItem::All(None) => self.push("*"),
-            SelectItem::All(Some(table)) => {
-                let alias = self.alias_of(table);
-                if let Some(alias) = alias {
-                    self.push_quote(&alias).push(".");
-                }
-                self.push("*")
-            },
-            SelectItem::Expr(expr, alias) => self.visit_expr(expr, true).visit_alias(alias),
->>>>>>> 8774772226ca2687befa563f5ff2fc9ff202e17c:rivet-orm/src/ast2/sql/visitor.rs
->>>>>>> abcaf035f24c82033536ed8d63703aa1a1b8ef1d
         }
     }
 

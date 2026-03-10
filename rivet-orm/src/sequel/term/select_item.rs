@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD:rivet-orm/src/sequel/term/select_item.rs
->>>>>>> abcaf035f24c82033536ed8d63703aa1a1b8ef1d
 use crate::sequel::term::column_ref::ColumnRef;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::literal::Literal;
@@ -10,21 +6,6 @@ use crate::sequel::term::literal::Literal;
 pub struct SelectItem {
     pub expr: Expr,
     pub alias: Option<String>,
-<<<<<<< HEAD
-=======
-=======
-use crate::ast2::term::column_ref::ColumnRef;
-use crate::ast2::term::expr::Expr;
-use crate::ast2::term::literal::Literal;
-use crate::ast2::term::table::TableInner;
-use std::sync::Arc;
-
-#[derive(Clone, Debug)]
-pub enum SelectItem {
-    Expr(Expr, Option<String>),
-    All(Option<Arc<TableInner>>),
->>>>>>> 8774772226ca2687befa563f5ff2fc9ff202e17c:rivet-orm/src/ast2/term/select_item.rs
->>>>>>> abcaf035f24c82033536ed8d63703aa1a1b8ef1d
 }
 
 macro_rules! impl_from_for_select_item {
