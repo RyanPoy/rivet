@@ -1,9 +1,24 @@
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD:rivet-orm/src/sequel/term/expr.rs
+>>>>>>> abcaf035f24c82033536ed8d63703aa1a1b8ef1d
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::column_ref::ColumnRef;
 use crate::sequel::term::func::{Func, FuncArg};
 use crate::sequel::term::literal::Literal;
 use crate::sequel::term::ops::{NOT, Op};
 use crate::sequel::term::select_item::SelectItem;
+<<<<<<< HEAD
+=======
+=======
+use crate::ast2::statement::select::SelectStatement;
+use crate::ast2::term::column_ref::ColumnRef;
+use crate::ast2::term::func::{Func, FuncArg};
+use crate::ast2::term::literal::Literal;
+use crate::ast2::term::ops::{NOT, Op};
+use crate::ast2::term::select_item::SelectItem;
+>>>>>>> 8774772226ca2687befa563f5ff2fc9ff202e17c:rivet-orm/src/ast2/term/expr.rs
+>>>>>>> abcaf035f24c82033536ed8d63703aa1a1b8ef1d
 
 #[derive(Debug, Clone)]
 pub enum Expr {
@@ -62,10 +77,20 @@ pub enum Expr {
 
 impl Expr {
     pub fn alias(self, alias: impl Into<String>) -> SelectItem {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD:rivet-orm/src/sequel/term/expr.rs
+>>>>>>> abcaf035f24c82033536ed8d63703aa1a1b8ef1d
         SelectItem {
             expr: self,
             alias: Some(alias.into()),
         }
+<<<<<<< HEAD
+=======
+=======
+        SelectItem::Expr(self, Some(alias.into()))
+>>>>>>> 8774772226ca2687befa563f5ff2fc9ff202e17c:rivet-orm/src/ast2/term/expr.rs
+>>>>>>> abcaf035f24c82033536ed8d63703aa1a1b8ef1d
     }
 
     pub fn distinct(self) -> FuncArg {

@@ -1,10 +1,25 @@
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD:rivet-orm/src/sequel/term/column_ref.rs
+>>>>>>> abcaf035f24c82033536ed8d63703aa1a1b8ef1d
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::FuncArg;
 use crate::sequel::term::literal::Literal;
 use crate::sequel::term::ops::{AND, EQ, GT, GTE, IN, IS, IS_NOT, LIKE, LT, LTE, NOT_EQ, NOT_IN, NOT_LIKE, OR};
 use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::TableInner;
+<<<<<<< HEAD
 
+=======
+=======
+use crate::ast2::term::expr::Expr;
+use crate::ast2::term::func::FuncArg;
+use crate::ast2::term::literal::Literal;
+use crate::ast2::term::ops::{AND, EQ, GT, GTE, IN, IS, IS_NOT, LIKE, LT, LTE, NOT_EQ, NOT_IN, NOT_LIKE, OR};
+use crate::ast2::term::select_item::SelectItem;
+use crate::ast2::term::table::TableInner;
+>>>>>>> 8774772226ca2687befa563f5ff2fc9ff202e17c:rivet-orm/src/ast2/term/column_ref.rs
+>>>>>>> abcaf035f24c82033536ed8d63703aa1a1b8ef1d
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -27,10 +42,20 @@ impl ColumnRef {
         }
     }
     pub fn alias(self, alias: impl Into<String>) -> SelectItem {
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD:rivet-orm/src/sequel/term/column_ref.rs
+>>>>>>> abcaf035f24c82033536ed8d63703aa1a1b8ef1d
         SelectItem {
             expr: Expr::Column(self),
             alias: Some(alias.into()),
         }
+<<<<<<< HEAD
+=======
+=======
+        SelectItem::Expr(Expr::Column(self), Some(alias.into()))
+>>>>>>> 8774772226ca2687befa563f5ff2fc9ff202e17c:rivet-orm/src/ast2/term/column_ref.rs
+>>>>>>> abcaf035f24c82033536ed8d63703aa1a1b8ef1d
     }
 
     pub fn distinct(self) -> FuncArg {

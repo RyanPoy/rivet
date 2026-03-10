@@ -1,6 +1,16 @@
+<<<<<<< HEAD
 use crate::sequel::term::calendar::{Date, DateTime, Time};
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::select_item::SelectItem;
+=======
+<<<<<<< HEAD:rivet-orm/src/sequel/term/literal.rs
+use crate::sequel::term::calendar::{Date, DateTime, Time};
+=======
+use crate::ast2::term::calendar::{Date, DateTime, Time};
+use crate::ast2::term::expr::Expr;
+use crate::ast2::term::select_item::SelectItem;
+>>>>>>> 8774772226ca2687befa563f5ff2fc9ff202e17c:rivet-orm/src/ast2/term/literal.rs
+>>>>>>> abcaf035f24c82033536ed8d63703aa1a1b8ef1d
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Literal {
@@ -15,9 +25,18 @@ pub enum Literal {
 }
 
 impl Literal {
+<<<<<<< HEAD
     pub fn alias(self, alias: impl Into<String>) -> SelectItem {
         Expr::Literal(self).alias(alias)
     }
+=======
+<<<<<<< HEAD:rivet-orm/src/sequel/term/literal.rs
+=======
+    pub fn alias(self, alias: impl Into<String>) -> SelectItem {
+        Expr::Literal(self).alias(alias)
+    }
+>>>>>>> 8774772226ca2687befa563f5ff2fc9ff202e17c:rivet-orm/src/ast2/term/literal.rs
+>>>>>>> abcaf035f24c82033536ed8d63703aa1a1b8ef1d
     pub fn is_null(&self) -> bool {
         match &self {
             Self::Null => true,
