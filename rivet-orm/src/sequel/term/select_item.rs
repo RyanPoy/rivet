@@ -1,4 +1,4 @@
-use crate::sequel::term::column_ref::ColumnRef;
+use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::literal::Literal;
 
@@ -26,7 +26,7 @@ macro_rules! impl_from_for_select_item {
 }
 
 impl_from_for_select_item!(
-    ColumnRef => Column,
+    Column => Column,
     Literal => Literal
 );
 
@@ -36,7 +36,7 @@ impl From<&str> for SelectItem {
             Some((prefix, name)) => (name, Some(prefix.to_string())),
             None => (value, None),
         };
-        let expr = Expr::from(ColumnRef::from(name));
+        let expr = Expr::from(Column::from(name));
         SelectItem { expr, alias }
     }
 }

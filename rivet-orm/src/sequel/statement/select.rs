@@ -1,4 +1,4 @@
-use crate::sequel::term::column_ref::ColumnRef;
+use crate::sequel::term::column::Column;
 use crate::sequel::term::distinct::Distinct;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::index::Index;
@@ -38,7 +38,7 @@ impl SelectStatement {
         self.distinct = Distinct::Simple;
         self
     }
-    pub fn distinct_on(mut self, cols: Vec<ColumnRef>) -> Self {
+    pub fn distinct_on(mut self, cols: Vec<Column>) -> Self {
         self.distinct = Distinct::On(cols);
         self
     }

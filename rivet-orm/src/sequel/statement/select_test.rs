@@ -1,7 +1,7 @@
 use crate::sequel::visitor::visitor;
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::calendar::Date;
-use crate::sequel::term::column_ref::ColumnRef;
+use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::literal::Literal;
 use crate::sequel::term::lock::{Lock, Wait};

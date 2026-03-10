@@ -1,5 +1,5 @@
 use crate::sequel::statement::select::SelectStatement;
-use crate::sequel::term::column_ref::ColumnRef;
+use crate::sequel::term::column::Column;
 use crate::sequel::term::func::{Func, FuncArg};
 use crate::sequel::term::literal::Literal;
 use crate::sequel::term::ops::{NOT, Op};
@@ -9,7 +9,7 @@ use crate::sequel::term::select_item::SelectItem;
 pub enum Expr {
     // e.g. SELECT id FROM users;
     //      SELECT u.id FROM users u;
-    Column(ColumnRef),
+    Column(Column),
 
     // e.g. SELECT 1;
     //      SELECT 'hello';
@@ -100,8 +100,8 @@ where
     }
 }
 
-impl From<ColumnRef> for Expr {
-    fn from(value: ColumnRef) -> Self {
+impl From<Column> for Expr {
+    fn from(value: Column) -> Self {
         Expr::Column(value)
     }
 }

@@ -1,5 +1,5 @@
 use crate::sequel::statement::select::SelectStatement;
-use crate::sequel::term::column_ref::ColumnRef;
+use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
 
 #[derive(Debug, Clone)]
@@ -9,8 +9,8 @@ pub enum FuncArg {
     Subquery(Box<SelectStatement>),
 }
 
-impl From<ColumnRef> for FuncArg {
-    fn from(col: ColumnRef) -> Self {
+impl From<Column> for FuncArg {
+    fn from(col: Column) -> Self {
         Self::Expr {
             expr: Expr::Column(col),
             distinct: false,

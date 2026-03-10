@@ -1,5 +1,5 @@
 use crate::sequel::statement::select::SelectStatement;
-use crate::sequel::term::column_ref::ColumnRef;
+use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::join::{Join, JoinType};
 use std::sync::Arc;
@@ -41,14 +41,14 @@ impl Table {
         }
     }
 
-    pub fn column(&self, name: impl Into<String>) -> ColumnRef {
-        ColumnRef {
+    pub fn column(&self, name: impl Into<String>) -> Column {
+        Column {
             name: name.into(),
             table_inner: Some(self.inner.clone()),
         }
     }
 
-    pub fn columns<T, I>(&self, names: I) -> Vec<ColumnRef>
+    pub fn columns<T, I>(&self, names: I) -> Vec<Column>
     where
         T: Into<String>,
         I: IntoIterator<Item = T>,

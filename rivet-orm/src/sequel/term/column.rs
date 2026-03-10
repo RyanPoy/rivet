@@ -7,20 +7,20 @@ use crate::sequel::term::table::TableInner;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
-pub struct ColumnRef {
+pub struct Column {
     pub name: String,
     pub table_inner: Option<Arc<TableInner>>,
 }
 
-impl From<&str> for ColumnRef {
+impl From<&str> for Column {
     fn from(value: &str) -> Self {
         Self::new(value, None)
     }
 }
 
-impl ColumnRef {
+impl Column {
     pub fn new(name: impl Into<String>, table: Option<Arc<TableInner>>) -> Self {
-        ColumnRef {
+        Column {
             name: name.into(),
             table_inner: table,
         }

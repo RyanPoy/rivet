@@ -1,5 +1,5 @@
 use crate::sequel::statement::select::SelectStatement;
-use crate::sequel::term::column_ref::ColumnRef;
+use crate::sequel::term::column::Column;
 use crate::sequel::term::distinct::Distinct;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::{Func, FuncArg};
@@ -300,7 +300,7 @@ impl<D: Dialect> Visitor<D> {
         }
     }
 
-    pub fn visit_column_ref(&mut self, col: &ColumnRef) -> &mut Self {
+    pub fn visit_column_ref(&mut self, col: &Column) -> &mut Self {
         if let Some(table) = &col.table_inner {
             let alias = self.alias_of(table);
             if let Some(alias) = alias {

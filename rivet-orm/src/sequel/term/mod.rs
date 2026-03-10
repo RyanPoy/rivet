@@ -1,5 +1,5 @@
 pub mod calendar;
-pub mod column_ref;
+pub mod column;
 pub mod distinct;
 pub mod expr;
 pub mod func;
