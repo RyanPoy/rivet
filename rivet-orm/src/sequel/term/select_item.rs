@@ -1,6 +1,6 @@
-use crate::ast2::term::column_ref::ColumnRef;
-use crate::ast2::term::expr::Expr;
-use crate::ast2::term::literal::Literal;
+use crate::sequel::term::column_ref::ColumnRef;
+use crate::sequel::term::expr::Expr;
+use crate::sequel::term::literal::Literal;
 
 #[derive(Clone, Debug)]
 pub struct SelectItem {

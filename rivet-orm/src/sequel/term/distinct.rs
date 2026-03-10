@@ -1,4 +1,4 @@
-use crate::ast2::term::column_ref::ColumnRef;
+use crate::sequel::term::column_ref::ColumnRef;
 
 #[derive(Clone, Debug)]
 pub enum Distinct {

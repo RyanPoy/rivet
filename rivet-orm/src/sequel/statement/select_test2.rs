@@ -1,9 +1,9 @@
-use crate::ast2::sql::visitor;
-use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::calendar::Date;
-use crate::ast2::term::func::{count, exists, sum};
-use crate::ast2::term::literal::Literal;
-use crate::ast2::term::table::Table;
+use crate::sequel::visitor::visitor;
+use crate::sequel::statement::select::SelectStatement;
+use crate::sequel::term::calendar::Date;
+use crate::sequel::term::func::{count, exists, sum};
+use crate::sequel::term::literal::Literal;
+use crate::sequel::term::table::Table;
 use crate::coalesce;
 
 // User = Table('users')
@@ -1146,8 +1146,8 @@ fn test_multiple_where() {
 //         T = Table('tbl', ('key',))
 //         def assertLike(expr, expected):
 //             query = T.select().where(expr)
-//             sql, params = __sql__(T.select().where(expr))
-//             match_obj = re.search(r'\("t1"."key" (ILIKE[^\)]+)\)', sql)
+//             visitor, params = __sql__(T.select().where(expr))
+//             match_obj = re.search(r'\("t1"."key" (ILIKE[^\)]+)\)', visitor)
 //             if match_obj is None:
 //                 raise AssertionError('LIKE expression not found in query.')
 //             like, = match_obj.groups()
@@ -1277,12 +1277,12 @@ fn test_multiple_where() {
 //
 //         # Cannot infer any columns for User.
 //         data = [('u1',), ('u2',)]
-//         self.assertRaises(ValueError, User.insert(data).sql)
+//         self.assertRaises(ValueError, User.insert(data).visitor)
 //
 //         # Note declares columns, but no primary key. So we would have to
 //         # include it for this to work.
 //         data = [(1, 'p1-n'), (2, 'p2-n')]
-//         self.assertRaises(ValueError, Note.insert(data).sql)
+//         self.assertRaises(ValueError, Note.insert(data).visitor)
 //
 //         data = [(1, 1, 'p1-n'), (2, 2, 'p2-n')]
 //         self.assertSQL(Note.insert(data), (
@@ -1354,12 +1354,12 @@ fn test_multiple_where() {
 //         class Empty(TestModel): pass
 //         query = Empty.insert()
 //         if isinstance(db, MySQLDatabase):
-//             sql = 'INSERT INTO "empty" () VALUES ()'
+//             visitor = 'INSERT INTO "empty" () VALUES ()'
 //         elif isinstance(db, PostgresqlDatabase):
-//             sql = 'INSERT INTO "empty" DEFAULT VALUES RETURNING "empty"."id"'
+//             visitor = 'INSERT INTO "empty" DEFAULT VALUES RETURNING "empty"."id"'
 //         else:
-//             sql = 'INSERT INTO "empty" DEFAULT VALUES'
-//         self.assertSQL(query, sql, [])
+//             visitor = 'INSERT INTO "empty" DEFAULT VALUES'
+//         self.assertSQL(query, visitor, [])
 //
 //
 // class TestUpdateQuery(BaseTestCase):
@@ -1641,8 +1641,8 @@ fn test_multiple_where() {
 //             query = Register.select(
 //                 Register.value,
 //                 fn.SUM(Register.value).over(**over_kwargs))
-//             sql, params = __sql__(query)
-//             match_obj = re.search(r'OVER \((.*?)\) FROM', sql)
+//             visitor, params = __sql__(query)
+//             match_obj = re.search(r'OVER \((.*?)\) FROM', visitor)
 //             self.assertTrue(match_obj is not None)
 //             self.assertEqual(match_obj.groups()[0], expected)
 //             self.assertEqual(params, [])
@@ -1937,18 +1937,18 @@ fn test_multiple_where() {
 //         fts = (('as_range', Window.RANGE, 'RANGE'),
 //                ('as_rows', Window.ROWS, 'ROWS'),
 //                ('as_groups', Window.GROUPS, 'GROUPS'))
-//         for method, arg, sql in fts:
+//         for method, arg, visitor in fts:
 //             w = getattr(Window(order_by=[Tbl.b + 1]), method)()
 //             self.assertSQL(Tbl.select(fn.SUM(Tbl.c).over(w)).window(w), (
 //                 'SELECT SUM("t1"."c") OVER w FROM "tbl" AS "t1" '
 //                 'WINDOW w AS (ORDER BY ("t1"."b" + ?) '
-//                 '%s UNBOUNDED PRECEDING)') % sql, [1])
+//                 '%s UNBOUNDED PRECEDING)') % visitor, [1])
 //
 //             query = Tbl.select(fn.SUM(Tbl.c)
 //                                .over(order_by=[Tbl.b + 1], frame_type=arg))
 //             self.assertSQL(query, (
 //                 'SELECT SUM("t1"."c") OVER (ORDER BY ("t1"."b" + ?) '
-//                 '%s UNBOUNDED PRECEDING) FROM "tbl" AS "t1"') % sql, [1])
+//                 '%s UNBOUNDED PRECEDING) FROM "tbl" AS "t1"') % visitor, [1])
 //
 //
 //}
@@ -1959,7 +1959,7 @@ fn test_multiple_where() {
 //                (Window.TIES, 'TIES'),
 //                (Window.NO_OTHERS, 'NO OTHERS'),
 //                (Window.GROUP, 'GROUP'))
-//         for arg, sql in fts:
+//         for arg, visitor in fts:
 //             query = Tbl.select(fn.MAX(Tbl.b).over(
 //                 order_by=[Tbl.c],
 //                 start=Window.preceding(4),
@@ -1969,7 +1969,7 @@ fn test_multiple_where() {
 //             self.assertSQL(query, (
 //                 'SELECT MAX("t1"."b") OVER (ORDER BY "t1"."c" '
 //                 'ROWS BETWEEN 4 PRECEDING AND UNBOUNDED FOLLOWING '
-//                 'EXCLUDE %s) FROM "tbl" AS "t1"') % sql, [])
+//                 'EXCLUDE %s) FROM "tbl" AS "t1"') % visitor, [])
 //
 //
 //}

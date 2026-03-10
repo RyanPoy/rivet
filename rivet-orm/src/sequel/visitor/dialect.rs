@@ -1,5 +1,5 @@
-use crate::ast2::sql::builder::Builder;
-use crate::ast2::term::index::Index;
+use crate::sequel::visitor::builder::Builder;
+use crate::sequel::term::index::Index;
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PlaceHolderStyle {
     QuestionMark,

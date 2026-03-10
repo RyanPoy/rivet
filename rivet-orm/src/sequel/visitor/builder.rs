@@ -1,5 +1,5 @@
-use crate::ast2::sql::dialect::{Dialect, PlaceHolderStyle};
-use crate::ast2::term::literal::Literal;
+use crate::sequel::visitor::dialect::{Dialect, PlaceHolderStyle};
+use crate::sequel::term::literal::Literal;
 
 pub struct Builder {
     pub buff: String,

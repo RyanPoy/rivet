@@ -1,4 +1,4 @@
-use crate::ast2::term::calendar::{Date, DateTime, Time};
+use crate::sequel::term::calendar::{Date, DateTime, Time};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Literal {

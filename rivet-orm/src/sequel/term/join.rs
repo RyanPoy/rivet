@@ -1,5 +1,5 @@
-use crate::ast2::term::expr::Expr;
-use crate::ast2::term::table::{Table, TableInner};
+use crate::sequel::term::expr::Expr;
+use crate::sequel::term::table::{Table, TableInner};
 use std::sync::Arc;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]

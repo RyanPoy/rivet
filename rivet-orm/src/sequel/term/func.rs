@@ -1,6 +1,6 @@
-use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::column_ref::ColumnRef;
-use crate::ast2::term::expr::Expr;
+use crate::sequel::statement::select::SelectStatement;
+use crate::sequel::term::column_ref::ColumnRef;
+use crate::sequel::term::expr::Expr;
 
 #[derive(Debug, Clone)]
 pub enum FuncArg {
@@ -68,10 +68,10 @@ macro_rules! coalesce {
             let mut args = Vec::new();
             $(
                 // 利用 Into<Expr> 自动处理 Subquery, ColumnRef, Literal 等
-                let expr: $crate::ast2::term::expr::Expr = $arg.into();
-                args.push($crate::ast2::term::func::FuncArg::Expr{ expr, distinct:false });
+                let expr: $crate::sequel::term::expr::Expr = $arg.into();
+                args.push($crate::sequel::term::func::FuncArg::Expr{ expr, distinct:false });
             )*
-            $crate::ast2::term::func::func("COALESCE", args)
+            $crate::sequel::term::func::func("COALESCE", args)
         }
     };
 }

@@ -1,9 +1,9 @@
-use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::column_ref::ColumnRef;
-use crate::ast2::term::func::{Func, FuncArg};
-use crate::ast2::term::literal::Literal;
-use crate::ast2::term::ops::{NOT, Op};
-use crate::ast2::term::select_item::SelectItem;
+use crate::sequel::statement::select::SelectStatement;
+use crate::sequel::term::column_ref::ColumnRef;
+use crate::sequel::term::func::{Func, FuncArg};
+use crate::sequel::term::literal::Literal;
+use crate::sequel::term::ops::{NOT, Op};
+use crate::sequel::term::select_item::SelectItem;
 
 #[derive(Debug, Clone)]
 pub enum Expr {

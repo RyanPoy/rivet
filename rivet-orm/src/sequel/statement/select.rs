@@ -1,10 +1,10 @@
-use crate::ast2::term::column_ref::ColumnRef;
-use crate::ast2::term::distinct::Distinct;
-use crate::ast2::term::expr::Expr;
-use crate::ast2::term::index::Index;
-use crate::ast2::term::lock::{Lock, Wait};
-use crate::ast2::term::select_item::{IntoSelectItems, SelectItem};
-use crate::ast2::term::table::{IntoTables, Table};
+use crate::sequel::term::column_ref::ColumnRef;
+use crate::sequel::term::distinct::Distinct;
+use crate::sequel::term::expr::Expr;
+use crate::sequel::term::index::Index;
+use crate::sequel::term::lock::{Lock, Wait};
+use crate::sequel::term::select_item::{IntoSelectItems, SelectItem};
+use crate::sequel::term::table::{IntoTables, Table};
 
 #[derive(Clone, Debug)]
 pub struct SelectStatement {

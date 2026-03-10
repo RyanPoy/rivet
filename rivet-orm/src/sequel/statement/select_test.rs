@@ -1,12 +1,12 @@
-use crate::ast2::sql::visitor;
-use crate::ast2::statement::select::SelectStatement;
-use crate::ast2::term::calendar::Date;
-use crate::ast2::term::column_ref::ColumnRef;
-use crate::ast2::term::expr::Expr;
-use crate::ast2::term::literal::Literal;
-use crate::ast2::term::lock::{Lock, Wait};
-use crate::ast2::term::table::Table;
-use rivet::ast2::term::table::TableInner;
+use crate::sequel::visitor::visitor;
+use crate::sequel::statement::select::SelectStatement;
+use crate::sequel::term::calendar::Date;
+use crate::sequel::term::column_ref::ColumnRef;
+use crate::sequel::term::expr::Expr;
+use crate::sequel::term::literal::Literal;
+use crate::sequel::term::lock::{Lock, Wait};
+use crate::sequel::term::table::Table;
+use crate::sequel::term::table::TableInner;
 use std::sync::Arc;
 //
 // #[test]
@@ -14,18 +14,18 @@ use std::sync::Arc;
 //     let stmt = SelectStatement::new();
 //
 //     let mut v = visitor::mysql();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT *".to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT *".to_string());
 //     assert!(values.is_empty());
 //
 //     let mut v = visitor::postgre();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT *".to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT *".to_string());
 //     assert!(values.is_empty());
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT *".to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT *".to_string());
 //     assert!(values.is_empty());
 // }
 //
@@ -33,21 +33,21 @@ use std::sync::Arc;
 // fn test_select_empty_from_single() {
 //     let stmt = SelectStatement::new().from("users"); // from(&str)
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT * FROM `users`".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT * FROM `users`".to_string());
 //
 //     let stmt = SelectStatement::new().from(NamedTable::new("users")); // from(NamedTable)
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users""#.to_string());
 //
 //     let stmt = SelectStatement::new().from(TableRef {
 //         inner: Arc::new(TableInner::Named(NamedTable::new("users"))),
 //         alias: None,
 //     }); // from(TableRef)
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users""#.to_string());
 // }
 //
 // #[test]
@@ -56,16 +56,16 @@ use std::sync::Arc;
 //
 //     let stmt = SelectStatement::new().from(t);
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT * FROM `users` AS `u`".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT * FROM `users` AS `u`".to_string());
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" AS "u""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" AS "u""#.to_string());
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" AS "u""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" AS "u""#.to_string());
 // }
 // #[test]
 // fn test_select_empty_from_multiple() {
@@ -73,25 +73,25 @@ use std::sync::Arc;
 //     let stmt2 = SelectStatement::new().from_many(vec!["users", "orders", "products"]);
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt1).finish();
-//     assert_eq!(sql, "SELECT * FROM `users`, `orders`, `products`".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt1).finish();
+//     assert_eq!(visitor, "SELECT * FROM `users`, `orders`, `products`".to_string());
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt2).finish();
-//     assert_eq!(sql, "SELECT * FROM `users`, `orders`, `products`".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt2).finish();
+//     assert_eq!(visitor, "SELECT * FROM `users`, `orders`, `products`".to_string());
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt1).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users", "orders", "products""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt1).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users", "orders", "products""#.to_string());
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt2).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users", "orders", "products""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt2).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users", "orders", "products""#.to_string());
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt1).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users", "orders", "products""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt1).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users", "orders", "products""#.to_string());
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt2).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users", "orders", "products""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt2).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users", "orders", "products""#.to_string());
 // }
 //
 // #[test]
@@ -102,23 +102,23 @@ use std::sync::Arc;
 //
 //     let stmt = SelectStatement::new().from(t1).from(t2).from(t3);
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         "SELECT * FROM `users` AS `u`, `orders` AS `o`, `products` AS `p`".to_string()
 //     );
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT * FROM "users" AS "u", "orders" AS "o", "products" AS "p""#.to_string()
 //     );
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT * FROM "users" AS "u", "orders" AS "o", "products" AS "p""#.to_string()
 //     );
 // }
@@ -128,16 +128,16 @@ use std::sync::Arc;
 //     let stmt = SelectStatement::new().select("id").from("users");
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT `id` FROM `users`".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT `id` FROM `users`".to_string());
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT "id" FROM "users""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT "id" FROM "users""#.to_string());
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT "id" FROM "users""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT "id" FROM "users""#.to_string());
 // }
 //
 // #[test]
@@ -147,16 +147,16 @@ use std::sync::Arc;
 //         .from("users");
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT `id`, `name`, `email` FROM `users`".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT `id`, `name`, `email` FROM `users`".to_string());
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT "id", "name", "email" FROM "users""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT "id", "name", "email" FROM "users""#.to_string());
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT "id", "name", "email" FROM "users""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT "id", "name", "email" FROM "users""#.to_string());
 // }
 //
 // #[test]
@@ -169,23 +169,23 @@ use std::sync::Arc;
 //         .select(Expr::Column(ColumnRef::new("name", None).qualifier("users")).alias("uname"));
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         "SELECT `card_number`, `cards`.`id` AS `cid`, `users`.`name` AS `uname` FROM `users`, `cards`".to_string()
 //     );
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT "card_number", "cards"."id" AS "cid", "users"."name" AS "uname" FROM "users", "cards""#.to_string()
 //     );
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT "card_number", "cards"."id" AS "cid", "users"."name" AS "uname" FROM "users", "cards""#.to_string()
 //     );
 // }
@@ -195,16 +195,16 @@ use std::sync::Arc;
 //     let stmt = SelectStatement::new().from("users").select("foo").distinct();
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT DISTINCT `foo` FROM `users`".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT DISTINCT `foo` FROM `users`".to_string());
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT DISTINCT "foo" FROM "users""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT DISTINCT "foo" FROM "users""#.to_string());
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT DISTINCT "foo" FROM "users""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT DISTINCT "foo" FROM "users""#.to_string());
 // }
 //
 // #[test]
@@ -216,16 +216,16 @@ use std::sync::Arc;
 //         .distinct();
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT DISTINCT `foo`, `bar` FROM `users`".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT DISTINCT `foo`, `bar` FROM `users`".to_string());
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "users""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT DISTINCT "foo", "bar" FROM "users""#.to_string());
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "users""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT DISTINCT "foo", "bar" FROM "users""#.to_string());
 // }
 // #[test]
 // fn test_select_distinct_on_single() {
@@ -238,19 +238,19 @@ use std::sync::Arc;
 //         .distinct_on(vec![foo]);
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT DISTINCT `foo`, `bar` FROM `users`".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT DISTINCT `foo`, `bar` FROM `users`".to_string());
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT DISTINCT ON ("foo") "foo", "bar" FROM "users""#.to_string()
 //     );
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "users""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT DISTINCT "foo", "bar" FROM "users""#.to_string());
 // }
 //
 // #[test]
@@ -264,19 +264,19 @@ use std::sync::Arc;
 //         .distinct_on(vec![foo, bar]);
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT DISTINCT `foo`, `bar` FROM `users`".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT DISTINCT `foo`, `bar` FROM `users`".to_string());
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT DISTINCT ON ("foo", "bar") "foo", "bar" FROM "users""#.to_string()
 //     );
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT DISTINCT "foo", "bar" FROM "users""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT DISTINCT "foo", "bar" FROM "users""#.to_string());
 // }
 //
 // #[test]
@@ -287,23 +287,23 @@ use std::sync::Arc;
 //         .select("sq0.bar");
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         "SELECT `sq0`.`foo`, `sq0`.`bar` FROM (SELECT * FROM `abc`) AS `sq0`".to_string()
 //     );
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#.to_string()
 //     );
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#.to_string()
 //     );
 // }
@@ -317,24 +317,24 @@ use std::sync::Arc;
 //         .select_many(["sq0.foo", "sq1.bar"]);
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         "SELECT `sq0`.`foo`, `sq1`.`bar` FROM (SELECT `foo` FROM `abc`) AS `sq0`, (SELECT `bar` FROM `efg`) AS `sq1`"
 //             .to_string()
 //     );
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT "sq0"."foo", "sq1"."bar" FROM (SELECT "foo" FROM "abc") AS "sq0", (SELECT "bar" FROM "efg") AS "sq1""#.to_string()
 //     );
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT "sq0"."foo", "sq1"."bar" FROM (SELECT "foo" FROM "abc") AS "sq0", (SELECT "bar" FROM "efg") AS "sq1""#.to_string()
 //     );
 // }
@@ -350,23 +350,23 @@ use std::sync::Arc;
 //     let stmt = SelectStatement::new().from(sq2).select("sq2.foo");
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         "SELECT `sq2`.`foo` FROM (SELECT `sq1`.`foo` FROM (SELECT `sq0`.`foo`, `sq0`.`bar` FROM (SELECT * FROM `abc`) AS `sq0`) AS `sq1`) AS `sq2`".to_string()
 //     );
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT "sq2"."foo" FROM (SELECT "sq1"."foo" FROM (SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0") AS "sq1") AS "sq2""#.to_string()
 //     );
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT "sq2"."foo" FROM (SELECT "sq1"."foo" FROM (SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0") AS "sq1") AS "sq2""#.to_string()
 //     );
 // }
@@ -381,16 +381,16 @@ use std::sync::Arc;
 //         .select(Literal::Null);
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT 1, 2.1 AS `avg`, 'No.1', 0, NULL".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT 1, 2.1 AS `avg`, 'No.1', 0, NULL".to_string());
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT 1, 2.1 AS "avg", 'No.1', false, NULL"#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT 1, 2.1 AS "avg", 'No.1', false, NULL"#.to_string());
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT 1, 2.1 AS "avg", 'No.1', 0, NULL"#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT 1, 2.1 AS "avg", 'No.1', 0, NULL"#.to_string());
 // }
 //
 // #[test]
@@ -398,16 +398,16 @@ use std::sync::Arc;
 //     let stmt = SelectStatement::new().from("users").select("foo").limit(10);
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT `foo` FROM `users` LIMIT 10".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT `foo` FROM `users` LIMIT 10".to_string());
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT "foo" FROM "users" LIMIT 10"#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT "foo" FROM "users" LIMIT 10"#.to_string());
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT "foo" FROM "users" LIMIT 10"#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT "foo" FROM "users" LIMIT 10"#.to_string());
 // }
 //
 // #[test]
@@ -415,16 +415,16 @@ use std::sync::Arc;
 //     let stmt = SelectStatement::new().from("users").select("foo").limit(0);
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT `foo` FROM `users`".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT `foo` FROM `users`".to_string());
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT "foo" FROM "users""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT "foo" FROM "users""#.to_string());
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT "foo" FROM "users""#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT "foo" FROM "users""#.to_string());
 // }
 //
 // #[test]
@@ -432,16 +432,16 @@ use std::sync::Arc;
 //     let stmt = SelectStatement::new().from("users").select("foo").offset(10);
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT `foo` FROM `users`".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT `foo` FROM `users`".to_string());
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT "foo" FROM "users" OFFSET 10"#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT "foo" FROM "users" OFFSET 10"#.to_string());
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT "foo" FROM "users" OFFSET 10"#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT "foo" FROM "users" OFFSET 10"#.to_string());
 // }
 //
 // #[test]
@@ -449,16 +449,16 @@ use std::sync::Arc;
 //     let stmt = SelectStatement::new().from("users").select("foo").limit(10).offset(5);
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT `foo` FROM `users` LIMIT 10 OFFSET 5".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT `foo` FROM `users` LIMIT 10 OFFSET 5".to_string());
 //
 //     let mut v = visitor::postgre();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT "foo" FROM "users" LIMIT 10 OFFSET 5"#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT "foo" FROM "users" LIMIT 10 OFFSET 5"#.to_string());
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT "foo" FROM "users" LIMIT 10 OFFSET 5"#.to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT "foo" FROM "users" LIMIT 10 OFFSET 5"#.to_string());
 // }
 //
 // #[test]
@@ -469,18 +469,18 @@ use std::sync::Arc;
 //         .where_(col.eq(Literal::from("foo")));
 //
 //     let mut v = visitor::mysql();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` = ?".to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT * FROM `users` WHERE `foo` = ?".to_string());
 //     assert_eq!(values.clone(), vec![Literal::from("foo")]);
 //
 //     let mut v = visitor::postgre();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" = $1"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" = $1"#.to_string());
 //     assert_eq!(values.clone(), vec![Literal::from("foo")]);
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" = ?"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" = ?"#.to_string());
 //     assert_eq!(values.clone(), vec![Literal::from("foo")]);
 // }
 //
@@ -490,18 +490,18 @@ use std::sync::Arc;
 //     let stmt = SelectStatement::new().from("users").where_(col.gt(Literal::from(0)));
 //
 //     let mut v = visitor::mysql();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` > ?".to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT * FROM `users` WHERE `foo` > ?".to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(0)]);
 //
 //     let mut v = visitor::postgre();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" > $1"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" > $1"#.to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(0)]);
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" > ?"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" > ?"#.to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(0)]);
 // }
 //
@@ -513,18 +513,18 @@ use std::sync::Arc;
 //         .where_(col.not_eq(Literal::from(true)));
 //
 //     let mut v = visitor::mysql();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` <> ?".to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT * FROM `users` WHERE `foo` <> ?".to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(true)]);
 //
 //     let mut v = visitor::postgre();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" <> $1"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" <> $1"#.to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(true)]);
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" <> ?"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" <> ?"#.to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(true)]);
 // }
 // #[test]
@@ -533,16 +533,16 @@ use std::sync::Arc;
 //     let stmt = SelectStatement::new().from("users").where_(col.eq(Literal::Null));
 //
 //     let mut v = visitor::mysql();
-//     let (sql, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` IS NULL".to_string());
+//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT * FROM `users` WHERE `foo` IS NULL".to_string());
 //
 //     let mut v = visitor::postgre();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" IS NULL"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" IS NULL"#.to_string());
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" IS NULL"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" IS NULL"#.to_string());
 // }
 // #[test]
 // fn test_where_basic_in_date() {
@@ -554,8 +554,8 @@ use std::sync::Arc;
 //     ]));
 //
 //     let mut v = visitor::mysql();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` IN (?, ?, ?)".to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT * FROM `users` WHERE `foo` IN (?, ?, ?)".to_string());
 //     assert_eq!(
 //         values.clone(),
 //         vec![
@@ -566,8 +566,8 @@ use std::sync::Arc;
 //     );
 //
 //     let mut v = visitor::postgre();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" IN ($1, $2, $3)"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" IN ($1, $2, $3)"#.to_string());
 //     assert_eq!(
 //         values.clone(),
 //         vec![
@@ -578,8 +578,8 @@ use std::sync::Arc;
 //     );
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" IN (?, ?, ?)"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" IN (?, ?, ?)"#.to_string());
 //     assert_eq!(
 //         values.clone(),
 //         vec![
@@ -599,18 +599,18 @@ use std::sync::Arc;
 //         .for_update(Lock::Update, Wait::DEFAULT);
 //
 //     let mut v = visitor::mysql();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE".to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE".to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 //
 //     let mut v = visitor::postgre();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE"#.to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 // }
 //
@@ -623,18 +623,18 @@ use std::sync::Arc;
 //         .for_update(Lock::Share, Wait::DEFAULT);
 //
 //     let mut v = visitor::mysql();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, "SELECT * FROM `users` WHERE `foo` < ? FOR SHARE".to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, "SELECT * FROM `users` WHERE `foo` < ? FOR SHARE".to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 //
 //     let mut v = visitor::postgre();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR SHARE"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR SHARE"#.to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 // }
 //
@@ -647,24 +647,24 @@ use std::sync::Arc;
 //         .for_update(Lock::Update, Wait::NoWait);
 //
 //     let mut v = visitor::mysql();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE NOWAIT".to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 //
 //     let mut v = visitor::postgre();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE NOWAIT"#.to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 // }
 //
@@ -677,24 +677,24 @@ use std::sync::Arc;
 //         .for_update(Lock::Update, Wait::SkipLocked);
 //
 //     let mut v = visitor::mysql();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE SKIP LOCKED".to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 //
 //     let mut v = visitor::postgre();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE SKIP LOCKED"#.to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 // }
 //
@@ -708,24 +708,24 @@ use std::sync::Arc;
 //         .for_update(Lock::UpdateOf(t), Wait::DEFAULT);
 //
 //     let mut v = visitor::mysql();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE OF `users`".to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 //
 //     let mut v = visitor::postgre();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE OF "users""#.to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 // }
 //
@@ -739,24 +739,24 @@ use std::sync::Arc;
 //         .for_update(Lock::UpdateOf(t), Wait::SkipLocked);
 //
 //     let mut v = visitor::mysql();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE OF `users` SKIP LOCKED".to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 //
 //     let mut v = visitor::postgre();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE OF "users" SKIP LOCKED"#.to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
 //     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 // }
 //
@@ -772,25 +772,25 @@ use std::sync::Arc;
 //         .where_(col_bar.eq(col_baz));
 //
 //     let mut v = visitor::mysql();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         "SELECT * FROM `users` AS `users` WHERE `users`.`foo` = ? AND `users`.`bar` = `users`.`baz`".to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from(1)]);
 //
 //     let mut v = visitor::postgre();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT * FROM "users" AS "users" WHERE "users"."foo" = $1 AND "users"."bar" = "users"."baz""#.to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from(1)]);
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT * FROM "users" AS "users" WHERE "users"."foo" = ? AND "users"."bar" = "users"."baz""#.to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from(1)]);
@@ -808,25 +808,25 @@ use std::sync::Arc;
 //         .where_(col_bar.eq(col_baz));
 //
 //     let mut v = visitor::mysql();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         "SELECT * FROM `users` AS `users` WHERE  NOT `foo` = ? AND `bar` = `users`.`baz`".to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from(1)]);
 //
 //     let mut v = visitor::postgre();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT * FROM "users" AS "users" WHERE  NOT "foo" = $1 AND "bar" = "users"."baz""#.to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from(1)]);
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT * FROM "users" AS "users" WHERE  NOT "foo" = ? AND "bar" = "users"."baz""#.to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from(1)]);
@@ -841,22 +841,22 @@ use std::sync::Arc;
 //         .where_(col.eq(Literal::from("bar")))
 //         .force_index("egg");
 //     let mut v = visitor::mysql();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         "SELECT `foo` FROM `users` FORCE INDEX (`egg`) WHERE `foo` = ?".to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from("bar")]);
 //
 //     let mut v = visitor::postgre();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(sql, r#"SELECT "foo" FROM "users" WHERE "foo" = $1"#.to_string());
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
+//     assert_eq!(visitor, r#"SELECT "foo" FROM "users" WHERE "foo" = $1"#.to_string());
 //     assert_eq!(values.clone(), vec![Literal::from("bar")]);
 //
 //     let mut v = visitor::sqlite();
-//     let (sql, values) = v.visit_select_statement(&stmt).finish();
+//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
 //     assert_eq!(
-//         sql,
+//         visitor,
 //         r#"SELECT "foo" FROM "users" INDEXED BY "egg" WHERE "foo" = ?"#.to_string()
 //     );
 //     assert_eq!(values.clone(), vec![Literal::from("bar")]);
@@ -869,9 +869,9 @@ use std::sync::Arc;
 // #[test]
 // fn test_where_field_matches_regex(){
 //     stmt = SelectStatement().from_(Name("abc")).where(foo__regex="r^b")
-//     assert visitors.mysql.sql(stmt) == "SELECT * FROM `abc` WHERE `foo` REGEX 'r^b'"
-//     assert visitors.sqlite.sql(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" REGEX 'r^b'"
-//     assert visitors.pg.sql(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" REGEX 'r^b'"
+//     assert visitors.mysql.visitor(stmt) == "SELECT * FROM `abc` WHERE `foo` REGEX 'r^b'"
+//     assert visitors.sqlite.visitor(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" REGEX 'r^b'"
+//     assert visitors.pg.visitor(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" REGEX 'r^b'"
 // }
 // #[test]
 // fn test_where_field_equals_for_multiple_tables(){
@@ -879,72 +879,72 @@ use std::sync::Arc;
 //             .join("efg", .on(abc__id=Name("id", "efg"))
 //             .where(abc__foo=Name("bar", "efg"))
 //             )
-//     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `abc` JOIN `efg` ON `abc`.`id` = `efg`.`id` WHERE `abc`.`foo` = `efg`.`bar`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "abc" JOIN "efg" ON "abc"."id" = "efg"."id" WHERE "abc"."foo" = "efg"."bar"'
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "abc" JOIN "efg" ON "abc"."id" = "efg"."id" WHERE "abc"."foo" = "efg"."bar"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT * FROM `abc` JOIN `efg` ON `abc`.`id` = `efg`.`id` WHERE `abc`.`foo` = `efg`.`bar`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT * FROM "abc" JOIN "efg" ON "abc"."id" = "efg"."id" WHERE "abc"."foo" = "efg"."bar"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT * FROM "abc" JOIN "efg" ON "abc"."id" = "efg"."id" WHERE "abc"."foo" = "efg"."bar"'
 // }
 //
 // #[test]
 // fn test_group_by__single(){
 //     foo = Name("foo")
 //     stmt = SelectStatement().from_(Name("abc")).group_by(foo).select(foo)
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` GROUP BY `foo`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` GROUP BY `foo`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
 // }
 //
 // #[test]
 // fn test_group_by__multi(){
 //     foo, bar = Name("foo"), Name("bar")
 //     stmt = SelectStatement().from_(Name("abc")).group_by(foo, bar).select(foo, bar)
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, `bar` FROM `abc` GROUP BY `foo`, `bar`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", "bar" FROM "abc" GROUP BY "foo", "bar"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo", "bar" FROM "abc" GROUP BY "foo", "bar"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, `bar` FROM `abc` GROUP BY `foo`, `bar`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", "bar" FROM "abc" GROUP BY "foo", "bar"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", "bar" FROM "abc" GROUP BY "foo", "bar"'
 // }
 //
 // #[test]
 // fn test_group_by__count_star(){
 //     foo = Name("foo")
 //     stmt = SelectStatement().from_(Name("abc")).group_by(foo).select(foo, Count(STAR))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, COUNT(*) FROM `abc` GROUP BY `foo`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", COUNT(*) FROM "abc" GROUP BY "foo"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo", COUNT(*) FROM "abc" GROUP BY "foo"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, COUNT(*) FROM `abc` GROUP BY `foo`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", COUNT(*) FROM "abc" GROUP BY "foo"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", COUNT(*) FROM "abc" GROUP BY "foo"'
 // }
 //
 // #[test]
 // fn test_group_by__count_field(){
 //     foo = Name("foo")
 //     stmt = SelectStatement().from_(Name("abc")).group_by(foo).select(foo, Count(Name("bar")))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, COUNT(`bar`) FROM `abc` GROUP BY `foo`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", COUNT("bar") FROM "abc" GROUP BY "foo"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo", COUNT("bar") FROM "abc" GROUP BY "foo"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, COUNT(`bar`) FROM `abc` GROUP BY `foo`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", COUNT("bar") FROM "abc" GROUP BY "foo"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", COUNT("bar") FROM "abc" GROUP BY "foo"'
 // }
 //
 // #[test]
 // fn test_group_by__count_distinct(){
 //     foo = Name("foo")
 //     stmt = SelectStatement().from_(Name("abc")).group_by(foo).select(foo, Count(STAR).distinct())
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, COUNT(DISTINCT *) FROM `abc` GROUP BY `foo`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", COUNT(DISTINCT *) FROM "abc" GROUP BY "foo"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo", COUNT(DISTINCT *) FROM "abc" GROUP BY "foo"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, COUNT(DISTINCT *) FROM `abc` GROUP BY `foo`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", COUNT(DISTINCT *) FROM "abc" GROUP BY "foo"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", COUNT(DISTINCT *) FROM "abc" GROUP BY "foo"'
 // }
 //
 // #[test]
 // fn test_group_by__sum_distinct(){
 //     foo = Name("foo")
 //     stmt = SelectStatement().from_(Name("abc")).group_by(foo).select(foo, Sum(Name("bar")).distinct())
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, SUM(DISTINCT `bar`) FROM `abc` GROUP BY `foo`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", SUM(DISTINCT "bar") FROM "abc" GROUP BY "foo"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo", SUM(DISTINCT "bar") FROM "abc" GROUP BY "foo"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, SUM(DISTINCT `bar`) FROM `abc` GROUP BY `foo`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", SUM(DISTINCT "bar") FROM "abc" GROUP BY "foo"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", SUM(DISTINCT "bar") FROM "abc" GROUP BY "foo"'
 // }
 //
 // #[test]
 // fn test_group_by__alias(){
 //     bar = Name("bar").as_("bar01")
 //     stmt = SelectStatement().from_(Name("abc")).select(Sum(Name("foo")), bar).group_by(bar)
-//     assert visitors.mysql.sql(stmt) == 'SELECT SUM(`foo`), `bar` AS `bar01` FROM `abc` GROUP BY `bar01`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" GROUP BY "bar01"'
-//     assert visitors.pg.sql(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" GROUP BY "bar01"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT SUM(`foo`), `bar` AS `bar01` FROM `abc` GROUP BY `bar01`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" GROUP BY "bar01"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" GROUP BY "bar01"'
 // }
 //
 // #[test]
@@ -954,18 +954,18 @@ use std::sync::Arc;
 //     stmt = (SelectStatement().from_(Name("abc")).join(table1)
 //             .on(abc__id=Name("t_ref", schema_name=table1.alias))
 //             .select(Sum(Name("foo")), bar).group_by(bar))
-//     assert visitors.mysql.sql(stmt) == 'SELECT SUM(`foo`), `t1`.`bar` AS `bar01` FROM `abc` JOIN `table1` AS `t1` ON `abc`.`id` = `t1`.`t_ref` GROUP BY `bar01`'
-//     assert visitors.sqlite.sql(
+//     assert visitors.mysql.visitor(stmt) == 'SELECT SUM(`foo`), `t1`.`bar` AS `bar01` FROM `abc` JOIN `table1` AS `t1` ON `abc`.`id` = `t1`.`t_ref` GROUP BY `bar01`'
+//     assert visitors.sqlite.visitor(
 //         stmt) == 'SELECT SUM("foo"), "t1"."bar" AS "bar01" FROM "abc" JOIN "table1" AS "t1" ON "abc"."id" = "t1"."t_ref" GROUP BY "bar01"'
-//     assert visitors.pg.sql(stmt) == 'SELECT SUM("foo"), "t1"."bar" AS "bar01" FROM "abc" JOIN "table1" AS "t1" ON "abc"."id" = "t1"."t_ref" GROUP BY "bar01"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT SUM("foo"), "t1"."bar" AS "bar01" FROM "abc" JOIN "table1" AS "t1" ON "abc"."id" = "t1"."t_ref" GROUP BY "bar01"'
 // }
 //
 // #[test]
 // fn test_mysql_query_uses_backtick_quote_chars(){
 //     stmt = SelectStatement().from_(Name("abc")).group_by(Name('foo')).select(Name('foo'))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` GROUP BY `foo`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` GROUP BY `foo`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
 // }
 //
 // #[test]
@@ -973,18 +973,18 @@ use std::sync::Arc;
 //     foo, bar = Name('foo'), Name('bar')
 //     stmt = SelectStatement().from_(Name("abc")).select(foo, Sum(bar)).group_by(foo).having(Sum(bar).gt(1))
 //
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, SUM(`bar`) FROM `abc` GROUP BY `foo` HAVING SUM(`bar`) > 1'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, SUM(`bar`) FROM `abc` GROUP BY `foo` HAVING SUM(`bar`) > 1'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1'
 // }
 //
 // #[test]
 // fn test_having_and(){
 //     foo, bar = Name('foo'), Name('bar')
 //     stmt = SelectStatement().from_(Name("abc")).select(foo, Sum(bar)).group_by(foo).having((Sum(bar).gt(1)) & (Sum(bar).lt(100)))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, SUM(`bar`) FROM `abc` GROUP BY `foo` HAVING SUM(`bar`) > 1 AND SUM(`bar`) < 100'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1 AND SUM("bar") < 100'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1 AND SUM("bar") < 100'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, SUM(`bar`) FROM `abc` GROUP BY `foo` HAVING SUM(`bar`) > 1 AND SUM(`bar`) < 100'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1 AND SUM("bar") < 100'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1 AND SUM("bar") < 100'
 // }
 //
 // #[test]
@@ -1003,13 +1003,13 @@ use std::sync::Arc;
 //         .having(Sum(efg_bar).gt(100))
 //     )
 //
-//     assert visitors.mysql.sql(stmt) == ('SELECT `abc`.`foo`, SUM(`efg`.`bar`), `abc`.`buz` FROM `abc` '
+//     assert visitors.mysql.visitor(stmt) == ('SELECT `abc`.`foo`, SUM(`efg`.`bar`), `abc`.`buz` FROM `abc` '
 //                                         'JOIN `efg` ON `abc`.`foo` = `efg`.`foo` GROUP BY `abc`.`foo` '
 //                                         'HAVING `abc`.`buz` = \'fiz\' AND SUM(`efg`.`bar`) > 100')
-//     assert visitors.sqlite.sql(stmt) == ('SELECT "abc"."foo", SUM("efg"."bar"), "abc"."buz" FROM "abc" '
+//     assert visitors.sqlite.visitor(stmt) == ('SELECT "abc"."foo", SUM("efg"."bar"), "abc"."buz" FROM "abc" '
 //                                          'JOIN "efg" ON "abc"."foo" = "efg"."foo" GROUP BY "abc"."foo" '
 //                                          'HAVING "abc"."buz" = \'fiz\' AND SUM("efg"."bar") > 100')
-//     assert visitors.pg.sql(stmt) == ('SELECT "abc"."foo", SUM("efg"."bar"), "abc"."buz" FROM "abc" '
+//     assert visitors.pg.visitor(stmt) == ('SELECT "abc"."foo", SUM("efg"."bar"), "abc"."buz" FROM "abc" '
 //                                      'JOIN "efg" ON "abc"."foo" = "efg"."foo" GROUP BY "abc"."foo" '
 //                                      'HAVING "abc"."buz" = \'fiz\' AND SUM("efg"."bar") > 100')
 // }
@@ -1017,62 +1017,62 @@ use std::sync::Arc;
 // #[test]
 // fn test_order_by__single_field(){
 //     stmt = SelectStatement().from_(Name("abc")).order_by(Name("foo")).select(Name("foo"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` ORDER BY `foo`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` ORDER BY `foo`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo"'
 // }
 //
 // #[test]
 // fn test_order_by__multi_fields(){
 //     foo, bar = Name("foo"), Name("bar")
 //     stmt = SelectStatement().from_(Name("abc")).order_by(foo, bar).select(foo, bar)
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo`, `bar` FROM `abc` ORDER BY `foo`, `bar`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo", "bar" FROM "abc" ORDER BY "foo", "bar"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo", "bar" FROM "abc" ORDER BY "foo", "bar"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, `bar` FROM `abc` ORDER BY `foo`, `bar`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", "bar" FROM "abc" ORDER BY "foo", "bar"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", "bar" FROM "abc" ORDER BY "foo", "bar"'
 // }
 //
 // #[test]
 // fn test_order_by_asc(){
 //     foo = Name("foo")
 //     stmt = SelectStatement().from_(Name("abc")).order_by(foo, sorted_in=SortedIn.ASC).select(foo)
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` ORDER BY `foo` ASC'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" ASC'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" ASC'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` ORDER BY `foo` ASC'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" ASC'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" ASC'
 // }
 //
 // #[test]
 // fn test_order_by_desc(){
 //     foo = Name("foo")
 //     stmt = SelectStatement().from_(Name("abc")).order_by(foo, sorted_in=SortedIn.DESC).select(foo)
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` ORDER BY `foo` DESC'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" DESC'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" DESC'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` ORDER BY `foo` DESC'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" DESC'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" DESC'
 // }
 //
 // #[test]
 // fn test_order_by__alias(){
 //     bar = Name("bar").as_("bar01")
 //     stmt = SelectStatement().from_(Name("abc")).select(Sum(Name("foo")), bar).order_by(bar)
-//     assert visitors.mysql.sql(stmt) == 'SELECT SUM(`foo`), `bar` AS `bar01` FROM `abc` ORDER BY `bar01`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" ORDER BY "bar01"'
-//     assert visitors.pg.sql(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" ORDER BY "bar01"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT SUM(`foo`), `bar` AS `bar01` FROM `abc` ORDER BY `bar01`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" ORDER BY "bar01"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" ORDER BY "bar01"'
 // }
 //
 // #[test]
 // fn test_table_field(){
 //     bar = Name("foo").as_("bar")
 //     stmt = SelectStatement().from_(Name("abc")).select(bar)
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar` FROM `abc`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` AS `bar` FROM `abc`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc"'
 // }
 //
 // #[test]
 // fn test_table_field__multi(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo").as_("bar"), Name("fiz").as_("buz"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar`, `fiz` AS `buz` FROM `abc`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" AS "bar", "fiz" AS "buz" FROM "abc"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" AS "bar", "fiz" AS "buz" FROM "abc"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` AS `bar`, `fiz` AS `buz` FROM `abc`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" AS "bar", "fiz" AS "buz" FROM "abc"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" AS "bar", "fiz" AS "buz" FROM "abc"'
 //
 //
 // # }
@@ -1081,52 +1081,52 @@ use std::sync::Arc;
 // fn test_arithmetic_function(){
 // #     """ @todo: support arithmetic """
 // #     stmt = SelectStatement().from_(Name("abc")).select((self.t.foo + self.t.bar).as_("biz"))
-// # visitors.mysql.sql(stmt) ==     self.assertEqual('SELECT "foo"+"bar" "biz" FROM "abc"'
+// # visitors.mysql.visitor(stmt) ==     self.assertEqual('SELECT "foo"+"bar" "biz" FROM "abc"'
 //
 // }
 //
 // #[test]
 // fn test_alias_functions(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Count(STAR).as_("foo"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT COUNT(*) AS `foo` FROM `abc`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT COUNT(*) AS "foo" FROM "abc"'
-//     assert visitors.pg.sql(stmt) == 'SELECT COUNT(*) AS "foo" FROM "abc"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT COUNT(*) AS `foo` FROM `abc`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT COUNT(*) AS "foo" FROM "abc"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT COUNT(*) AS "foo" FROM "abc"'
 // }
 //
 // #[test]
 // fn test_alias_function_using_as_nested(){
 //     """ We don't show aliases of fields that are arguments of a function. """
 //     stmt = SelectStatement().from_(Name("abc")).select(Sqrt(Count(STAR).as_("foo")).as_("bar"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT SQRT(COUNT(*)) AS `bar` FROM `abc`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT SQRT(COUNT(*)) AS "bar" FROM "abc"'
-//     assert visitors.pg.sql(stmt) == 'SELECT SQRT(COUNT(*)) AS "bar" FROM "abc"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT SQRT(COUNT(*)) AS `bar` FROM `abc`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT SQRT(COUNT(*)) AS "bar" FROM "abc"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT SQRT(COUNT(*)) AS "bar" FROM "abc"'
 // }
 //
 // #[test]
 // fn test_alias_in__group_by(){
 //     foo = Name('foo').as_('bar')
 //     stmt = SelectStatement().from_(Name("abc")).select(foo).group_by(foo)
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar` FROM `abc` GROUP BY `bar`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc" GROUP BY "bar"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc" GROUP BY "bar"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` AS `bar` FROM `abc` GROUP BY `bar`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc" GROUP BY "bar"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc" GROUP BY "bar"'
 // }
 //
 // #[test]
 // fn test_alias_in__order_by(){
 //     foo = Name('foo').as_('bar')
 //     stmt = SelectStatement().from_(Name("abc")).select(foo).order_by(foo)
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar` FROM `abc` ORDER BY `bar`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc" ORDER BY "bar"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc" ORDER BY "bar"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` AS `bar` FROM `abc` ORDER BY `bar`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc" ORDER BY "bar"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc" ORDER BY "bar"'
 // }
 //
 // #[test]
 // fn test_alias_ignored__in_value(){
 //     foo = Name('foo').as_('bar')
 //     stmt = SelectStatement().from_(Name("abc")).select(foo).where(username=foo)
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` AS `bar` FROM `abc` WHERE `username` = `foo`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc" WHERE "username" = "foo"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" AS "bar" FROM "abc" WHERE "username" = "foo"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` AS `bar` FROM `abc` WHERE `username` = `foo`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc" WHERE "username" = "foo"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc" WHERE "username" = "foo"'
 // }
 //
 // #[test]
@@ -1136,9 +1136,9 @@ use std::sync::Arc;
 //     foo = Name('foo', schema_name=table_abc)
 //     bar = Name('bar', schema_name=table_efg)
 //     stmt = SelectStatement().from_(table_abc).select(foo).from_(table_efg).select(bar)
-//     assert visitors.mysql.sql(stmt) == 'SELECT `t0`.`foo`, `t1`.`bar` FROM `abc` AS `t0`, `efg` AS `t1`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "t0"."foo", "t1"."bar" FROM "abc" AS "t0", "efg" AS "t1"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "t0"."foo", "t1"."bar" FROM "abc" AS "t0", "efg" AS "t1"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `t0`.`foo`, `t1`.`bar` FROM `abc` AS `t0`, `efg` AS `t1`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "t0"."foo", "t1"."bar" FROM "abc" AS "t0", "efg" AS "t1"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "t0"."foo", "t1"."bar" FROM "abc" AS "t0", "efg" AS "t1"'
 // }
 //
 // #[test]
@@ -1147,18 +1147,18 @@ use std::sync::Arc;
 //     my_foo = Name("foo", table_abc.alias).as_("my_foo")
 //     bar = Name("bar", table_abc.alias)
 //     stmt = SelectStatement().from_(table_abc).select(my_foo, bar).group_by(my_foo).order_by(my_foo)
-//     assert visitors.mysql.sql(stmt) == 'SELECT `t0`.`foo` AS `my_foo`, `t0`.`bar` FROM `abc` AS `t0` GROUP BY `my_foo` ORDER BY `my_foo`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "t0"."foo" AS "my_foo", "t0"."bar" FROM "abc" AS "t0" GROUP BY "my_foo" ORDER BY "my_foo"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "t0"."foo" AS "my_foo", "t0"."bar" FROM "abc" AS "t0" GROUP BY "my_foo" ORDER BY "my_foo"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `t0`.`foo` AS `my_foo`, `t0`.`bar` FROM `abc` AS `t0` GROUP BY `my_foo` ORDER BY `my_foo`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "t0"."foo" AS "my_foo", "t0"."bar" FROM "abc" AS "t0" GROUP BY "my_foo" ORDER BY "my_foo"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "t0"."foo" AS "my_foo", "t0"."bar" FROM "abc" AS "t0" GROUP BY "my_foo" ORDER BY "my_foo"'
 // }
 //
 // #[test]
 // fn test_table_with_schema_and_alias(){
 //     table = Name("abc", schema_name="schema").as_("alias")
 //     stmt = SelectStatement().from_(table)
-//     assert visitors.mysql.sql(stmt) == 'SELECT * FROM `schema`.`abc` AS `alias`'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT * FROM "schema"."abc" AS "alias"'
-//     assert visitors.pg.sql(stmt) == 'SELECT * FROM "schema"."abc" AS "alias"'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT * FROM `schema`.`abc` AS `alias`'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT * FROM "schema"."abc" AS "alias"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT * FROM "schema"."abc" AS "alias"'
 // }
 //
 // #[test]
@@ -1167,10 +1167,10 @@ use std::sync::Arc;
 //     t2 = Name("table2").as_("t2")
 //     stmt = SelectStatement().from_(t1).join(t2).on(t1__value__bt=(Name("start", schema_name=t2), Name("end", schema_name=t2))).select(
 //         Name("value", schema_name=t1))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `t1`.`value` FROM `table1` AS `t1` JOIN `table2` AS `t2` ON `t1`.`value` BETWEEN `t2`.`start` AND `t2`.`end`'
-//     assert visitors.sqlite.sql(
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `t1`.`value` FROM `table1` AS `t1` JOIN `table2` AS `t2` ON `t1`.`value` BETWEEN `t2`.`start` AND `t2`.`end`'
+//     assert visitors.sqlite.visitor(
 //         stmt) == 'SELECT "t1"."value" FROM "table1" AS "t1" JOIN "table2" AS "t2" ON "t1"."value" BETWEEN "t2"."start" AND "t2"."end"'
-//     assert visitors.pg.sql(stmt) == 'SELECT "t1"."value" FROM "table1" AS "t1" JOIN "table2" AS "t2" ON "t1"."value" BETWEEN "t2"."start" AND "t2"."end"'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "t1"."value" FROM "table1" AS "t1" JOIN "table2" AS "t2" ON "t1"."value" BETWEEN "t2"."start" AND "t2"."end"'
 //
 //     # class SubqueryTests(unittest.TestCase):
 //     #     maxDiff = None
@@ -1201,7 +1201,7 @@ use std::sync::Arc;
 // #[test]
 // fn test_where__in_nested(){
 //     #         stmt = SelectStatement().from_(Name("abc")).where(Name("abc").foo).isin(Name("efg"))
-//     #         assert visitors.mysql.sql(stmt) == 'SELECT * FROM "abc" WHERE "foo" IN (SELECT * FROM "efg")'
+//     #         assert visitors.mysql.visitor(stmt) == 'SELECT * FROM "abc" WHERE "foo" IN (SELECT * FROM "efg")'
 //     #
 //     #     }
 //
@@ -1415,48 +1415,48 @@ use std::sync::Arc;
 // #[test]
 // fn test_select_with_force_index(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`)'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg")'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg")'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`)'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg")'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg")'
 // }
 //
 // #[test]
 // fn test_select_with_force_index_multiple_indexes(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg"), Name("bacon"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`, `bacon`)'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "bacon")'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "bacon")'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`, `bacon`)'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "bacon")'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "bacon")'
 // }
 //
 // #[test]
 // fn test_select_with_force_index_multiple_calls(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg")).force_index(Name("spam"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`, `spam`)'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "spam")'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "spam")'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`, `spam`)'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "spam")'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "spam")'
 // }
 //
 // #[test]
 // fn test_select_with_use_index(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).use_index(Name("egg"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`)'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg")'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg")'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`)'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg")'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg")'
 // }
 //
 // #[test]
 // fn test_select_with_use_index_multiple_indexes(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).use_index(Name("egg"), Name("bacon"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`, `bacon`)'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "bacon")'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "bacon")'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`, `bacon`)'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "bacon")'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "bacon")'
 // }
 //
 // #[test]
 // fn test_select_with_use_index_multiple_calls(){
 //     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).use_index(Name("egg")).use_index(Name("spam"))
-//     assert visitors.mysql.sql(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`, `spam`)'
-//     assert visitors.sqlite.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "spam")'
-//     assert visitors.pg.sql(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "spam")'
+//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`, `spam`)'
+//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "spam")'
+//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "spam")'
 // }
 //

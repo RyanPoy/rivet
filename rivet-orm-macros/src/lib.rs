@@ -94,7 +94,7 @@ fn expand_columns_metadata(struct_input: &ItemStruct, metas: Vec<ColumnMeta>, ta
         let column_type = get_column_type(&m.tp);
 
         quote! {
-            pub const #field_ident: ::rivet::orm::Col<#column_type> = ::rivet::orm::Col::new(#column_name);
+            pub const #field_ident: ::rivet::orm::Col<#column_type> = ::rivet::orm::Col::new(#column_name, ::rivet::orm::Table{name: #table_name});
         }
     });
 
