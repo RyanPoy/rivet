@@ -4,34 +4,13 @@ use crate::ast2::term::expr::Expr;
 use crate::ast2::term::index::Index;
 use crate::ast2::term::lock::{Lock, Wait};
 use crate::ast2::term::select_item::{IntoSelectItems, SelectItem};
-use crate::ast2::term::table::{IntoTableRefs, Table};
+use crate::ast2::term::table::{IntoTables, Table};
 
-/// SelectStatement
-/// ├─ select_clause: Vec<SelectItem>
-/// │    ├─ SelectItem::Expr { expr: Expr, alias: Option<Alias> }
-/// │    │      ├─ Expr::Column(ColumnRef)
-/// │    │      ├─ Expr::Literal(Literal)
-/// │    │      ├─ Expr::Unary { op, expr: Box<Expr> }
-/// │    │      ├─ Expr::Binary { left: Box<Expr>, right: Box<Expr>, op }
-/// │    │      ├─ Expr::Func { name, args: Vec<FuncArg> }
-/// │    │      └─ Expr::Subquery(Box<SelectStatement>)  ← 子查询表达式，返回单值
-/// │    └─ SelectItem::Wildcard / QualifiedWildcard
-/// │
-/// └─ from_clause: Vec<TableRef>
-///      ├─ TableRef::NamedTable(NamedTable)
-///      ├─ TableRef::DerivedTable(DerivedTable)
-///      │      ├─ stmt: Box<SelectStatement>     ← 子查询返回表
-///      │      └─ alias: Option<Alias>
-///      └─ TableRef::JoinedTable(JoinedTable)
-///             ├─ left: Box<TableRef>
-///             ├─ right: Box<TableRef>
-///             ├─ join_type: JoinType
-///             └─ condition: Option<Expr>          ← ON 条件
 #[derive(Clone, Debug)]
 pub struct SelectStatement {
     pub distinct: Distinct,
     pub select_clause: Vec<SelectItem>,
-    pub from_clause: Vec<Table>,
+    pub from_clause: Table,
     pub where_clause: Vec<Expr>,
     pub limit: Option<usize>,
     pub offset: Option<usize>,
@@ -40,11 +19,14 @@ pub struct SelectStatement {
 }
 
 impl SelectStatement {
-    pub fn new() -> Self {
+    pub fn from<T>(t: &T) -> Self
+    where
+        T: Clone + Into<Table>,
+    {
         Self {
             distinct: Distinct::None,
             select_clause: Vec::new(),
-            from_clause: Vec::new(),
+            from_clause: t.clone().into(),
             where_clause: Vec::new(),
             limit: None,
             offset: None,
@@ -52,21 +34,12 @@ impl SelectStatement {
             indexes: Vec::new(),
         }
     }
-
     pub fn distinct(mut self) -> Self {
         self.distinct = Distinct::Simple;
         self
     }
     pub fn distinct_on(mut self, cols: Vec<ColumnRef>) -> Self {
         self.distinct = Distinct::On(cols);
-        self
-    }
-
-    pub fn from<T>(mut self, t: T) -> Self
-    where
-        T: IntoTableRefs,
-    {
-        self.from_clause.extend(t.into_table_refs());
         self
     }
 
@@ -80,6 +53,30 @@ impl SelectStatement {
 
     pub fn where_(mut self, c: Expr) -> Self {
         self.where_clause.push(c);
+        self
+    }
+
+    pub fn join(mut self, other: impl Into<Table>, on: Expr) -> Self {
+        self.from_clause = self.from_clause.inner_join(other, on);
+        self
+    }
+    pub fn left_join(mut self, other: impl Into<Table>, on: Expr) -> Self {
+        self.from_clause = self.from_clause.left_join(other, on);
+        self
+    }
+    pub fn right_join(mut self, other: impl Into<Table>, on: Expr) -> Self {
+        self.from_clause = self.from_clause.right_join(other, on);
+        self
+    }
+    pub fn full_join(mut self, other: impl Into<Table>, on: Expr) -> Self {
+        self.from_clause = self.from_clause.full_join(other, on);
+        self
+    }
+    pub fn cross_join(mut self, others: impl IntoTables) -> Self {
+        let tables = others.into_table_refs();
+        for t in tables {
+            self.from_clause = self.from_clause.cross_join(t);
+        }
         self
     }
 

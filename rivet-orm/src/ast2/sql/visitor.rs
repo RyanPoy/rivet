@@ -6,7 +6,7 @@ use crate::ast2::term::distinct::Distinct;
 use crate::ast2::term::expr::Expr;
 use crate::ast2::term::func::{Func, FuncArg};
 use crate::ast2::term::index::Index;
-use crate::ast2::term::join::Join;
+use crate::ast2::term::join::{Join, JoinType};
 use crate::ast2::term::literal::Literal;
 use crate::ast2::term::lock::{Lock, Wait};
 use crate::ast2::term::ops::{IN, NOT_IN, Op};
@@ -44,9 +44,7 @@ impl<D: Dialect> Visitor<D> {
 
     fn register_tables(&mut self, stmt: &SelectStatement) {
         // 1. 处理 FROM 子句（这是产生新别名的主要地方）
-        for table in &stmt.from_clause {
-            self.register_table_inner(&table);
-        }
+        self.register_table_inner(&stmt.from_clause);
 
         // 2. 处理 SELECT 子句中的子查询
         for item in &stmt.select_clause {
@@ -126,7 +124,8 @@ impl<D: Dialect> Visitor<D> {
         self.push("SELECT ");
         self.visit_distinct(&select_stmt.distinct);
         self.visit_select_clause(&select_stmt.select_clause);
-        self.visit_from_clause(&select_stmt.from_clause);
+
+        self.push(" FROM ").visit_table(&select_stmt.from_clause);
 
         self.visit_indexes(&select_stmt.indexes);
         self.visit_where_clause(&select_stmt.where_clause);
@@ -180,18 +179,6 @@ impl<D: Dialect> Visitor<D> {
         self
     }
 
-    pub fn visit_from_clause(&mut self, from_clause: &Vec<Table>) -> &mut Self {
-        let mut iter = from_clause.iter();
-        if let Some(t) = iter.next() {
-            self.push(" FROM ");
-            self.visit_table(t);
-            for t in iter {
-                self.push(", ");
-                self.visit_table(t);
-            }
-        }
-        self
-    }
     pub fn visit_limit_and_offset(&mut self, limit: Option<usize>, offset: Option<usize>) {
         if let Some(n) = limit {
             self.push(" LIMIT ").push(&n.to_string());
@@ -214,7 +201,15 @@ impl<D: Dialect> Visitor<D> {
     }
 
     pub fn visit_join(&mut self, join: &Join) -> &mut Self {
-        self
+        self.visit_table(&join.left);
+        match join.join_type {
+            JoinType::Cross => self.push(" CROSS JOIN "),
+            JoinType::Inner => self.push(" INNER JOIN "),
+            JoinType::Left => self.push(" LEFT JOIN "),
+            JoinType::Right => self.push(" RIGHT JOIN "),
+            JoinType::Full => self.push(" FULL JOIN "),
+        };
+        self.visit_table(&join.right)
     }
 
     pub fn visit_select_item(&mut self, item: &SelectItem) -> &mut Self {

@@ -68,7 +68,7 @@ impl Table {
         }
     }
 
-    pub fn join(self, other: impl Into<Table>, join_type: JoinType, on: Option<Expr>) -> Self {
+    fn join(self, other: impl Into<Table>, join_type: JoinType, on: Option<Expr>) -> Self {
         let inner = TableInner::Join(Join {
             left: Box::new(self),
             right: Box::new(other.into()),
@@ -81,45 +81,45 @@ impl Table {
         }
     }
 
-    pub fn inner_join(self, other: impl Into<Table>, on: Option<Expr>) -> Self {
-        self.join(other, JoinType::Inner, on)
+    pub fn inner_join(self, other: impl Into<Table>, on: Expr) -> Self {
+        self.join(other, JoinType::Inner, Some(on))
     }
-    pub fn left_join(self, other: impl Into<Table>, on: Option<Expr>) -> Self {
-        self.join(other, JoinType::Left, on)
+    pub fn left_join(self, other: impl Into<Table>, on: Expr) -> Self {
+        self.join(other, JoinType::Left, Some(on))
     }
-    pub fn right_join(self, other: impl Into<Table>, on: Option<Expr>) -> Self {
-        self.join(other, JoinType::Right, on)
+    pub fn right_join(self, other: impl Into<Table>, on: Expr) -> Self {
+        self.join(other, JoinType::Right, Some(on))
     }
-    pub fn full_join(self, other: impl Into<Table>, on: Option<Expr>) -> Self {
-        self.join(other, JoinType::Full, on)
+    pub fn full_join(self, other: impl Into<Table>, on: Expr) -> Self {
+        self.join(other, JoinType::Full, Some(on))
     }
-    pub fn cross_join(self, other: impl Into<Table>, on: Option<Expr>) -> Self {
-        self.join(other, JoinType::Cross, on)
+    pub fn cross_join(self, other: impl Into<Table>) -> Self {
+        self.join(other, JoinType::Cross, None)
     }
 }
 
-pub trait IntoTableRefs {
+pub trait IntoTables {
     fn into_table_refs(self) -> Vec<Table>;
 }
 
-impl IntoTableRefs for Table {
+impl IntoTables for Table {
     fn into_table_refs(self) -> Vec<Table> {
         vec![self]
     }
 }
-impl IntoTableRefs for &Table {
+impl IntoTables for &Table {
     fn into_table_refs(self) -> Vec<Table> {
         vec![self.clone()]
     }
 }
 
-impl IntoTableRefs for &str {
+impl IntoTables for &str {
     fn into_table_refs(self) -> Vec<Table> {
         vec![self.into()]
     }
 }
 
-impl<T> IntoTableRefs for Vec<T>
+impl<T> IntoTables for Vec<T>
 where
     T: Into<Table>,
 {
@@ -128,7 +128,7 @@ where
     }
 }
 
-impl<T, const N: usize> IntoTableRefs for [T; N]
+impl<T, const N: usize> IntoTables for [T; N]
 where
     T: Into<Table>,
 {

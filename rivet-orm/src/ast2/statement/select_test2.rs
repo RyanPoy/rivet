@@ -5,7 +5,6 @@ use crate::ast2::term::func::{count, exists, sum};
 use crate::ast2::term::literal::Literal;
 use crate::ast2::term::table::Table;
 use crate::coalesce;
-use crate::sequel::ast::Column;
 
 // User = Table('users')
 // Tweet = Table('tweets')
@@ -34,11 +33,10 @@ fn test_select() {
     let users = Table::new("users");
     let id = users.column("id");
     let username = users.column("username");
-    let stmt = SelectStatement::new()
-        .from(&users)
-        .from("teachers")
-        .from(["cards", "departments"])
-        .from(vec!["classes", "grades"])
+    let stmt = SelectStatement::from(&users)
+        .cross_join("teachers")
+        .cross_join(["cards", "departments"])
+        .cross_join(vec!["classes", "grades"])
         .select(&id)
         .select(&username)
         .select([users.column("age"), users.column("password")])
@@ -49,28 +47,28 @@ fn test_select() {
     let (sql, params) = visitor::mysql().visit_select_statement(&stmt).finish();
     assert_sql!(
         sql,
-        "SELECT `t1`.`id`, `t1`.`username`, `t1`.`age`, `t1`.`password`, `t1`.`gender`, `t1`.`score` FROM `users` AS `t1`, `teachers` AS `t2`, `cards` AS `t3`, `departments` AS `t4`, `classes` AS `t5`, `grades` AS `t6` WHERE `t1`.`username` = ? AND `t1`.`username` = ?"
+        "SELECT `t1`.`id`, `t1`.`username`, `t1`.`age`, `t1`.`password`, `t1`.`gender`, `t1`.`score` FROM `users` AS `t1` CROSS JOIN `teachers` AS `t2` CROSS JOIN `cards` AS `t3` CROSS JOIN `departments` AS `t4` CROSS JOIN `classes` AS `t5` CROSS JOIN `grades` AS `t6` WHERE `t1`.`username` = ? AND `t1`.`username` = ?"
     );
     assert_params!(params, ["foo", "bar"]);
 
     let (sql, params) = visitor::postgre().visit_select_statement(&stmt).finish();
     assert_sql!(
         sql,
-        r#"SELECT "t1"."id", "t1"."username", "t1"."age", "t1"."password", "t1"."gender", "t1"."score" FROM "users" AS "t1", "teachers" AS "t2", "cards" AS "t3", "departments" AS "t4", "classes" AS "t5", "grades" AS "t6" WHERE "t1"."username" = $1 AND "t1"."username" = $2"#
+        r#"SELECT "t1"."id", "t1"."username", "t1"."age", "t1"."password", "t1"."gender", "t1"."score" FROM "users" AS "t1" CROSS JOIN "teachers" AS "t2" CROSS JOIN "cards" AS "t3" CROSS JOIN "departments" AS "t4" CROSS JOIN "classes" AS "t5" CROSS JOIN "grades" AS "t6" WHERE "t1"."username" = $1 AND "t1"."username" = $2"#
     );
     assert_params!(params, ["foo", "bar"]);
 
     let (sql, params) = visitor::sqlite().visit_select_statement(&stmt).finish();
     assert_sql!(
         sql,
-        r#"SELECT "t1"."id", "t1"."username", "t1"."age", "t1"."password", "t1"."gender", "t1"."score" FROM "users" AS "t1", "teachers" AS "t2", "cards" AS "t3", "departments" AS "t4", "classes" AS "t5", "grades" AS "t6" WHERE "t1"."username" = ? AND "t1"."username" = ?"#
+        r#"SELECT "t1"."id", "t1"."username", "t1"."age", "t1"."password", "t1"."gender", "t1"."score" FROM "users" AS "t1" CROSS JOIN "teachers" AS "t2" CROSS JOIN "cards" AS "t3" CROSS JOIN "departments" AS "t4" CROSS JOIN "classes" AS "t5" CROSS JOIN "grades" AS "t6" WHERE "t1"."username" = ? AND "t1"."username" = ?"#
     );
     assert_params!(params, ["foo", "bar"]);
 }
 #[test]
 fn test_select_extend() {
     let users = Table::new("users");
-    let stmt = SelectStatement::new().from(&users);
+    let stmt = SelectStatement::from(&users);
     let stmt = stmt.select([users.column("id"), users.column("username")]);
     let stmt = stmt.select(vec![users.column("is_active"), users.column("is_admin")]);
 
@@ -84,37 +82,42 @@ fn test_select_extend() {
 
 // #[test]
 // fn test_selected_columns() {
-//     let users = TableRef::named("users");
-//     let tweets = TableRef::named("id");
-//     let stmt = SelectStatement::new().select([])
-//         query = (User
-//                  .select(User.c.id, User.c.username, fn.COUNT(Tweet.c.id))
-//                  .join(Tweet, JOIN.LEFT_OUTER,
-//                        on=(User.c.id == Tweet.c.user_id)))
-//         # NOTE: because of operator overloads for equality we have to test by
-//         # asserting the attributes of the selected cols.
-//         c_id, c_username, c_ct = query.selected_columns
-//         self.assertEqual(c_id.name, 'id')
-//         self.assertTrue(c_id.source is User)
-//         self.assertEqual(c_username.name, 'username')
-//         self.assertTrue(c_username.source is User)
-//         self.assertTrue(isinstance(c_ct, Function))
-//         self.assertEqual(c_ct.name, 'COUNT')
-//         c_tid, = c_ct.arguments
-//         self.assertEqual(c_tid.name, 'id')
-//         self.assertTrue(c_tid.source is Tweet)
+//     let users = Table::new("users");
+//     let tweets = Table::new("tweets");
+//     let query = SelectStatement::new()
+//         .from(&users)
+//         .select([users.column("id"), users.column("username")])
+//         .select(count(tweets.column("id")))
+//         .left_join(&tweets, users.column("id").eq(tweets.column("user_id"));
 //
-//         query.selected_columns = (User.c.username,)
-//         c_username, = query.selected_columns
-//         self.assertEqual(c_username.name, 'username')
-//         self.assertTrue(c_username.source is User)
+//     //
+//     // query = (User
+//     //          .select(User.c.id, User.c.username, fn.COUNT(Tweet.c.id))
+//     //          .join(Tweet, JOIN.LEFT_OUTER,
+//     //                on=(User.c.id == Tweet.c.user_id)))
+//     // # NOTE: because of operator overloads for equality we have to test by
+//     // # asserting the attributes of the selected cols.
+//     // c_id, c_username, c_ct = query.selected_columns
+//     // self.assertEqual(c_id.name, 'id')
+//     // self.assertTrue(c_id.source is User)
+//     // self.assertEqual(c_username.name, 'username')
+//     // self.assertTrue(c_username.source is User)
+//     // self.assertTrue(isinstance(c_ct, Function))
+//     // self.assertEqual(c_ct.name, 'COUNT')
+//     // c_tid, = c_ct.arguments
+//     // self.assertEqual(c_tid.name, 'id')
+//     // self.assertTrue(c_tid.source is Tweet)
+//     //
+//     // query.selected_columns = (User.c.username,)
+//     // c_username, = query.selected_columns
+//     // self.assertEqual(c_username.name, 'username')
+//     // self.assertTrue(c_username.source is User)
 // }
 
 #[test]
 fn test_select_explicit_columns() {
     let person = Table::new("person");
-    let stmt = SelectStatement::new()
-        .from(&person)
+    let stmt = SelectStatement::from(&person)
         .select(vec![person.column("id"), person.column("name"), person.column("dob")])
         .where_(person.column("dob").lt(Date::new(1980, 1, 1).unwrap()));
     let (sql, params) = visitor::mysql().visit_select_statement(&stmt).finish();
@@ -128,8 +131,7 @@ fn test_select_explicit_columns() {
 #[test]
 fn test_select_in_list_of_values() {
     let person = Table::new("person");
-    let stmt = SelectStatement::new()
-        .from(&person)
+    let stmt = SelectStatement::from(&person)
         .select([person.column("id"), person.column("name"), person.column("dob")])
         .where_(person.column("name").in_(["charlie", "huey"]));
 
@@ -140,8 +142,7 @@ fn test_select_in_list_of_values() {
     );
     assert_params!(params, ["charlie", "huey"]);
 
-    let stmt = SelectStatement::new()
-        .from(&person)
+    let stmt = SelectStatement::from(&person)
         .select([person.column("id"), person.column("name"), person.column("dob")])
         .where_(person.column("id").in_([1, 10, 2]));
     let (sql, params) = visitor::mysql().visit_select_statement(&stmt).finish();
@@ -158,13 +159,11 @@ fn test_select_subselect_function() {
     let tweets = Table::new("tweets");
     let users = Table::new("users");
     let ex = exists(
-        SelectStatement::new()
-            .from(&tweets)
+        SelectStatement::from(&tweets)
             .select(tweets.column("id"))
             .where_(tweets.column("user_id").eq(users.column("id"))),
     );
-    let stmt = SelectStatement::new()
-        .from(&users)
+    let stmt = SelectStatement::from(&users)
         .select(users.column("username"))
         .select(ex.alias("has_tweet"));
 
@@ -177,11 +176,9 @@ fn test_select_subselect_function() {
 
     // If the function has more than one argument, we need to wrap the subquery in parentheses.
     let sa = Table::new("stat").alias("sa");
-    let subq = SelectStatement::new()
-        .from(&sa)
-        .select(sum(sa.column("val")).alias("val_sum"));
+    let subq = SelectStatement::from(&sa).select(sum(sa.column("val")).alias("val_sum"));
     let stat = Table::new("stat");
-    let query = SelectStatement::new().from(stat).select(coalesce!(subq, 0));
+    let query = SelectStatement::from(&stat).select(coalesce!(subq, 0));
     let (sql, params) = visitor::mysql().visit_select_statement(&query).finish();
     assert_sql!(
         sql,
@@ -350,8 +347,7 @@ fn test_select_subselect_function() {
 fn test_multiple_where() {
     let person = Table::new("person");
     let dob = person.column("dob");
-    let stmt = SelectStatement::new()
-        .from(&person)
+    let stmt = SelectStatement::from(&person)
         .select(person.column("name"))
         .where_(dob.lt(Date::new(1980, 1, 1).unwrap()))
         .where_(dob.gt(Date::new(1950, 1, 1).unwrap()));
@@ -2175,10 +2171,7 @@ fn test_multiple_where() {
 #[test]
 fn test_distinct() {
     let person = Table::new("person");
-    let stmt = SelectStatement::new()
-        .from(&person)
-        .select(person.column("name"))
-        .distinct();
+    let stmt = SelectStatement::from(&person).select(person.column("name")).distinct();
     let (sql, params) = visitor::mysql().visit_select_statement(&stmt).finish();
     assert_sql!(sql, "SELECT DISTINCT `t1`.`name` FROM `person` AS `t1`");
     assert_params!(params, []);
@@ -2186,9 +2179,7 @@ fn test_distinct() {
 #[test]
 fn test_distinct_count() {
     let person = Table::new("person");
-    let stmt = SelectStatement::new()
-        .from(&person)
-        .select(count(person.column("name").distinct()));
+    let stmt = SelectStatement::from(&person).select(count(person.column("name").distinct()));
     let (sql, params) = visitor::mysql().visit_select_statement(&stmt).finish();
     assert_sql!(sql, "SELECT COUNT(DISTINCT `t1`.`name`) FROM `person` AS `t1`");
     assert_params!(params, []);
