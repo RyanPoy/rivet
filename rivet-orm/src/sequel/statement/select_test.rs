@@ -1,1462 +1,872 @@
-use crate::sequel::visitor::visitor;
+// ============================================================================
+// 辅助宏 - 用于验证 SQL 生成（仅在本测试文件内使用）
+// ============================================================================
+
 use crate::sequel::statement::select::SelectStatement;
-use crate::sequel::term::calendar::Date;
-use crate::sequel::term::column::Column;
-use crate::sequel::term::expr::Expr;
 use crate::sequel::term::literal::Literal;
-use crate::sequel::term::lock::{Lock, Wait};
 use crate::sequel::term::table::Table;
-use crate::sequel::term::table::TableInner;
-use std::sync::Arc;
-//
+use crate::sequel::visitor::visitor;
+use std::sync::LazyLock;
+
+macro_rules! assert_mysql {
+    ($stmt:expr, $expected_sql:expr, [$($params:expr),*]) => {
+        let (sql, params) = visitor::mysql().visit_select_statement($stmt).finish();
+        assert_eq!(sql, $expected_sql.to_string());
+        let expected: Vec<Literal> = vec![$($params.into()),*];
+        assert_eq!(params, expected);
+    };
+}
+
+macro_rules! assert_pg {
+    ($stmt:expr, $expected_sql:expr, [$($params:expr),*]) => {
+        let (sql, params) = visitor::postgre().visit_select_statement($stmt).finish();
+        assert_eq!(sql, $expected_sql.to_string());
+        let expected: Vec<Literal> = vec![$($params.into()),*];
+        assert_eq!(params, expected);
+    };
+}
+
+macro_rules! assert_sqlite {
+    ($stmt:expr, $expected_sql:expr, [$($params:expr),*]) => {
+        let (sql, params) = visitor::sqlite().visit_select_statement($stmt).finish();
+        assert_eq!(sql, $expected_sql.to_string());
+        let expected: Vec<Literal> = vec![$($params.into()),*];
+        assert_eq!(params, expected);
+    };
+}
+
+// ============================================================================
+// 基础表定义
+// ============================================================================
+
+static USERS: LazyLock<Table> = LazyLock::new(|| Table::new("users"));
+static ORDERS: LazyLock<Table> = LazyLock::new(|| Table::new("orders"));
+static PRODUCTS: LazyLock<Table> = LazyLock::new(|| Table::new("products"));
+static CATEGORIES: LazyLock<Table> = LazyLock::new(|| Table::new("categories"));
+
+// ============================================================================
+// 1. 基础 SELECT 测试
+// ============================================================================
+
+#[test]
+fn test_select_all() {
+    let stmt = SelectStatement::from(&*USERS);
+    assert_mysql!(&stmt, "SELECT * FROM `users` AS `t1`", []);
+    assert_pg!(&stmt, r#"SELECT * FROM "users" AS "t1""#, []);
+    assert_sqlite!(&stmt, r#"SELECT * FROM "users" AS "t1""#, []);
+}
+
+#[test]
+fn test_select_single_column() {
+    let stmt = SelectStatement::from(&*USERS).select(USERS.column("id"));
+    assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1`", []);
+    assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1""#, []);
+    assert_sqlite!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1""#, []);
+}
+
+#[test]
+fn test_select_multiple_columns() {
+    let stmt = SelectStatement::from(&*USERS).select(USERS.columns(["id", "name", "email"]));
+    assert_mysql!(
+        &stmt,
+        "SELECT `t1`.`id`, `t1`.`name`, `t1`.`email` FROM `users` AS `t1`",
+        []
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "t1"."id", "t1"."name", "t1"."email" FROM "users" AS "t1""#,
+        []
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "t1"."id", "t1"."name", "t1"."email" FROM "users" AS "t1""#,
+        []
+    );
+}
+
+#[test]
+fn test_select_with_literal() {
+    let stmt = SelectStatement::from(&*USERS).select([Literal::from(1), Literal::from("hello")]);
+    assert_mysql!(&stmt, "SELECT 1, 'hello' FROM `users` AS `t1`", []);
+    assert_pg!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "t1""#, []);
+    assert_sqlite!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "t1""#, []);
+}
+
+#[test]
+fn test_where() {
+    let id = USERS.column("id");
+    let age = USERS.column("age");
+    let score = USERS.column("score");
+    let name = USERS.column("name");
+    let country = USERS.column("country");
+    let email = USERS.column("email");
+    let ext = USERS.column("ext");
+
+    let stmt = SelectStatement::from(&*USERS)
+        .select(&id)
+        .where_(id.eq(5))
+        .where_(id.not_eq(10))
+        .where_(age.gt(20))
+        .where_(age.lt(100))
+        .where_(score.gte(60))
+        .where_(score.lte(96))
+        .where_(name.like("%John%"))
+        .where_(name.not_like("%Lucy%"))
+        .where_(country.in_(vec!["China", "Japan"]))
+        .where_(country.not_in(["USA", "England"]))
+        .where_(email.not_eq(None::<i32>))
+        .where_(ext.eq(None::<i32>));
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`id` = ? AND `t1`.`id` <> ? AND `t1`.`age` > ? AND `t1`.`age` < ? AND `t1`.`score` >= ? AND `t1`.`score` <= ? AND `t1`.`name` LIKE ? AND `t1`.`name` NOT LIKE ? AND `t1`.`country` IN (?, ?) AND `t1`.`country` NOT IN (?, ?) AND `t1`.`email` IS NOT NULL AND `t1`.`ext` IS NULL",
+        [
+            5_i64, 10_i64, 20_i64, 100_i64, 60_i64, 96_i64, "%John%", "%Lucy%", "China", "Japan", "USA", "England"
+        ]
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "t1"."id" FROM "users" AS "t1" WHERE "t1"."id" = $1 AND "t1"."id" <> $2 AND "t1"."age" > $3 AND "t1"."age" < $4 AND "t1"."score" >= $5 AND "t1"."score" <= $6 AND "t1"."name" LIKE $7 AND "t1"."name" NOT LIKE $8 AND "t1"."country" IN ($9, $10) AND "t1"."country" NOT IN ($11, $12) AND "t1"."email" IS NOT NULL AND "t1"."ext" IS NULL"#,
+        [
+            5_i64, 10_i64, 20_i64, 100_i64, 60_i64, 96_i64, "%John%", "%Lucy%", "China", "Japan", "USA", "England"
+        ]
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "t1"."id" FROM "users" AS "t1" WHERE "t1"."id" = ? AND "t1"."id" <> ? AND "t1"."age" > ? AND "t1"."age" < ? AND "t1"."score" >= ? AND "t1"."score" <= ? AND "t1"."name" LIKE ? AND "t1"."name" NOT LIKE ? AND "t1"."country" IN (?, ?) AND "t1"."country" NOT IN (?, ?) AND "t1"."email" IS NOT NULL AND "t1"."ext" IS NULL"#,
+        [
+            5_i64, 10_i64, 20_i64, 100_i64, 60_i64, 96_i64, "%John%", "%Lucy%", "China", "Japan", "USA", "England"
+        ]
+    );
+}
+
+
 // #[test]
-// fn test_select_without_from() {
-//     let stmt = SelectStatement::new();
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT *".to_string());
-//     assert!(values.is_empty());
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT *".to_string());
-//     assert!(values.is_empty());
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT *".to_string());
-//     assert!(values.is_empty());
-// }
-//
-// #[test]
-// fn test_select_empty_from_single() {
-//     let stmt = SelectStatement::new().from("users"); // from(&str)
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT * FROM `users`".to_string());
-//
-//     let stmt = SelectStatement::new().from(NamedTable::new("users")); // from(NamedTable)
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users""#.to_string());
-//
-//     let stmt = SelectStatement::new().from(TableRef {
-//         inner: Arc::new(TableInner::Named(NamedTable::new("users"))),
-//         alias: None,
-//     }); // from(TableRef)
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users""#.to_string());
-// }
-//
-// #[test]
-// fn test_select_empty_from_single_with_alias() {
-//     let t = TableRef::from("users").alias("u");
-//
-//     let stmt = SelectStatement::new().from(t);
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT * FROM `users` AS `u`".to_string());
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" AS "u""#.to_string());
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" AS "u""#.to_string());
-// }
-// #[test]
-// fn test_select_empty_from_multiple() {
-//     let stmt1 = SelectStatement::new().from("users").from("orders").from("products");
-//     let stmt2 = SelectStatement::new().from_many(vec!["users", "orders", "products"]);
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt1).finish();
-//     assert_eq!(visitor, "SELECT * FROM `users`, `orders`, `products`".to_string());
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt2).finish();
-//     assert_eq!(visitor, "SELECT * FROM `users`, `orders`, `products`".to_string());
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt1).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users", "orders", "products""#.to_string());
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt2).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users", "orders", "products""#.to_string());
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt1).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users", "orders", "products""#.to_string());
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt2).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users", "orders", "products""#.to_string());
-// }
-//
-// #[test]
-// fn test_select_empty_from_multiple_with_alias() {
-//     let t1 = TableRef::from("users").alias("u");
-//     let t2 = TableRef::from("orders").alias("o");
-//     let t3 = TableRef::from("products").alias("p");
-//
-//     let stmt = SelectStatement::new().from(t1).from(t2).from(t3);
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         "SELECT * FROM `users` AS `u`, `orders` AS `o`, `products` AS `p`".to_string()
-//     );
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT * FROM "users" AS "u", "orders" AS "o", "products" AS "p""#.to_string()
-//     );
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT * FROM "users" AS "u", "orders" AS "o", "products" AS "p""#.to_string()
-//     );
-// }
-//
-// #[test]
-// fn test_select_single_column() {
-//     let stmt = SelectStatement::new().select("id").from("users");
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT `id` FROM `users`".to_string());
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT "id" FROM "users""#.to_string());
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT "id" FROM "users""#.to_string());
-// }
-//
-// #[test]
-// fn test_select_multiple_columns() {
-//     let stmt = SelectStatement::new()
-//         .select_many(vec!["id", "name", "email"])
-//         .from("users");
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT `id`, `name`, `email` FROM `users`".to_string());
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT "id", "name", "email" FROM "users""#.to_string());
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT "id", "name", "email" FROM "users""#.to_string());
-// }
-//
-// #[test]
-// fn test_select_column_with_alias() {
-//     let stmt = SelectStatement::new()
-//         .from("users")
-//         .from("cards")
-//         .select("card_number")
-//         .select(ColumnRef::new("id", None).qualifier("cards").alias("cid"))
-//         .select(Expr::Column(ColumnRef::new("name", None).qualifier("users")).alias("uname"));
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         "SELECT `card_number`, `cards`.`id` AS `cid`, `users`.`name` AS `uname` FROM `users`, `cards`".to_string()
-//     );
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT "card_number", "cards"."id" AS "cid", "users"."name" AS "uname" FROM "users", "cards""#.to_string()
-//     );
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT "card_number", "cards"."id" AS "cid", "users"."name" AS "uname" FROM "users", "cards""#.to_string()
+// fn test_where_and() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(USERS.column("id"))
+//         .where_(USERS.column("age").gt(18).and(USERS.column("status").eq("active")));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`age` > ? AND `t1`.`status` = ?",
+//         [18i64, "active"]
 //     );
 // }
 //
 // #[test]
-// fn test_select_distinct_single() {
-//     let stmt = SelectStatement::new().from("users").select("foo").distinct();
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT DISTINCT `foo` FROM `users`".to_string());
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT DISTINCT "foo" FROM "users""#.to_string());
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT DISTINCT "foo" FROM "users""#.to_string());
-// }
-//
-// #[test]
-// fn test_select_distinct_multi() {
-//     let stmt = SelectStatement::new()
-//         .from("users")
-//         .select("foo")
-//         .select("bar")
-//         .distinct();
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT DISTINCT `foo`, `bar` FROM `users`".to_string());
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT DISTINCT "foo", "bar" FROM "users""#.to_string());
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT DISTINCT "foo", "bar" FROM "users""#.to_string());
-// }
-// #[test]
-// fn test_select_distinct_on_single() {
-//     let foo = ColumnRef::new("foo", None);
-//     let bar = ColumnRef::new("bar", None);
-//     let stmt = SelectStatement::new()
-//         .from("users")
-//         .select(foo.clone())
-//         .select(bar.clone())
-//         .distinct_on(vec![foo]);
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT DISTINCT `foo`, `bar` FROM `users`".to_string());
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT DISTINCT ON ("foo") "foo", "bar" FROM "users""#.to_string()
-//     );
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT DISTINCT "foo", "bar" FROM "users""#.to_string());
-// }
-//
-// #[test]
-// fn test_select_distinct_on_multi() {
-//     let foo = ColumnRef::new("foo", None);
-//     let bar = ColumnRef::new("bar", None);
-//     let stmt = SelectStatement::new()
-//         .from("users")
-//         .select(foo.clone())
-//         .select(bar.clone())
-//         .distinct_on(vec![foo, bar]);
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT DISTINCT `foo`, `bar` FROM `users`".to_string());
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT DISTINCT ON ("foo", "bar") "foo", "bar" FROM "users""#.to_string()
-//     );
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT DISTINCT "foo", "bar" FROM "users""#.to_string());
-// }
-//
-// #[test]
-// fn test_select_subquery() {
-//     let stmt = SelectStatement::new()
-//         .from(SelectStatement::new().from("abc").alias("sq0"))
-//         .select("sq0.foo")
-//         .select("sq0.bar");
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         "SELECT `sq0`.`foo`, `sq0`.`bar` FROM (SELECT * FROM `abc`) AS `sq0`".to_string()
-//     );
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#.to_string()
-//     );
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0""#.to_string()
+// fn test_where_or() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(USERS.column("id"))
+//         .where_(USERS.column("age").lt(18).or(USERS.column("age").gt(65)));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`age` < ? OR `t1`.`age` > ?",
+//         [18i64, 65i64]
 //     );
 // }
 //
 // #[test]
-// fn test_select_multiple_subqueries() {
-//     let sq0 = SelectStatement::new().from("abc").select("foo").alias("sq0");
-//     let sq1 = SelectStatement::new().from("efg").select("bar").alias("sq1");
-//     let stmt = SelectStatement::new()
-//         .from_many(vec![sq0, sq1])
-//         .select_many(["sq0.foo", "sq1.bar"]);
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         "SELECT `sq0`.`foo`, `sq1`.`bar` FROM (SELECT `foo` FROM `abc`) AS `sq0`, (SELECT `bar` FROM `efg`) AS `sq1`"
-//             .to_string()
-//     );
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT "sq0"."foo", "sq1"."bar" FROM (SELECT "foo" FROM "abc") AS "sq0", (SELECT "bar" FROM "efg") AS "sq1""#.to_string()
-//     );
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT "sq0"."foo", "sq1"."bar" FROM (SELECT "foo" FROM "abc") AS "sq0", (SELECT "bar" FROM "efg") AS "sq1""#.to_string()
+// fn test_where_not() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(USERS.column("id"))
+//         .where_(USERS.column("status").eq("active").not());
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id` FROM `users` AS `t1` WHERE NOT `t1`.`status` = ?",
+//         ["active"]
 //     );
 // }
 //
 // #[test]
-// fn test_select_nested_subquery() {
-//     let sq0 = SelectStatement::new().from("abc").alias("sq0");
-//     let sq1 = SelectStatement::new()
-//         .from(sq0)
-//         .select_many(vec!["sq0.foo", "sq0.bar"])
-//         .alias("sq1");
-//     let sq2 = SelectStatement::new().from(sq1).select("sq1.foo").alias("sq2");
-//     let stmt = SelectStatement::new().from(sq2).select("sq2.foo");
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         "SELECT `sq2`.`foo` FROM (SELECT `sq1`.`foo` FROM (SELECT `sq0`.`foo`, `sq0`.`bar` FROM (SELECT * FROM `abc`) AS `sq0`) AS `sq1`) AS `sq2`".to_string()
+// fn test_where_complex_boolean_logic() {
+//     let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).where_(
+//         USERS
+//             .column("age")
+//             .gt(18)
+//             .and(USERS.column("status").eq("active"))
+//             .or(USERS.column("role").eq("admin")),
 //     );
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT "sq2"."foo" FROM (SELECT "sq1"."foo" FROM (SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0") AS "sq1") AS "sq2""#.to_string()
-//     );
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT "sq2"."foo" FROM (SELECT "sq1"."foo" FROM (SELECT "sq0"."foo", "sq0"."bar" FROM (SELECT * FROM "abc") AS "sq0") AS "sq1") AS "sq2""#.to_string()
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`age` > ? AND `t1`.`status` = ? OR `t1`.`role` = ?",
+//         [18i64, "active", "admin"]
 //     );
 // }
 //
 // #[test]
-// fn test_select_no_table() {
-//     let stmt = SelectStatement::new()
-//         .select(Literal::Int(1))
-//         .select(Literal::Float(2.1).alias("avg"))
-//         .select(Literal::String(String::from("No.1")))
-//         .select(Literal::Bool(false))
-//         .select(Literal::Null);
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT 1, 2.1 AS `avg`, 'No.1', 0, NULL".to_string());
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT 1, 2.1 AS "avg", 'No.1', false, NULL"#.to_string());
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT 1, 2.1 AS "avg", 'No.1', 0, NULL"#.to_string());
-// }
-//
-// #[test]
-// fn test_select_with_limit() {
-//     let stmt = SelectStatement::new().from("users").select("foo").limit(10);
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT `foo` FROM `users` LIMIT 10".to_string());
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT "foo" FROM "users" LIMIT 10"#.to_string());
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT "foo" FROM "users" LIMIT 10"#.to_string());
-// }
-//
-// #[test]
-// fn test_select_with_limit_zero() {
-//     let stmt = SelectStatement::new().from("users").select("foo").limit(0);
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT `foo` FROM `users`".to_string());
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT "foo" FROM "users""#.to_string());
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT "foo" FROM "users""#.to_string());
-// }
-//
-// #[test]
-// fn test_select_with_offset_without_limit() {
-//     let stmt = SelectStatement::new().from("users").select("foo").offset(10);
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT `foo` FROM `users`".to_string());
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT "foo" FROM "users" OFFSET 10"#.to_string());
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT "foo" FROM "users" OFFSET 10"#.to_string());
-// }
-//
-// #[test]
-// fn test_select_with_limit_and_offset() {
-//     let stmt = SelectStatement::new().from("users").select("foo").limit(10).offset(5);
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT `foo` FROM `users` LIMIT 10 OFFSET 5".to_string());
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT "foo" FROM "users" LIMIT 10 OFFSET 5"#.to_string());
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT "foo" FROM "users" LIMIT 10 OFFSET 5"#.to_string());
-// }
-//
-// #[test]
-// fn test_where_eq_str() {
-//     let col = ColumnRef::new("foo", None);
-//     let stmt = SelectStatement::new()
-//         .from("users")
-//         .where_(col.eq(Literal::from("foo")));
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT * FROM `users` WHERE `foo` = ?".to_string());
-//     assert_eq!(values.clone(), vec![Literal::from("foo")]);
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" = $1"#.to_string());
-//     assert_eq!(values.clone(), vec![Literal::from("foo")]);
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" = ?"#.to_string());
-//     assert_eq!(values.clone(), vec![Literal::from("foo")]);
-// }
-//
-// #[test]
-// fn test_where_gt_num() {
-//     let col = ColumnRef::new("foo", None);
-//     let stmt = SelectStatement::new().from("users").where_(col.gt(Literal::from(0)));
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT * FROM `users` WHERE `foo` > ?".to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(0)]);
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" > $1"#.to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(0)]);
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" > ?"#.to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(0)]);
-// }
-//
-// #[test]
-// fn test_where_not_eq_bool() {
-//     let col = ColumnRef::new("foo", None);
-//     let stmt = SelectStatement::new()
-//         .from("users")
-//         .where_(col.not_eq(Literal::from(true)));
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT * FROM `users` WHERE `foo` <> ?".to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(true)]);
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" <> $1"#.to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(true)]);
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" <> ?"#.to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(true)]);
-// }
-// #[test]
-// fn test_where_is_none() {
-//     let col = ColumnRef::new("foo", None);
-//     let stmt = SelectStatement::new().from("users").where_(col.eq(Literal::Null));
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, _) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT * FROM `users` WHERE `foo` IS NULL".to_string());
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" IS NULL"#.to_string());
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" IS NULL"#.to_string());
-// }
-// #[test]
-// fn test_where_basic_in_date() {
-//     let col = ColumnRef::new("foo", None);
-//     let stmt = SelectStatement::new().from("users").where_(col.in_(vec![
-//         Literal::from(1),
-//         Literal::from("lily"),
-//         Literal::from(Date::new(2025, 1, 3).unwrap()),
-//     ]));
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT * FROM `users` WHERE `foo` IN (?, ?, ?)".to_string());
-//     assert_eq!(
-//         values.clone(),
-//         vec![
-//             Literal::from(1),
-//             Literal::from("lily"),
-//             Literal::from(Date::new(2025, 1, 3).unwrap())
-//         ]
+// fn test_where_multiple_separate_conditions() {
+//     // 测试多个 where_ 调用（应该用 AND 连接）
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(USERS.column("id"))
+//         .where_(USERS.column("age").gt(18))
+//         .where_(USERS.column("status").eq("active"))
+//         .where_(USERS.column("role").eq("user"));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`age` > ? AND `t1`.`status` = ? AND `t1`.`role` = ?",
+//         [18i64, "active", "user"]
 //     );
+// }
 //
-//     let mut v = visitor::postgre();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" IN ($1, $2, $3)"#.to_string());
-//     assert_eq!(
-//         values.clone(),
-//         vec![
-//             Literal::from(1),
-//             Literal::from("lily"),
-//             Literal::from(Date::new(2025, 1, 3).unwrap())
-//         ]
-//     );
+// // ============================================================================
+// // 3. JOIN 测试
+// // ============================================================================
 //
-//     let mut v = visitor::sqlite();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" IN (?, ?, ?)"#.to_string());
-//     assert_eq!(
-//         values.clone(),
-//         vec![
-//             Literal::from(1),
-//             Literal::from("lily"),
-//             Literal::from(Date::new(2025, 1, 3).unwrap())
-//         ]
+// #[test]
+// fn test_inner_join() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(vec![USERS.column("id"), ORDERS.column("total")])
+//         .join(&ORDERS, USERS.column("id").eq(ORDERS.column("user_id")));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id`, `t2`.`total` FROM `users` AS `t1` INNER JOIN `orders` AS `t2` ON `t1`.`id` = `t2`.`user_id`",
+//         []
 //     );
 // }
 //
 // #[test]
-// fn test_select_for_update() {
-//     let col = ColumnRef::new("foo", None);
-//     let stmt = SelectStatement::new()
-//         .from("users")
-//         .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
-//         .for_update(Lock::Update, Wait::DEFAULT);
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE".to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE"#.to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+// fn test_left_join() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(vec![USERS.column("id"), ORDERS.column("total")])
+//         .left_join(&ORDERS, USERS.column("id").eq(ORDERS.column("user_id")));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id`, `t2`.`total` FROM `users` AS `t1` LEFT JOIN `orders` AS `t2` ON `t1`.`id` = `t2`.`user_id`",
+//         []
+//     );
 // }
 //
 // #[test]
-// fn test_select_for_share() {
-//     let col = ColumnRef::new("foo", None);
-//     let stmt = SelectStatement::new()
-//         .from("users")
-//         .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
-//         .for_update(Lock::Share, Wait::DEFAULT);
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, "SELECT * FROM `users` WHERE `foo` < ? FOR SHARE".to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < $1 FOR SHARE"#.to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+// fn test_right_join() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(vec![USERS.column("id"), ORDERS.column("total")])
+//         .right_join(&ORDERS, USERS.column("id").eq(ORDERS.column("user_id")));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id`, `t2`.`total` FROM `users` AS `t1` RIGHT JOIN `orders` AS `t2` ON `t1`.`id` = `t2`.`user_id`",
+//         []
+//     );
 // }
 //
 // #[test]
-// fn test_select_for_update_nowait() {
-//     let col = ColumnRef::new("foo", None);
-//     let stmt = SelectStatement::new()
-//         .from("users")
-//         .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
+// fn test_full_join() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(vec![USERS.column("id"), ORDERS.column("total")])
+//         .full_join(&ORDERS, USERS.column("id").eq(ORDERS.column("user_id")));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id`, `t2`.`total` FROM `users` AS `t1` FULL JOIN `orders` AS `t2` ON `t1`.`id` = `t2`.`user_id`",
+//         []
+//     );
+// }
+//
+// #[test]
+// fn test_cross_join() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(vec![USERS.column("id"), PRODUCTS.column("name")])
+//         .cross_join(&PRODUCTS);
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id`, `t2`.`name` FROM `users` AS `t1` CROSS JOIN `products` AS `t2`",
+//         []
+//     );
+// }
+//
+// #[test]
+// fn test_multiple_joins() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(vec![
+//             USERS.column("id"),
+//             ORDERS.column("total"),
+//             PRODUCTS.column("name"),
+//         ])
+//         .join(&ORDERS, USERS.column("id").eq(ORDERS.column("user_id")))
+//         .join(&PRODUCTS, ORDERS.column("product_id").eq(PRODUCTS.column("id")));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id`, `t2`.`total`, `t3`.`name` FROM `users` AS `t1` INNER JOIN `orders` AS `t2` ON `t1`.`id` = `t2`.`user_id` INNER JOIN `products` AS `t3` ON `t2`.`product_id` = `t3`.`id`",
+//         []
+//     );
+// }
+//
+// #[test]
+// fn test_mixed_join_types() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(vec![USERS.column("id"), ORDERS.column("total")])
+//         .left_join(&ORDERS, USERS.column("id").eq(ORDERS.column("user_id")))
+//         .inner_join(&PRODUCTS, ORDERS.column("product_id").eq(PRODUCTS.column("id")));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id`, `t2`.`total` FROM `users` AS `t1` LEFT JOIN `orders` AS `t2` ON `t1`.`id` = `t2`.`user_id` INNER JOIN `products` AS `t3` ON `t2`.`product_id` = `t3`.`id`",
+//         []
+//     );
+// }
+//
+// // ============================================================================
+// // 4. DISTINCT 测试
+// // ============================================================================
+//
+// #[test]
+// fn test_distinct() {
+//     let stmt = SelectStatement::from(&*USERS).select(USERS.column("city")).distinct();
+//     assert_mysql!(&stmt, "SELECT DISTINCT `t1`.`city` FROM `users` AS `t1`", []);
+//     assert_pg!(&stmt, r#"SELECT DISTINCT "t1"."city" FROM "users" AS "t1""#, []);
+// }
+//
+// #[test]
+// fn test_distinct_on_postgres() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(vec![USERS.column("city"), USERS.column("name")])
+//         .distinct_on(vec![USERS.column("city")]);
+//     // PostgreSQL 支持 DISTINCT ON
+//     assert_pg!(
+//         &stmt,
+//         r#"SELECT DISTINCT ON ("t1"."city") "t1"."city", "t1"."name" FROM "users" AS "t1""#,
+//         []
+//     );
+//     // MySQL/SQLite 会退化为普通 DISTINCT
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT DISTINCT `t1`.`city`, `t1`.`name` FROM `users` AS `t1`",
+//         []
+//     );
+// }
+//
+// // ============================================================================
+// // 5. LIMIT 和 OFFSET 测试
+// // ============================================================================
+//
+// #[test]
+// fn test_limit_only() {
+//     let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).limit(10);
+//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1` LIMIT 10", []);
+//     assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" LIMIT 10"#, []);
+//     assert_sqlite!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" LIMIT 10"#, []);
+// }
+//
+// #[test]
+// fn test_offset_only() {
+//     let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).offset(20);
+//     // MySQL 不支持单独 OFFSET
+//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1`", []);
+//     // PostgreSQL 和 SQLite 支持
+//     assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" OFFSET 20"#, []);
+//     assert_sqlite!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" OFFSET 20"#, []);
+// }
+//
+// #[test]
+// fn test_limit_and_offset() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(USERS.column("id"))
+//         .limit(10)
+//         .offset(20);
+//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1` LIMIT 10 OFFSET 20", []);
+//     assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" LIMIT 10 OFFSET 20"#, []);
+//     assert_sqlite!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" LIMIT 10 OFFSET 20"#, []);
+// }
+//
+// // ============================================================================
+// // 6. 聚合函数测试
+// // ============================================================================
+//
+// #[test]
+// fn test_count_all() {
+//     let stmt = SelectStatement::from(&*USERS).select(count_all());
+//     assert_mysql!(&stmt, "SELECT COUNT(*) FROM `users` AS `t1`", []);
+//     assert_pg!(&stmt, r#"SELECT COUNT(*) FROM "users" AS "t1""#, []);
+//     assert_sqlite!(&stmt, r#"SELECT COUNT(*) FROM "users" AS "t1""#, []);
+// }
+//
+// #[test]
+// fn test_count_column() {
+//     let stmt = SelectStatement::from(&*USERS).select(count(USERS.column("email")));
+//     assert_mysql!(&stmt, "SELECT COUNT(`t1`.`email`) FROM `users` AS `t1`", []);
+//     assert_pg!(&stmt, r#"SELECT COUNT("t1"."email") FROM "users" AS "t1""#, []);
+// }
+//
+// #[test]
+// fn test_count_distinct() {
+//     let stmt = SelectStatement::from(&*USERS).select(count(USERS.column("city").distinct()));
+//     assert_mysql!(&stmt, "SELECT COUNT(DISTINCT `t1`.`city`) FROM `users` AS `t1`", []);
+//     assert_pg!(&stmt, r#"SELECT COUNT(DISTINCT "t1"."city") FROM "users" AS "t1""#, []);
+// }
+//
+// #[test]
+// fn test_sum_avg() {
+//     let stmt = SelectStatement::from(&*ORDERS).select(vec![sum(ORDERS.column("total")), avg(ORDERS.column("price"))]);
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT SUM(`t1`.`total`), AVG(`t1`.`price`) FROM `orders` AS `t1`",
+//         []
+//     );
+// }
+//
+// #[test]
+// fn test_max_min() {
+//     let stmt = SelectStatement::from(&*ORDERS).select(vec![max(ORDERS.column("total")), min(ORDERS.column("price"))]);
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT MAX(`t1`.`total`), MIN(`t1`.`price`) FROM `orders` AS `t1`",
+//         []
+//     );
+// }
+//
+// #[test]
+// fn test_upper_lower() {
+//     let stmt = SelectStatement::from(&*USERS).select(vec![upper(USERS.column("name")), lower(USERS.column("email"))]);
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT UPPER(`t1`.`name`), LOWER(`t1`.`email`) FROM `users` AS `t1`",
+//         []
+//     );
+// }
+//
+// #[test]
+// fn test_abs_ceil_floor() {
+//     let stmt = SelectStatement::from(&*ORDERS).select(vec![
+//         abs(ORDERS.column("discount")),
+//         ceil(ORDERS.column("price")),
+//         floor(ORDERS.column("tax")),
+//     ]);
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT ABS(`t1`.`discount`), CEIL(`t1`.`price`), FLOOR(`t1`.`tax`) FROM `orders` AS `t1`",
+//         []
+//     );
+// }
+//
+// #[test]
+// fn test_sqrt() {
+//     let stmt = SelectStatement::from(&*ORDERS).select(sqrt(ORDERS.column("quantity")));
+//     assert_mysql!(&stmt, "SELECT SQRT(`t1`.`quantity`) FROM `orders` AS `t1`", []);
+// }
+//
+// // ============================================================================
+// // 7. 自定义函数测试
+// // ============================================================================
+//
+// #[test]
+// fn test_custom_func() {
+//     let stmt = SelectStatement::from(&*USERS).select(func(
+//         "CONCAT",
+//         vec![USERS.column("first_name"), USERS.column("last_name")],
+//     ));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT CONCAT(`t1`.`first_name`, `t1`.`last_name`) FROM `users` AS `t1`",
+//         []
+//     );
+// }
+//
+// #[test]
+// fn test_coalesce() {
+//     let stmt = SelectStatement::from(&*USERS).select(coalesce![USERS.column("email"), Literal::from("no-email")]);
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT COALESCE(`t1`.`email`, ?) FROM `users` AS `t1`",
+//         ["no-email"]
+//     );
+// }
+//
+// #[test]
+// fn test_coalesce_multiple() {
+//     let stmt = SelectStatement::from(&*USERS).select(coalesce![
+//         USERS.column("email"),
+//         USERS.column("phone"),
+//         Literal::from("no-contact")
+//     ]);
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT COALESCE(`t1`.`email`, `t1`.`phone`, ?) FROM `users` AS `t1`",
+//         ["no-contact"]
+//     );
+// }
+//
+// // ============================================================================
+// // 8. 子查询测试
+// // ============================================================================
+//
+// #[test]
+// fn test_exists_subquery() {
+//     let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).where_(exists(
+//         SelectStatement::from(&*ORDERS).where_(ORDERS.column("user_id").eq(USERS.column("id"))),
+//     ));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id` FROM `users` AS `t1` WHERE EXISTS(SELECT * FROM `orders` AS `t2` WHERE `t2`.`user_id` = `t1`.`id`)",
+//         []
+//     );
+// }
+//
+// #[test]
+// fn test_scalar_subquery() {
+//     let subquery = SelectStatement::from(&*ORDERS)
+//         .select(max(ORDERS.column("total")))
+//         .where_(ORDERS.column("user_id").eq(USERS.column("id")));
+//
+//     let stmt = SelectStatement::from(&*USERS).select(vec![USERS.column("id"), Expr::from(subquery)]);
+//
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id`, (SELECT MAX(`t2`.`total`) FROM `orders` AS `t2` WHERE `t2`.`user_id` = `t1`.`id`) FROM `users` AS `t1`",
+//         []
+//     );
+// }
+//
+// #[test]
+// fn test_in_subquery() {
+//     let subquery = SelectStatement::from(&*ORDERS).select(ORDERS.column("user_id"));
+//
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(USERS.column("id"))
+//         .where_(USERS.column("id").in_(vec![Expr::from(subquery)]));
+//
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`id` IN ((SELECT `t2`.`user_id` FROM `orders` AS `t2`))",
+//         []
+//     );
+// }
+//
+// // ============================================================================
+// // 9. 列别名测试
+// // ============================================================================
+//
+// #[test]
+// fn test_column_alias() {
+//     let stmt = SelectStatement::from(&*USERS).select(USERS.column("name").alias("username"));
+//     assert_mysql!(&stmt, "SELECT `t1`.`name` AS `username` FROM `users` AS `t1`", []);
+//     assert_pg!(&stmt, r#"SELECT "t1"."name" AS "username" FROM "users" AS "t1""#, []);
+// }
+//
+// #[test]
+// fn test_expression_alias() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select((USERS.column("first_name").clone() + USERS.column("last_name").clone()).alias("full_name"));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`first_name` + `t1`.`last_name` AS `full_name` FROM `users` AS `t1`",
+//         []
+//     );
+// }
+//
+// #[test]
+// fn test_func_alias() {
+//     let stmt = SelectStatement::from(&*USERS).select(upper(USERS.column("name")).alias("upper_name"));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT UPPER(`t1`.`name`) AS `upper_name` FROM `users` AS `t1`",
+//         []
+//     );
+// }
+//
+// // ============================================================================
+// // 10. 字面量表达式测试
+// // ============================================================================
+//
+// #[test]
+// fn test_arithmetic_operations() {
+//     let stmt = SelectStatement::from(&*ORDERS).select(ORDERS.column("price") * ORDERS.column("quantity"));
+//     assert_mysql!(&stmt, "SELECT `t1`.`price` * `t1`.`quantity` FROM `orders` AS `t1`", []);
+// }
+//
+// #[test]
+// fn test_addition_subtraction() {
+//     let stmt = SelectStatement::from(&*ORDERS).select(vec![
+//         ORDERS.column("price") + ORDERS.column("tax"),
+//         ORDERS.column("price") - ORDERS.column("discount"),
+//     ]);
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`price` + `t1`.`tax`, `t1`.`price` - `t1`.`discount` FROM `orders` AS `t1`",
+//         []
+//     );
+// }
+//
+// #[test]
+// fn test_division_modulo() {
+//     let stmt = SelectStatement::from(&*ORDERS).select(vec![
+//         ORDERS.column("total") / ORDERS.column("quantity"),
+//         ORDERS.column("total") % ORDERS.column("quantity"),
+//     ]);
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`total` / `t1`.`quantity`, `t1`.`total` % `t1`.`quantity` FROM `orders` AS `t1`",
+//         []
+//     );
+// }
+//
+// #[test]
+// fn test_mixed_arithmetic() {
+//     let stmt = SelectStatement::from(&*ORDERS)
+//         .select((ORDERS.column("price") * ORDERS.column("quantity") + ORDERS.column("tax")) * Literal::from(0.9));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`price` * `t1`.`quantity` + `t1`.`tax` * ? FROM `orders` AS `t1`",
+//         [0.9f64]
+//     );
+// }
+//
+// // ============================================================================
+// // 11. 表别名测试
+// // ============================================================================
+//
+// #[test]
+// fn test_table_alias() {
+//     let u = USERS.clone().alias("u");
+//     let o = ORDERS.clone().alias("o");
+//
+//     let stmt = SelectStatement::from(&u)
+//         .select(vec![u.column("id"), o.column("total")])
+//         .join(&o, u.column("id").eq(o.column("user_id")));
+//
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `u`.`id`, `o`.`total` FROM `users` AS `u` INNER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id`",
+//         []
+//     );
+// }
+//
+// // ============================================================================
+// // 12. 锁定子句测试 (FOR UPDATE 等)
+// // ============================================================================
+//
+// #[test]
+// fn test_for_update() {
+//     use crate::sequel::term::lock::{Lock, Wait};
+//
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(USERS.column("id"))
 //         .for_update(Lock::Update, Wait::NoWait);
 //
-//     let mut v = visitor::mysql();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE NOWAIT".to_string()
+//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1` FOR UPDATE NOWAIT", []);
+//     assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" FOR UPDATE NOWAIT"#, []);
+// }
+//
+// #[test]
+// fn test_for_share() {
+//     use crate::sequel::term::lock::{Lock, Wait};
+//
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(USERS.column("id"))
+//         .for_update(Lock::Share, Wait::SkipLocked);
+//
+//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1` FOR SHARE SKIP LOCKED", []);
+// }
+//
+// // ============================================================================
+// // 13. 索引提示测试 (MySQL 特有)
+// // ============================================================================
+//
+// #[test]
+// fn test_force_index() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(USERS.column("id"))
+//         .force_index("idx_users_email");
+//
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id` FROM `users` AS `t1` FORCE INDEX (idx_users_email)",
+//         []
 //     );
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+// }
 //
-//     let mut v = visitor::postgre();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE NOWAIT"#.to_string()
+// // ============================================================================
+// // 14. 复杂组合测试
+// // ============================================================================
+//
+// #[test]
+// fn test_complex_query() {
+//     let u = USERS.clone().alias("u");
+//     let o = ORDERS.clone().alias("o");
+//     let p = PRODUCTS.clone().alias("p");
+//
+//     let stmt = SelectStatement::from(&u)
+//         .select(vec![
+//             u.column("id"),
+//             u.column("name"),
+//             sum(o.column("total")).alias("total_spent"),
+//             count(o.column("id")).alias("order_count"),
+//         ])
+//         .join(&o, u.column("id").eq(o.column("user_id")))
+//         .join(&p, o.column("product_id").eq(p.column("id")))
+//         .where_(o.column("total").gt(100).and(p.column("category_id").eq(5)))
+//         .distinct()
+//         .limit(10)
+//         .offset(20);
+//
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT DISTINCT `u`.`id`, `u`.`name`, SUM(`o`.`total`) AS `total_spent`, COUNT(`o`.`id`) AS `order_count` FROM `users` AS `u` INNER JOIN `orders` AS `o` ON `u`.`id` = `o`.`user_id` INNER JOIN `products` AS `p` ON `o`.`product_id` = `p`.`id` WHERE `o`.`total` > ? AND `p`.`category_id` = ? LIMIT 10 OFFSET 20",
+//         [100i64, 5i64]
 //     );
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 // }
 //
 // #[test]
-// fn test_select_for_update_skip() {
-//     let col = ColumnRef::new("foo", None);
-//     let stmt = SelectStatement::new()
-//         .from("users")
-//         .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
-//         .for_update(Lock::Update, Wait::SkipLocked);
+// fn test_nested_subquery_with_join() {
+//     let subquery = SelectStatement::from(&*ORDERS)
+//         .select(max(ORDERS.column("total")))
+//         .where_(ORDERS.column("status").eq("completed"));
 //
-//     let mut v = visitor::mysql();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE SKIP LOCKED".to_string()
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(vec![
+//             USERS.column("id"),
+//             Expr::from(subquery.clone()).alias("max_order"),
+//         ])
+//         .where_(Expr::from(subquery).gt(1000));
+//
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id`, (SELECT MAX(`t2`.`total`) FROM `orders` AS `t2` WHERE `t2`.`status` = ?) AS `max_order` FROM `users` AS `t1` WHERE (SELECT MAX(`t3`.`total`) FROM `orders` AS `t3` WHERE `t3`.`status` = ?) > ?",
+//         ["completed", "completed", 1000i64]
 //     );
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+// }
 //
-//     let mut v = visitor::postgre();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE SKIP LOCKED"#.to_string()
+// // ============================================================================
+// // 15. 边界情况测试
+// // ============================================================================
+//
+// #[test]
+// fn test_empty_select_becomes_star() {
+//     // 当没有指定 select 列时，应该生成 SELECT *
+//     let stmt = SelectStatement::from(&*USERS);
+//     assert_mysql!(&stmt, "SELECT * FROM `users` AS `t1`", []);
+// }
+//
+// #[test]
+// fn test_zero_limit() {
+//     // limit(0) 应该被忽略
+//     let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).limit(0);
+//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1`", []);
+// }
+//
+// #[test]
+// fn test_string_with_quotes() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(USERS.column("name"))
+//         .where_(USERS.column("name").eq("O'Brien"));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`name` FROM `users` AS `t1` WHERE `t1`.`name` = ?",
+//         ["O'Brien"]
 //     );
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 // }
 //
 // #[test]
-// fn test_select_for_update_of() {
-//     let col = ColumnRef::new("foo", None);
-//     let t = NamedTable::new("users");
-//     let stmt = SelectStatement::new()
-//         .from(t.clone())
-//         .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
-//         .for_update(Lock::UpdateOf(t), Wait::DEFAULT);
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE OF `users`".to_string()
+// fn test_string_with_backslash() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(USERS.column("path"))
+//         .where_(USERS.column("path").eq("C:\\Users\\test"));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`path` FROM `users` AS `t1` WHERE `t1`.`path` = ?",
+//         ["C:\\Users\\test"]
 //     );
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+// }
 //
-//     let mut v = visitor::postgre();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE OF "users""#.to_string()
+// #[test]
+// fn test_boolean_literals() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(USERS.column("id"))
+//         .where_(USERS.column("active").eq(true));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`active` = TRUE",
+//         [true]
 //     );
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 //
-//     let mut v = visitor::sqlite();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
-// }
-//
-// #[test]
-// fn test_select_for_update_skip_locked_and_of() {
-//     let col = ColumnRef::new("foo", None);
-//     let t = NamedTable::new("users");
-//     let stmt = SelectStatement::new()
-//         .from(t.clone())
-//         .where_(col.lt(Literal::from(Date::new(2025, 1, 3).unwrap())))
-//         .for_update(Lock::UpdateOf(t), Wait::SkipLocked);
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         "SELECT * FROM `users` WHERE `foo` < ? FOR UPDATE OF `users` SKIP LOCKED".to_string()
+//     let stmt2 = SelectStatement::from(&*USERS)
+//         .select(USERS.column("id"))
+//         .where_(USERS.column("active").eq(false));
+//     assert_mysql!(
+//         &stmt2,
+//         "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`active` = FALSE",
+//         [false]
 //     );
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
+// }
 //
-//     let mut v = visitor::postgre();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT * FROM "users" WHERE "foo" < $1 FOR UPDATE OF "users" SKIP LOCKED"#.to_string()
+// #[test]
+// fn test_float_literals() {
+//     let stmt = SelectStatement::from(&*ORDERS)
+//         .select(ORDERS.column("price"))
+//         .where_(ORDERS.column("price").eq(19.99));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`price` FROM `orders` AS `t1` WHERE `t1`.`price` = ?",
+//         [19.99f64]
 //     );
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT * FROM "users" WHERE "foo" < ?"#.to_string());
-//     assert_eq!(values.clone(), vec![Literal::from(Date::new(2025, 1, 3).unwrap())]);
 // }
 //
 // #[test]
-// fn test_where_field_equals_where() {
-//     let t = TableRef::from("users").alias("users");
-//     let col_foo = t.column("foo");
-//     let col_bar = t.column("bar");
-//     let col_baz = t.column("baz");
-//     let stmt = SelectStatement::new()
-//         .from(t)
-//         .where_(col_foo.eq(Literal::Int(1)))
-//         .where_(col_bar.eq(col_baz));
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         "SELECT * FROM `users` AS `users` WHERE `users`.`foo` = ? AND `users`.`bar` = `users`.`baz`".to_string()
+// fn test_null_literal() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(USERS.column("id"))
+//         .where_(USERS.column("deleted_at").eq(Literal::Null));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`deleted_at` IS NULL",
+//         []
 //     );
-//     assert_eq!(values.clone(), vec![Literal::from(1)]);
+// }
 //
-//     let mut v = visitor::postgre();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT * FROM "users" AS "users" WHERE "users"."foo" = $1 AND "users"."bar" = "users"."baz""#.to_string()
+// #[test]
+// fn test_date_time_literals() {
+//     use crate::sequel::term::calendar::{Date, DateTime, Time};
+//
+//     let date = Date::new(2024, 1, 15);
+//     let time = Time::new(10, 30, 0);
+//     let datetime = DateTime::new(date, time);
+//
+//     let stmt = SelectStatement::from(&*ORDERS)
+//         .select(ORDERS.column("id"))
+//         .where_(ORDERS.column("created_at").eq(datetime));
+//
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT `t1`.`id` FROM `orders` AS `t1` WHERE `t1`.`created_at` = ?",
+//         [datetime]
 //     );
-//     assert_eq!(values.clone(), vec![Literal::from(1)]);
+// }
 //
-//     let mut v = visitor::sqlite();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT * FROM "users" AS "users" WHERE "users"."foo" = ? AND "users"."bar" = "users"."baz""#.to_string()
+// // ============================================================================
+// // 16. 多数据库方言差异测试
+// // ============================================================================
+//
+// #[test]
+// fn test_dialect_differences() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(USERS.column("id"))
+//         .limit(10)
+//         .offset(5);
+//
+//     // 所有数据库都支持 LIMIT + OFFSET
+//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1` LIMIT 10 OFFSET 5", []);
+//     assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" LIMIT 10 OFFSET 5"#, []);
+//     assert_sqlite!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" LIMIT 10 OFFSET 5"#, []);
+// }
+//
+// #[test]
+// fn test_postgresql_distinct_on() {
+//     let stmt = SelectStatement::from(&*USERS)
+//         .select(vec![USERS.column("city"), USERS.column("name")])
+//         .distinct_on(vec![USERS.column("city")]);
+//
+//     // PostgreSQL 支持 DISTINCT ON
+//     assert_pg!(
+//         &stmt,
+//         r#"SELECT DISTINCT ON ("t1"."city") "t1"."city", "t1"."name" FROM "users" AS "t1""#,
+//         []
 //     );
-//     assert_eq!(values.clone(), vec![Literal::from(1)]);
-// }
 //
-// #[test]
-// fn test_where_field_equals_where_not() {
-//     let table_users = TableRef::from("users").alias("users");
-//     let col_foo = ColumnRef::from("foo");
-//     let col_bar = ColumnRef::from("bar");
-//     let col_baz = table_users.column("baz");
-//     let stmt = SelectStatement::new()
-//         .from(table_users)
-//         .where_(!col_foo.eq(Literal::from(1)))
-//         .where_(col_bar.eq(col_baz));
-//
-//     let mut v = visitor::mysql();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         "SELECT * FROM `users` AS `users` WHERE  NOT `foo` = ? AND `bar` = `users`.`baz`".to_string()
+//     // MySQL/SQLite 会退化为普通 DISTINCT
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT DISTINCT `t1`.`city`, `t1`.`name` FROM `users` AS `t1`",
+//         []
 //     );
-//     assert_eq!(values.clone(), vec![Literal::from(1)]);
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT * FROM "users" AS "users" WHERE  NOT "foo" = $1 AND "bar" = "users"."baz""#.to_string()
+//     assert_sqlite!(
+//         &stmt,
+//         r#"SELECT DISTINCT "t1"."city", "t1"."name" FROM "users" AS "t1""#,
+//         []
 //     );
-//     assert_eq!(values.clone(), vec![Literal::from(1)]);
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT * FROM "users" AS "users" WHERE  NOT "foo" = ? AND "bar" = "users"."baz""#.to_string()
-//     );
-//     assert_eq!(values.clone(), vec![Literal::from(1)]);
 // }
-//
-// #[test]
-// fn test_select_with_force_index_and_where() {
-//     let col = ColumnRef::from("foo");
-//     let stmt = SelectStatement::new()
-//         .from("users")
-//         .select(col.clone())
-//         .where_(col.eq(Literal::from("bar")))
-//         .force_index("egg");
-//     let mut v = visitor::mysql();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         "SELECT `foo` FROM `users` FORCE INDEX (`egg`) WHERE `foo` = ?".to_string()
-//     );
-//     assert_eq!(values.clone(), vec![Literal::from("bar")]);
-//
-//     let mut v = visitor::postgre();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(visitor, r#"SELECT "foo" FROM "users" WHERE "foo" = $1"#.to_string());
-//     assert_eq!(values.clone(), vec![Literal::from("bar")]);
-//
-//     let mut v = visitor::sqlite();
-//     let (visitor, values) = v.visit_select_statement(&stmt).finish();
-//     assert_eq!(
-//         visitor,
-//         r#"SELECT "foo" FROM "users" INDEXED BY "egg" WHERE "foo" = ?"#.to_string()
-//     );
-//     assert_eq!(values.clone(), vec![Literal::from("bar")]);
-// }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// todo!()
-// #[test]
-// fn test_where_field_matches_regex(){
-//     stmt = SelectStatement().from_(Name("abc")).where(foo__regex="r^b")
-//     assert visitors.mysql.visitor(stmt) == "SELECT * FROM `abc` WHERE `foo` REGEX 'r^b'"
-//     assert visitors.sqlite.visitor(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" REGEX 'r^b'"
-//     assert visitors.pg.visitor(stmt) == "SELECT * FROM \"abc\" WHERE \"foo\" REGEX 'r^b'"
-// }
-// #[test]
-// fn test_where_field_equals_for_multiple_tables(){
-//     let stmt = SelectStatement().from_("abc")
-//             .join("efg", .on(abc__id=Name("id", "efg"))
-//             .where(abc__foo=Name("bar", "efg"))
-//             )
-//     assert visitors.mysql.visitor(stmt) == 'SELECT * FROM `abc` JOIN `efg` ON `abc`.`id` = `efg`.`id` WHERE `abc`.`foo` = `efg`.`bar`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT * FROM "abc" JOIN "efg" ON "abc"."id" = "efg"."id" WHERE "abc"."foo" = "efg"."bar"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT * FROM "abc" JOIN "efg" ON "abc"."id" = "efg"."id" WHERE "abc"."foo" = "efg"."bar"'
-// }
-//
-// #[test]
-// fn test_group_by__single(){
-//     foo = Name("foo")
-//     stmt = SelectStatement().from_(Name("abc")).group_by(foo).select(foo)
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` GROUP BY `foo`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
-// }
-//
-// #[test]
-// fn test_group_by__multi(){
-//     foo, bar = Name("foo"), Name("bar")
-//     stmt = SelectStatement().from_(Name("abc")).group_by(foo, bar).select(foo, bar)
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, `bar` FROM `abc` GROUP BY `foo`, `bar`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", "bar" FROM "abc" GROUP BY "foo", "bar"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", "bar" FROM "abc" GROUP BY "foo", "bar"'
-// }
-//
-// #[test]
-// fn test_group_by__count_star(){
-//     foo = Name("foo")
-//     stmt = SelectStatement().from_(Name("abc")).group_by(foo).select(foo, Count(STAR))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, COUNT(*) FROM `abc` GROUP BY `foo`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", COUNT(*) FROM "abc" GROUP BY "foo"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", COUNT(*) FROM "abc" GROUP BY "foo"'
-// }
-//
-// #[test]
-// fn test_group_by__count_field(){
-//     foo = Name("foo")
-//     stmt = SelectStatement().from_(Name("abc")).group_by(foo).select(foo, Count(Name("bar")))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, COUNT(`bar`) FROM `abc` GROUP BY `foo`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", COUNT("bar") FROM "abc" GROUP BY "foo"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", COUNT("bar") FROM "abc" GROUP BY "foo"'
-// }
-//
-// #[test]
-// fn test_group_by__count_distinct(){
-//     foo = Name("foo")
-//     stmt = SelectStatement().from_(Name("abc")).group_by(foo).select(foo, Count(STAR).distinct())
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, COUNT(DISTINCT *) FROM `abc` GROUP BY `foo`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", COUNT(DISTINCT *) FROM "abc" GROUP BY "foo"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", COUNT(DISTINCT *) FROM "abc" GROUP BY "foo"'
-// }
-//
-// #[test]
-// fn test_group_by__sum_distinct(){
-//     foo = Name("foo")
-//     stmt = SelectStatement().from_(Name("abc")).group_by(foo).select(foo, Sum(Name("bar")).distinct())
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, SUM(DISTINCT `bar`) FROM `abc` GROUP BY `foo`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", SUM(DISTINCT "bar") FROM "abc" GROUP BY "foo"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", SUM(DISTINCT "bar") FROM "abc" GROUP BY "foo"'
-// }
-//
-// #[test]
-// fn test_group_by__alias(){
-//     bar = Name("bar").as_("bar01")
-//     stmt = SelectStatement().from_(Name("abc")).select(Sum(Name("foo")), bar).group_by(bar)
-//     assert visitors.mysql.visitor(stmt) == 'SELECT SUM(`foo`), `bar` AS `bar01` FROM `abc` GROUP BY `bar01`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" GROUP BY "bar01"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" GROUP BY "bar01"'
-// }
-//
-// #[test]
-// fn test_group_by__alias_with_join(){
-//     table1 = Name("table1").as_("t1")
-//     bar = Name("bar", schema_name=table1.alias).as_("bar01")
-//     stmt = (SelectStatement().from_(Name("abc")).join(table1)
-//             .on(abc__id=Name("t_ref", schema_name=table1.alias))
-//             .select(Sum(Name("foo")), bar).group_by(bar))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT SUM(`foo`), `t1`.`bar` AS `bar01` FROM `abc` JOIN `table1` AS `t1` ON `abc`.`id` = `t1`.`t_ref` GROUP BY `bar01`'
-//     assert visitors.sqlite.visitor(
-//         stmt) == 'SELECT SUM("foo"), "t1"."bar" AS "bar01" FROM "abc" JOIN "table1" AS "t1" ON "abc"."id" = "t1"."t_ref" GROUP BY "bar01"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT SUM("foo"), "t1"."bar" AS "bar01" FROM "abc" JOIN "table1" AS "t1" ON "abc"."id" = "t1"."t_ref" GROUP BY "bar01"'
-// }
-//
-// #[test]
-// fn test_mysql_query_uses_backtick_quote_chars(){
-//     stmt = SelectStatement().from_(Name("abc")).group_by(Name('foo')).select(Name('foo'))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` GROUP BY `foo`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" GROUP BY "foo"'
-// }
-//
-// #[test]
-// fn test_having_greater_than(){
-//     foo, bar = Name('foo'), Name('bar')
-//     stmt = SelectStatement().from_(Name("abc")).select(foo, Sum(bar)).group_by(foo).having(Sum(bar).gt(1))
-//
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, SUM(`bar`) FROM `abc` GROUP BY `foo` HAVING SUM(`bar`) > 1'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1'
-// }
-//
-// #[test]
-// fn test_having_and(){
-//     foo, bar = Name('foo'), Name('bar')
-//     stmt = SelectStatement().from_(Name("abc")).select(foo, Sum(bar)).group_by(foo).having((Sum(bar).gt(1)) & (Sum(bar).lt(100)))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, SUM(`bar`) FROM `abc` GROUP BY `foo` HAVING SUM(`bar`) > 1 AND SUM(`bar`) < 100'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1 AND SUM("bar") < 100'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", SUM("bar") FROM "abc" GROUP BY "foo" HAVING SUM("bar") > 1 AND SUM("bar") < 100'
-// }
-//
-// #[test]
-// fn test_having_join_and_equality(){
-//     abc_foo = Name('foo', schema_name=Name("abc").name)
-//     abc_buz = Name('buz', schema_name=Name("abc").name)
-//     efg_foo = Name('foo', schema_name=Name("efg").name)
-//     efg_bar = Name('bar', schema_name=Name("efg").name)
-//
-//     stmt = (
-//         SelectStatement().from_(Name("abc")).join(Name("efg"))
-//         .on(abc__foo=efg_foo)
-//         .select(abc_foo, Sum(efg_bar), abc_buz)
-//         .group_by(abc_foo)
-//         .having(abc__buz="fiz")
-//         .having(Sum(efg_bar).gt(100))
-//     )
-//
-//     assert visitors.mysql.visitor(stmt) == ('SELECT `abc`.`foo`, SUM(`efg`.`bar`), `abc`.`buz` FROM `abc` '
-//                                         'JOIN `efg` ON `abc`.`foo` = `efg`.`foo` GROUP BY `abc`.`foo` '
-//                                         'HAVING `abc`.`buz` = \'fiz\' AND SUM(`efg`.`bar`) > 100')
-//     assert visitors.sqlite.visitor(stmt) == ('SELECT "abc"."foo", SUM("efg"."bar"), "abc"."buz" FROM "abc" '
-//                                          'JOIN "efg" ON "abc"."foo" = "efg"."foo" GROUP BY "abc"."foo" '
-//                                          'HAVING "abc"."buz" = \'fiz\' AND SUM("efg"."bar") > 100')
-//     assert visitors.pg.visitor(stmt) == ('SELECT "abc"."foo", SUM("efg"."bar"), "abc"."buz" FROM "abc" '
-//                                      'JOIN "efg" ON "abc"."foo" = "efg"."foo" GROUP BY "abc"."foo" '
-//                                      'HAVING "abc"."buz" = \'fiz\' AND SUM("efg"."bar") > 100')
-// }
-//
-// #[test]
-// fn test_order_by__single_field(){
-//     stmt = SelectStatement().from_(Name("abc")).order_by(Name("foo")).select(Name("foo"))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` ORDER BY `foo`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo"'
-// }
-//
-// #[test]
-// fn test_order_by__multi_fields(){
-//     foo, bar = Name("foo"), Name("bar")
-//     stmt = SelectStatement().from_(Name("abc")).order_by(foo, bar).select(foo, bar)
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo`, `bar` FROM `abc` ORDER BY `foo`, `bar`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo", "bar" FROM "abc" ORDER BY "foo", "bar"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo", "bar" FROM "abc" ORDER BY "foo", "bar"'
-// }
-//
-// #[test]
-// fn test_order_by_asc(){
-//     foo = Name("foo")
-//     stmt = SelectStatement().from_(Name("abc")).order_by(foo, sorted_in=SortedIn.ASC).select(foo)
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` ORDER BY `foo` ASC'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" ASC'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" ASC'
-// }
-//
-// #[test]
-// fn test_order_by_desc(){
-//     foo = Name("foo")
-//     stmt = SelectStatement().from_(Name("abc")).order_by(foo, sorted_in=SortedIn.DESC).select(foo)
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` ORDER BY `foo` DESC'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" DESC'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" ORDER BY "foo" DESC'
-// }
-//
-// #[test]
-// fn test_order_by__alias(){
-//     bar = Name("bar").as_("bar01")
-//     stmt = SelectStatement().from_(Name("abc")).select(Sum(Name("foo")), bar).order_by(bar)
-//     assert visitors.mysql.visitor(stmt) == 'SELECT SUM(`foo`), `bar` AS `bar01` FROM `abc` ORDER BY `bar01`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" ORDER BY "bar01"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT SUM("foo"), "bar" AS "bar01" FROM "abc" ORDER BY "bar01"'
-// }
-//
-// #[test]
-// fn test_table_field(){
-//     bar = Name("foo").as_("bar")
-//     stmt = SelectStatement().from_(Name("abc")).select(bar)
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` AS `bar` FROM `abc`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc"'
-// }
-//
-// #[test]
-// fn test_table_field__multi(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo").as_("bar"), Name("fiz").as_("buz"))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` AS `bar`, `fiz` AS `buz` FROM `abc`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" AS "bar", "fiz" AS "buz" FROM "abc"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" AS "bar", "fiz" AS "buz" FROM "abc"'
-//
-//
-// # }
-//
-// #[test]
-// fn test_arithmetic_function(){
-// #     """ @todo: support arithmetic """
-// #     stmt = SelectStatement().from_(Name("abc")).select((self.t.foo + self.t.bar).as_("biz"))
-// # visitors.mysql.visitor(stmt) ==     self.assertEqual('SELECT "foo"+"bar" "biz" FROM "abc"'
-//
-// }
-//
-// #[test]
-// fn test_alias_functions(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Count(STAR).as_("foo"))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT COUNT(*) AS `foo` FROM `abc`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT COUNT(*) AS "foo" FROM "abc"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT COUNT(*) AS "foo" FROM "abc"'
-// }
-//
-// #[test]
-// fn test_alias_function_using_as_nested(){
-//     """ We don't show aliases of fields that are arguments of a function. """
-//     stmt = SelectStatement().from_(Name("abc")).select(Sqrt(Count(STAR).as_("foo")).as_("bar"))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT SQRT(COUNT(*)) AS `bar` FROM `abc`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT SQRT(COUNT(*)) AS "bar" FROM "abc"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT SQRT(COUNT(*)) AS "bar" FROM "abc"'
-// }
-//
-// #[test]
-// fn test_alias_in__group_by(){
-//     foo = Name('foo').as_('bar')
-//     stmt = SelectStatement().from_(Name("abc")).select(foo).group_by(foo)
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` AS `bar` FROM `abc` GROUP BY `bar`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc" GROUP BY "bar"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc" GROUP BY "bar"'
-// }
-//
-// #[test]
-// fn test_alias_in__order_by(){
-//     foo = Name('foo').as_('bar')
-//     stmt = SelectStatement().from_(Name("abc")).select(foo).order_by(foo)
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` AS `bar` FROM `abc` ORDER BY `bar`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc" ORDER BY "bar"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc" ORDER BY "bar"'
-// }
-//
-// #[test]
-// fn test_alias_ignored__in_value(){
-//     foo = Name('foo').as_('bar')
-//     stmt = SelectStatement().from_(Name("abc")).select(foo).where(username=foo)
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` AS `bar` FROM `abc` WHERE `username` = `foo`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc" WHERE "username" = "foo"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" AS "bar" FROM "abc" WHERE "username" = "foo"'
-// }
-//
-// #[test]
-// fn test_select_multiple_tables(){
-//     table_abc = Name("abc").as_("t0")
-//     table_efg = Name("efg").as_("t1")
-//     foo = Name('foo', schema_name=table_abc)
-//     bar = Name('bar', schema_name=table_efg)
-//     stmt = SelectStatement().from_(table_abc).select(foo).from_(table_efg).select(bar)
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `t0`.`foo`, `t1`.`bar` FROM `abc` AS `t0`, `efg` AS `t1`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "t0"."foo", "t1"."bar" FROM "abc" AS "t0", "efg" AS "t1"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "t0"."foo", "t1"."bar" FROM "abc" AS "t0", "efg" AS "t1"'
-// }
-//
-// #[test]
-// fn test_use_aliases_in__group_by_and_order_by(){
-//     table_abc = Name("abc").as_("t0")
-//     my_foo = Name("foo", table_abc.alias).as_("my_foo")
-//     bar = Name("bar", table_abc.alias)
-//     stmt = SelectStatement().from_(table_abc).select(my_foo, bar).group_by(my_foo).order_by(my_foo)
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `t0`.`foo` AS `my_foo`, `t0`.`bar` FROM `abc` AS `t0` GROUP BY `my_foo` ORDER BY `my_foo`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "t0"."foo" AS "my_foo", "t0"."bar" FROM "abc" AS "t0" GROUP BY "my_foo" ORDER BY "my_foo"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "t0"."foo" AS "my_foo", "t0"."bar" FROM "abc" AS "t0" GROUP BY "my_foo" ORDER BY "my_foo"'
-// }
-//
-// #[test]
-// fn test_table_with_schema_and_alias(){
-//     table = Name("abc", schema_name="schema").as_("alias")
-//     stmt = SelectStatement().from_(table)
-//     assert visitors.mysql.visitor(stmt) == 'SELECT * FROM `schema`.`abc` AS `alias`'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT * FROM "schema"."abc" AS "alias"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT * FROM "schema"."abc" AS "alias"'
-// }
-//
-// #[test]
-// fn test_extraneous_quotes(){
-//     t1 = Name("table1").as_("t1")
-//     t2 = Name("table2").as_("t2")
-//     stmt = SelectStatement().from_(t1).join(t2).on(t1__value__bt=(Name("start", schema_name=t2), Name("end", schema_name=t2))).select(
-//         Name("value", schema_name=t1))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `t1`.`value` FROM `table1` AS `t1` JOIN `table2` AS `t2` ON `t1`.`value` BETWEEN `t2`.`start` AND `t2`.`end`'
-//     assert visitors.sqlite.visitor(
-//         stmt) == 'SELECT "t1"."value" FROM "table1" AS "t1" JOIN "table2" AS "t2" ON "t1"."value" BETWEEN "t2"."start" AND "t2"."end"'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "t1"."value" FROM "table1" AS "t1" JOIN "table2" AS "t2" ON "t1"."value" BETWEEN "t2"."start" AND "t2"."end"'
-//
-//     # class SubqueryTests(unittest.TestCase):
-//     #     maxDiff = None
-//     #
-//     #     table_abc, table_efg, table_hij = Tables("abc", "efg", "hij")
-//     #
-//     #     }
-//
-// #[test]
-// fn test_where__in(){
-//     #         stmt = (
-//     #             SelectStatement().from_(Name("abc"))
-//     #
-//     #             .where(
-//     #                 Name("abc").foo.isin(
-//     #                     SelectStatement().from_(Name("efg")).select(Name("efg").foo).where(Name("efg").bar == 0)
-//     #                 )
-//     #             )
-//     #         )
-//     #
-//     #       assert
-//     #             'SELECT * FROM "abc" WHERE "foo" IN (SELECT "foo" FROM "efg" WHERE "bar"=0)',
-//     #             str(q),
-//     #         )
-//     #
-//     #     }
-//
-// #[test]
-// fn test_where__in_nested(){
-//     #         stmt = SelectStatement().from_(Name("abc")).where(Name("abc").foo).isin(Name("efg"))
-//     #         assert visitors.mysql.visitor(stmt) == 'SELECT * FROM "abc" WHERE "foo" IN (SELECT * FROM "efg")'
-//     #
-//     #     }
-//
-// #[test]
-// fn test_join(){
-//     #         subquery = SelectStatement().from_("efg").select("fiz", "buz").where(F("buz") == 0)
-//     #
-//     #         stmt = (
-//     #             SelectStatement().from_(Name("abc"))
-//     #             .join(subquery)
-//     #             .on(Name("abc").bar == subquery.buz)
-//     #             .select(Name("abc").foo, subquery.fiz)
-//     #         )
-//     #
-//     #       assert
-//     #             'SELECT "abc"."foo","sq0"."fiz" FROM "abc" '
-//     #             'JOIN (SELECT "fiz","buz" FROM "efg" WHERE "buz"=0) "sq0" '
-//     #             'ON "abc"."bar"="sq0"."buz"',
-//     #             str(q),
-//     #         )
-//     #
-//     #     }
-//
-// #[test]
-// fn test_select_subquery(){
-//     #         substmt = SelectStatement().from_(Name("efg")).select("fizzbuzz").where(Name("efg").id == 1)
-//     #
-//     #         stmt = SelectStatement().from_(Name("abc")).select("foo", "bar").select(subq)
-//     #
-//     #       assert
-//     #             'SELECT "foo","bar",(SELECT "fizzbuzz" FROM "efg" WHERE "id"=1) ' 'FROM "abc"',
-//     #             str(q),
-//     #         )
-//     #
-//     #     }
-//
-// #[test]
-// fn test_select_subquery_with_alias(){
-//     #         substmt = SelectStatement().from_(Name("efg")).select("fizzbuzz").where(Name("efg").id == 1)
-//     #
-//     #         stmt = SelectStatement().from_(Name("abc")).select("foo", "bar").select(subq.as_("sq"))
-//     #
-//     #       assert
-//     #             'SELECT "foo","bar",(SELECT "fizzbuzz" FROM "efg" WHERE "id"=1) "sq" ' 'FROM "abc"',
-//     #             str(q),
-//     #         )
-//     #
-//     #     }
-//
-// #[test]
-// fn test_where__equality(){
-//     #         subquery = SelectStatement().from_("efg").select("fiz").where(F("buz") == 0)
-//     #         query = (
-//     #             SelectStatement().from_(Name("abc"))
-//     #             .select(Name("abc").foo, Name("abc").bar)
-//     #             .where(Name("abc").bar == subquery)
-//     #         )
-//     #
-//     #       assert
-//     #             'SELECT "foo","bar" FROM "abc" ' 'WHERE "bar"=(SELECT "fiz" FROM "efg" WHERE "buz"=0)',
-//     #             str(query),
-//     #         )
-//     #
-//     #     }
-//
-// #[test]
-// fn test_select_from_nested_query(){
-//     #         subquery = SelectStatement().from_(Name("abc")).select(
-//     #             Name("abc").foo,
-//     #             Name("abc").bar,
-//     #             (Name("abc").fizz + Name("abc").buzz).as_("fizzbuzz"),
-//     #         )
-//     #
-//     #         query = SelectStatement().from_(subquery).select(subquery.foo, subquery.bar, subquery.fizzbuzz)
-//     #
-//     #       assert
-//     #             'SELECT "sq0"."foo","sq0"."bar","sq0"."fizzbuzz" '
-//     #             "FROM ("
-//     #             'SELECT "foo","bar","fizz"+"buzz" "fizzbuzz" '
-//     #             'FROM "abc"'
-//     #             ') "sq0"',
-//     #             str(query),
-//     #         )
-//     #
-//     #     }
-//
-// #[test]
-// fn test_select_from_nested_query_with_join(){
-//     #         subquery1 = (
-//     #             SelectStatement().from_(Name("abc"))
-//     #             .select(
-//     #                 Name("abc").foo,
-//     #                 fn.Sum(Name("abc").fizz + Name("abc").buzz).as_("fizzbuzz"),
-//     #             )
-//     #             .group_by(Name("abc").foo)
-//     #         )
-//     #
-//     #         subquery2 = SelectStatement().from_(Name("efg")).select(
-//     #             Name("efg").foo.as_("foo_two"),
-//     #             Name("efg").bar,
-//     #         )
-//     #
-//     #         query = (
-//     #             SelectStatement().from_(subquery1)
-//     #             .select(subquery1.foo, subquery1.fizzbuzz)
-//     #             .join(subquery2)
-//     #             .on(subquery1.foo == subquery2.foo_two)
-//     #             .select(subquery2.foo_two, subquery2.bar)
-//     #         )
-//     #
-//     #       assert
-//     #             "SELECT "
-//     #             '"sq0"."foo","sq0"."fizzbuzz",'
-//     #             '"sq1"."foo_two","sq1"."bar" '
-//     #             "FROM ("
-//     #             "SELECT "
-//     #             '"foo",SUM("fizz"+"buzz") "fizzbuzz" '
-//     #             'FROM "abc" '
-//     #             'GROUP BY "foo"'
-//     #             ') "sq0" JOIN ('
-//     #             "SELECT "
-//     #             '"foo" "foo_two","bar" '
-//     #             'FROM "efg"'
-//     #             ') "sq1" ON "sq0"."foo"="sq1"."foo_two"',
-//     #             str(query),
-//     #         )
-//     #
-//     #     }
-//
-// #[test]
-// fn test_from_subquery_without_alias(){
-//     #         subquery = SelectStatement().from_(Name("efg")).select(
-//     #             Name("efg").base_id.as_("x"), Name("efg").fizz, Name("efg").buzz
-//     #         )
-//     #
-//     #         test_query = SelectStatement().from_(subquery).select(subquery.x, subquery.fizz, subquery.buzz)
-//     #
-//     #       assert
-//     #             'SELECT "sq0"."x","sq0"."fizz","sq0"."buzz" '
-//     #             "FROM ("
-//     #             'SELECT "base_id" "x","fizz","buzz" FROM "efg"'
-//     #             ') "sq0"',
-//     #             str(test_query),
-//     #         )
-//     #
-//     #     }
-//
-// #[test]
-// fn test_join_query_with_alias(){
-//     #         subquery = (
-//     #             SelectStatement().from_(Name("efg"))
-//     #             .select(
-//     #                 Name("efg").base_id.as_("x"),
-//     #                 Name("efg").fizz,
-//     #                 Name("efg").buzz,
-//     #             )
-//     #             .as_("subq")
-//     #         )
-//     #
-//     #         test_query = SelectStatement().from_(subquery).select(subquery.x, subquery.fizz, subquery.buzz)
-//     #
-//     #       assert
-//     #             'SELECT "subq"."x","subq"."fizz","subq"."buzz" '
-//     #             "FROM ("
-//     #             'SELECT "base_id" "x","fizz","buzz" FROM "efg"'
-//     #             ') "subq"',
-//     #             str(test_query),
-//     #         )
-//     #
-//     #     }
-//
-// #[test]
-// fn test_with(){
-//     #         sub_query = SelectStatement().from_(Name("efg")).select("fizz")
-//     #         test_query = SelectStatement().with_(sub_query, "an_alias").from_(AliasedQuery("an_alias"))
-//     #
-//     #       assert
-//     #             'WITH an_alias AS (SELECT "fizz" FROM "efg") SELECT * FROM an_alias',
-//     #             str(test_query),
-//     #         )
-//     #
-//     #     }
-//
-// #[test]
-// fn test_join_with_with(){
-//     #         sub_query = SelectStatement().from_(Name("efg")).select("fizz")
-//     #         test_query = (
-//     #             SelectStatement().with_(sub_query, "an_alias")
-//     #             .from_(Name("abc"))
-//     #             .join(AliasedQuery("an_alias"))
-//     #             .on(AliasedQuery("an_alias").fizz == Name("abc").buzz)
-//     #
-//     #         )
-//     #       assert
-//     #             'WITH an_alias AS (SELECT "fizz" FROM "efg") '
-//     #             'SELECT * FROM "abc" JOIN an_alias ON "an_alias"."fizz"="abc"."buzz"',
-//     #             str(test_query),
-//     #         )
-//     #
-//     #     }
-//
-// #[test]
-// fn test_select_from_with_returning(){
-//     #         sub_query = SelectStatement().into(Name("abc")).insert(1).returning('*')
-//     #         test_query = SelectStatement().with_(sub_query, "an_alias").from_(AliasedQuery("an_alias"))
-//     #       assert
-//     #             'WITH an_alias AS (INSERT INTO "abc" VALUES (1) RETURNING *) SELECT * FROM an_alias', str(test_query)
-//     #         )
-//     #
-//     #
-// #[test]
-// fn test_select_with_force_index(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg"))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`)'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg")'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg")'
-// }
-//
-// #[test]
-// fn test_select_with_force_index_multiple_indexes(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg"), Name("bacon"))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`, `bacon`)'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "bacon")'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "bacon")'
-// }
-//
-// #[test]
-// fn test_select_with_force_index_multiple_calls(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).force_index(Name("egg")).force_index(Name("spam"))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` FORCE INDEX (`egg`, `spam`)'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "spam")'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" FORCE INDEX ("egg", "spam")'
-// }
-//
-// #[test]
-// fn test_select_with_use_index(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).use_index(Name("egg"))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`)'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg")'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg")'
-// }
-//
-// #[test]
-// fn test_select_with_use_index_multiple_indexes(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).use_index(Name("egg"), Name("bacon"))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`, `bacon`)'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "bacon")'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "bacon")'
-// }
-//
-// #[test]
-// fn test_select_with_use_index_multiple_calls(){
-//     stmt = SelectStatement().from_(Name("abc")).select(Name("foo")).use_index(Name("egg")).use_index(Name("spam"))
-//     assert visitors.mysql.visitor(stmt) == 'SELECT `foo` FROM `abc` USE INDEX (`egg`, `spam`)'
-//     assert visitors.sqlite.visitor(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "spam")'
-//     assert visitors.pg.visitor(stmt) == 'SELECT "foo" FROM "abc" USE INDEX ("egg", "spam")'
-// }
-//

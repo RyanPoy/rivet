@@ -75,9 +75,33 @@ impl Expr {
         }
     }
 }
+impl<T> From<Option<T>> for Expr
+where
+    T: Into<Expr>,
+{
+    fn from(value: Option<T>) -> Self {
+        match value {
+            Some(value) => value.into(),
+            None => Expr::Literal(Literal::Null),
+        }
+    }
+}
 impl From<SelectStatement> for Expr {
     fn from(stmt: SelectStatement) -> Self {
         Self::Subquery(Box::new(stmt))
+    }
+}
+impl From<Column> for Expr {
+    fn from(value: Column) -> Self {
+        Expr::Column(value)
+    }
+}
+impl<T> From<T> for Expr
+where
+    T: Into<Literal>,
+{
+    fn from(value: T) -> Self {
+        Expr::Literal(value.into())
     }
 }
 impl std::ops::Not for Expr {
@@ -88,20 +112,5 @@ impl std::ops::Not for Expr {
             op: NOT,
             expr: Box::new(self),
         }
-    }
-}
-
-impl<T> From<T> for Expr
-where
-    T: Into<Literal>,
-{
-    fn from(value: T) -> Self {
-        Expr::Literal(value.into())
-    }
-}
-
-impl From<Column> for Expr {
-    fn from(value: Column) -> Self {
-        Expr::Column(value)
     }
 }

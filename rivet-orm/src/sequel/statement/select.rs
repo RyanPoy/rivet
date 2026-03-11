@@ -56,20 +56,33 @@ impl SelectStatement {
         self
     }
 
-    pub fn join(mut self, other: impl Into<Table>, on: Expr) -> Self {
-        self.from_clause = self.from_clause.inner_join(other, on);
+    pub fn join<T>(mut self, other: &T, on: Expr) -> Self
+    where
+        T: Clone + Into<Table>,
+    {
+        self.from_clause = self.from_clause.inner_join(other.clone(), on);
         self
     }
-    pub fn left_join(mut self, other: impl Into<Table>, on: Expr) -> Self {
-        self.from_clause = self.from_clause.left_join(other, on);
+
+    pub fn left_join<T>(mut self, other: &T, on: Expr) -> Self
+    where
+        T: Clone + Into<Table>,
+    {
+        self.from_clause = self.from_clause.left_join(other.clone(), on);
         self
     }
-    pub fn right_join(mut self, other: impl Into<Table>, on: Expr) -> Self {
-        self.from_clause = self.from_clause.right_join(other, on);
+    pub fn right_join<T>(mut self, other: &T, on: Expr) -> Self
+    where
+        T: Clone + Into<Table>,
+    {
+        self.from_clause = self.from_clause.right_join(other.clone(), on);
         self
     }
-    pub fn full_join(mut self, other: impl Into<Table>, on: Expr) -> Self {
-        self.from_clause = self.from_clause.full_join(other, on);
+    pub fn full_join<T>(mut self, other: &T, on: Expr) -> Self
+    where
+        T: Clone + Into<Table>,
+    {
+        self.from_clause = self.from_clause.full_join(other.clone(), on);
         self
     }
     pub fn cross_join(mut self, others: impl IntoTables) -> Self {
@@ -112,8 +125,4 @@ impl SelectStatement {
 
 #[cfg(test)]
 #[path = "./select_test.rs"]
-mod tests;
-
-#[cfg(test)]
-#[path = "./select_test2.rs"]
-mod select_tests;
+mod select_test;

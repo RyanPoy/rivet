@@ -156,10 +156,16 @@ impl<D: Dialect> Visitor<D> {
         let mut iter = where_clause.iter();
         if let Some(f) = iter.next() {
             self.push(" WHERE ");
-            self.visit_expr(f, false);
+            match f {
+                Expr::Literal(lit) => self.visit_literal(lit, false).push(" = ").visit_literal(lit, false),
+                _ => self.visit_expr(f, false),
+            };
             for f in iter {
                 self.push(" AND ");
-                self.visit_expr(f, false);
+                match f {
+                    Expr::Literal(lit) => self.visit_literal(lit, false).push(" = ").visit_literal(lit, false),
+                    _ => self.visit_expr(f, false),
+                };
             }
         }
         self

@@ -55,6 +55,7 @@ impl Table {
     {
         names.into_iter().map(|e| self.column(e)).collect()
     }
+
     pub fn alias(mut self, name: impl Into<String>) -> Self {
         self.alias = Some(name.into());
         self

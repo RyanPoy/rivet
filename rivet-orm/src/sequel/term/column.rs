@@ -52,7 +52,7 @@ impl Column {
         }
     }
 
-    pub fn not_eq<T>(self, rhs: T) -> Expr
+    pub fn not_eq<T>(&self, rhs: T) -> Expr
     where
         T: Into<Expr>,
     {
@@ -62,29 +62,29 @@ impl Column {
             _ => NOT_EQ,
         };
         Expr::Binary {
-            left: Box::new(Expr::Column(self)),
+            left: Box::new(Expr::Column(self.clone())),
             op,
             right: Box::new(right),
         }
     }
 
-    pub fn gt<T>(self, rhs: T) -> Expr
+    pub fn gt<T>(&self, rhs: T) -> Expr
     where
         T: Into<Expr>,
     {
         Expr::Binary {
-            left: Box::new(Expr::Column(self)),
+            left: Box::new(Expr::Column(self.clone())),
             op: GT,
             right: Box::new(rhs.into()),
         }
     }
 
-    pub fn gte<T>(self, rhs: T) -> Expr
+    pub fn gte<T>(&self, rhs: T) -> Expr
     where
         T: Into<Expr>,
     {
         Expr::Binary {
-            left: Box::new(Expr::Column(self)),
+            left: Box::new(Expr::Column(self.clone())),
             op: GTE,
             right: Box::new(rhs.into()),
         }
@@ -101,12 +101,12 @@ impl Column {
         }
     }
 
-    pub fn lte<T>(self, rhs: T) -> Expr
+    pub fn lte<T>(&self, rhs: T) -> Expr
     where
         T: Into<Expr>,
     {
         Expr::Binary {
-            left: Box::new(Expr::Column(self)),
+            left: Box::new(Expr::Column(self.clone())),
             op: LTE,
             right: Box::new(rhs.into()),
         }
@@ -134,47 +134,47 @@ impl Column {
         }
     }
 
-    pub fn like<T>(self, rhs: T) -> Expr
+    pub fn like<T>(&self, rhs: T) -> Expr
     where
         T: Into<Expr>,
     {
         Expr::Binary {
-            left: Box::new(Expr::Column(self)),
+            left: Box::new(Expr::Column(self.clone())),
             op: LIKE,
             right: Box::new(rhs.into()),
         }
     }
 
-    pub fn not_like<T>(self, rhs: T) -> Expr
+    pub fn not_like<T>(&self, rhs: T) -> Expr
     where
         T: Into<Expr>,
     {
         Expr::Binary {
-            left: Box::new(Expr::Column(self)),
+            left: Box::new(Expr::Column(self.clone())),
             op: NOT_LIKE,
             right: Box::new(rhs.into()),
         }
     }
 
-    pub fn in_<T, I>(self, rhs: I) -> Expr
+    pub fn in_<T, I>(&self, rhs: I) -> Expr
     where
         T: Into<Expr>,
         I: IntoIterator<Item = T>,
     {
         Expr::In {
-            expr: Box::new(Expr::Column(self)),
+            expr: Box::new(Expr::Column(self.clone())),
             list: rhs.into_iter().map(Into::into).collect(),
             negated: false,
         }
     }
 
-    pub fn not_in<T, I>(self, rhs: I) -> Expr
+    pub fn not_in<T, I>(&self, rhs: I) -> Expr
     where
         T: Into<Expr>,
         I: IntoIterator<Item = T>,
     {
         Expr::In {
-            expr: Box::new(Expr::Column(self)),
+            expr: Box::new(Expr::Column(self.clone())),
             list: rhs.into_iter().map(Into::into).collect(),
             negated: true,
         }
