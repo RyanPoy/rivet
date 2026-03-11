@@ -1,32 +1,73 @@
-#[derive(Clone, Copy, Debug)]
-pub struct Op(&'static str);
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum BinaryOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+    Eq,
+    NotEq,
+    Gt,
+    Gte,
+    Lt,
+    Lte,
+    And,
+    Or,
+    Like,
+    NotLike,
+    In,
+    NotIn,
+    Is,
+    IsNot,
+}
+impl BinaryOp {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Add => "+",
+            Self::Sub => "-",
+            Self::Mul => "*",
+            Self::Div => "/",
+            Self::Mod => "%",
 
-impl AsRef<str> for Op {
-    fn as_ref(&self) -> &str {
-        self.0
+            Self::Eq => "=",
+            Self::NotEq => "<>",
+            Self::Gt => ">",
+            Self::Gte => ">=",
+            Self::Lt => "<",
+            Self::Lte => "<=",
+
+            Self::And => "AND",
+            Self::Or => "OR",
+
+            Self::Like => "LIKE",
+            Self::NotLike => "NOT LIKE",
+            Self::In => "IN",
+            Self::NotIn => "NOT IN",
+            Self::Is => "IS",
+            Self::IsNot => "IS NOT",
+        }
+    }
+
+    pub fn precedence(&self) -> i32 {
+        match self {
+            Self::Or => 10,
+            Self::And => 20,
+            _ => 30, // 比较运算和算术运算更高
+        }
     }
 }
-
-pub const ADD: Op = Op("+");
-pub const SUB: Op = Op("-");
-pub const MUL: Op = Op("*");
-pub const DIV: Op = Op("/");
-pub const MOD: Op = Op("%");
-
-pub const EQ: Op = Op("=");
-pub const NOT_EQ: Op = Op("<>");
-pub const GT: Op = Op(">");
-pub const GTE: Op = Op(">=");
-pub const LT: Op = Op("<");
-pub const LTE: Op = Op("<=");
-
-pub const NOT: Op = Op("NOT");
-pub const AND: Op = Op("AND");
-pub const OR: Op = Op("OR");
-pub const LIKE: Op = Op("LIKE");
-pub const NOT_LIKE: Op = Op("NOT LIKE");
-pub const IN: Op = Op("IN");
-pub const NOT_IN: Op = Op("NOT IN");
-
-pub const IS: Op = Op("IS");
-pub const IS_NOT: Op = Op("IS NOT");
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum UnaryOp {
+    Not,
+    Neg, // -
+    Pos, // +
+}
+impl UnaryOp {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            Self::Not => "NOT",
+            Self::Neg => "-",
+            Self::Pos => "+",
+        }
+    }
+}

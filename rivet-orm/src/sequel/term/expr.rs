@@ -2,7 +2,7 @@ use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::column::Column;
 use crate::sequel::term::func::{Func, FuncArg};
 use crate::sequel::term::literal::Literal;
-use crate::sequel::term::ops::{NOT, Op};
+use crate::sequel::term::ops::{BinaryOp, UnaryOp};
 use crate::sequel::term::select_item::SelectItem;
 
 #[derive(Debug, Clone)]
@@ -28,7 +28,7 @@ pub enum Expr {
     // e.g. SELECT -price FROM orders;
     //      SELECT NOT active FROM users;
     Unary {
-        op: Op,
+        op: UnaryOp,
         expr: Box<Expr>,
     },
 
@@ -37,7 +37,7 @@ pub enum Expr {
     //      SELECT a = b FROM t;
     Binary {
         left: Box<Expr>,
-        op: Op,
+        op: BinaryOp,
         right: Box<Expr>,
     },
 
@@ -68,10 +68,40 @@ impl Expr {
         }
     }
 
+    pub fn precedence(&self) -> i32 {
+        match self {
+            Expr::Binary { op, .. } => op.precedence(),
+            Expr::Unary { .. } => 25,
+            _ => 100,
+        }
+    }
+
     pub fn distinct(self) -> FuncArg {
         FuncArg::Expr {
             expr: self,
             distinct: true,
+        }
+    }
+
+    pub fn and<T>(self, rhs: T) -> Expr
+    where
+        T: Into<Expr>,
+    {
+        Expr::Binary {
+            left: Box::new(self),
+            op: BinaryOp::And,
+            right: Box::new(rhs.into()),
+        }
+    }
+
+    pub fn or<T>(self, rhs: T) -> Expr
+    where
+        T: Into<Expr>,
+    {
+        Expr::Binary {
+            left: Box::new(self),
+            op: BinaryOp::Or,
+            right: Box::new(rhs.into()),
         }
     }
 }
@@ -109,7 +139,7 @@ impl std::ops::Not for Expr {
 
     fn not(self) -> Self::Output {
         Self::Unary {
-            op: NOT,
+            op: UnaryOp::Not,
             expr: Box::new(self),
         }
     }

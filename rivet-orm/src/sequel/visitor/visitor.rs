@@ -7,7 +7,7 @@ use crate::sequel::term::index::Index;
 use crate::sequel::term::join::{Join, JoinType};
 use crate::sequel::term::literal::Literal;
 use crate::sequel::term::lock::{Lock, Wait};
-use crate::sequel::term::ops::{IN, NOT_IN, Op};
+use crate::sequel::term::ops::{BinaryOp, UnaryOp};
 use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::{Table, TableInner};
 use crate::sequel::visitor::builder::Builder;
@@ -158,13 +158,13 @@ impl<D: Dialect> Visitor<D> {
             self.push(" WHERE ");
             match f {
                 Expr::Literal(lit) => self.visit_literal(lit, false).push(" = ").visit_literal(lit, false),
-                _ => self.visit_expr(f, false),
+                _ => self.visit_expr(f, false, 0),
             };
             for f in iter {
                 self.push(" AND ");
                 match f {
                     Expr::Literal(lit) => self.visit_literal(lit, false).push(" = ").visit_literal(lit, false),
-                    _ => self.visit_expr(f, false),
+                    _ => self.visit_expr(f, false, 0),
                 };
             }
         }
@@ -220,23 +220,35 @@ impl<D: Dialect> Visitor<D> {
 
     pub fn visit_select_item(&mut self, item: &SelectItem) -> &mut Self {
         match item {
-            SelectItem { expr, alias } => self.visit_expr(expr, true).visit_alias(alias),
+            SelectItem { expr, alias } => self.visit_expr(expr, true, 0).visit_alias(alias),
         }
     }
 
-    pub fn visit_expr(&mut self, expr: &Expr, inline: bool) -> &mut Self {
+    pub fn visit_expr(&mut self, expr: &Expr, inline: bool, parent_precedence: i32) -> &mut Self {
+        let current_precedence = expr.precedence();
+        let need_parens = current_precedence < parent_precedence;
+        if need_parens {
+            self.push("(");
+        }
         match expr {
             Expr::Column(c) => self.visit_column_ref(c),
             Expr::Literal(l) => self.visit_literal(l, inline),
-            Expr::Binary { left, op, right } => self.visit_expr(left, inline).visit_op(op).visit_expr(right, inline),
+            Expr::Binary { left, op, right } => self
+                .visit_expr(left, inline, current_precedence)
+                .visit_binary_op(op)
+                .visit_expr(right, inline, current_precedence),
             Expr::In { expr, list, negated } => self
-                .visit_expr(expr, inline)
-                .visit_op(if *negated { &NOT_IN } else { &IN })
+                .visit_expr(expr, inline, current_precedence)
+                .visit_binary_op(if *negated { &BinaryOp::NotIn } else { &BinaryOp::In })
                 .visit_expr_list(list, inline),
-            Expr::Unary { op, expr } => self.visit_op(op).visit_expr(expr, inline),
+            Expr::Unary { op, expr } => self.visit_unary_op(op).visit_expr(expr, inline, current_precedence),
             Expr::Func(f) => self.visit_func(f, inline),
             Expr::Subquery(sq) => self.visit_select_statement(sq),
+        };
+        if need_parens {
+            self.push(")");
         }
+        self
     }
 
     pub fn visit_func(&mut self, f: &Func, inline: bool) -> &mut Self {
@@ -258,7 +270,7 @@ impl<D: Dialect> Visitor<D> {
                 if *distinct {
                     self.push("DISTINCT ");
                 }
-                self.visit_expr(expr, inline)
+                self.visit_expr(expr, inline, 0)
             },
             FuncArg::Wildcard => self.push("*"),
             FuncArg::Subquery(sq) => self.visit_select_statement(sq),
@@ -269,18 +281,22 @@ impl<D: Dialect> Visitor<D> {
         self.push("(");
         let mut iter = expr_list.iter();
         if let Some(expr) = iter.next() {
-            self.visit_expr(expr, inline);
+            self.visit_expr(expr, inline, 0);
         }
         for expr in iter {
-            self.push(", ").visit_expr(expr, inline);
+            self.push(", ").visit_expr(expr, inline, 0);
         }
         self.push(")");
         self
     }
 
     #[inline]
-    pub fn visit_op(&mut self, op: &Op) -> &mut Self {
-        self.push(" ").push(op.as_ref()).push(" ")
+    pub fn visit_binary_op(&mut self, op: &BinaryOp) -> &mut Self {
+        self.push(" ").push(op.as_str()).push(" ")
+    }
+    #[inline]
+    pub fn visit_unary_op(&mut self, op: &UnaryOp) -> &mut Self {
+        self.push(op.as_str()).push(" ")
     }
 
     pub fn visit_distinct(&mut self, distinct: &Distinct) -> &mut Self {

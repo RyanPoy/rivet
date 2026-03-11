@@ -1,7 +1,7 @@
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::FuncArg;
 use crate::sequel::term::literal::Literal;
-use crate::sequel::term::ops::{AND, EQ, GT, GTE, IN, IS, IS_NOT, LIKE, LT, LTE, NOT_EQ, NOT_IN, NOT_LIKE, OR};
+use crate::sequel::term::ops::BinaryOp;
 use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::TableInner;
 use std::sync::Arc;
@@ -42,8 +42,8 @@ impl Column {
     {
         let right = rhs.into();
         let op = match right {
-            Expr::Literal(Literal::Null) => IS,
-            _ => EQ,
+            Expr::Literal(Literal::Null) => BinaryOp::Is,
+            _ => BinaryOp::Eq,
         };
         Expr::Binary {
             left: Box::new(Expr::Column(self.clone())),
@@ -58,8 +58,8 @@ impl Column {
     {
         let right = rhs.into();
         let op = match right {
-            Expr::Literal(Literal::Null) => IS_NOT,
-            _ => NOT_EQ,
+            Expr::Literal(Literal::Null) => BinaryOp::IsNot,
+            _ => BinaryOp::NotEq,
         };
         Expr::Binary {
             left: Box::new(Expr::Column(self.clone())),
@@ -74,7 +74,7 @@ impl Column {
     {
         Expr::Binary {
             left: Box::new(Expr::Column(self.clone())),
-            op: GT,
+            op: BinaryOp::Gt,
             right: Box::new(rhs.into()),
         }
     }
@@ -85,7 +85,7 @@ impl Column {
     {
         Expr::Binary {
             left: Box::new(Expr::Column(self.clone())),
-            op: GTE,
+            op: BinaryOp::Gte,
             right: Box::new(rhs.into()),
         }
     }
@@ -96,7 +96,7 @@ impl Column {
     {
         Expr::Binary {
             left: Box::new(Expr::Column(self.clone())),
-            op: LT,
+            op: BinaryOp::Lt,
             right: Box::new(rhs.into()),
         }
     }
@@ -107,29 +107,7 @@ impl Column {
     {
         Expr::Binary {
             left: Box::new(Expr::Column(self.clone())),
-            op: LTE,
-            right: Box::new(rhs.into()),
-        }
-    }
-
-    pub fn and<T>(self, rhs: T) -> Expr
-    where
-        T: Into<Expr>,
-    {
-        Expr::Binary {
-            left: Box::new(Expr::Column(self)),
-            op: AND,
-            right: Box::new(rhs.into()),
-        }
-    }
-
-    pub fn or<T>(self, rhs: T) -> Expr
-    where
-        T: Into<Expr>,
-    {
-        Expr::Binary {
-            left: Box::new(Expr::Column(self)),
-            op: OR,
+            op: BinaryOp::Lte,
             right: Box::new(rhs.into()),
         }
     }
@@ -140,7 +118,7 @@ impl Column {
     {
         Expr::Binary {
             left: Box::new(Expr::Column(self.clone())),
-            op: LIKE,
+            op: BinaryOp::Like,
             right: Box::new(rhs.into()),
         }
     }
@@ -151,7 +129,7 @@ impl Column {
     {
         Expr::Binary {
             left: Box::new(Expr::Column(self.clone())),
-            op: NOT_LIKE,
+            op: BinaryOp::NotLike,
             right: Box::new(rhs.into()),
         }
     }
