@@ -40,154 +40,145 @@ static ORDERS: LazyLock<Table> = LazyLock::new(|| Table::new("orders"));
 static PRODUCTS: LazyLock<Table> = LazyLock::new(|| Table::new("products"));
 static CATEGORIES: LazyLock<Table> = LazyLock::new(|| Table::new("categories"));
 
-// ============================================================================
-// 1. 基础 SELECT 测试
-// ============================================================================
-mod select_basic {
-    use super::*;
-    #[test]
-    fn test_select_all() {
-        let stmt = SelectStatement::from(&*USERS);
-        assert_mysql!(&stmt, "SELECT * FROM `users` AS `t1`", []);
-        assert_pg!(&stmt, r#"SELECT * FROM "users" AS "t1""#, []);
-        assert_sqlite!(&stmt, r#"SELECT * FROM "users" AS "t1""#, []);
-    }
-
-    #[test]
-    fn test_select_single_column() {
-        let stmt = SelectStatement::from(&*USERS).select(USERS.column("id"));
-        assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1`", []);
-        assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1""#, []);
-        assert_sqlite!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1""#, []);
-    }
-
-    #[test]
-    fn test_select_multiple_columns() {
-        let stmt = SelectStatement::from(&*USERS).select(USERS.columns(["id", "name", "email"]));
-        assert_mysql!(
-            &stmt,
-            "SELECT `t1`.`id`, `t1`.`name`, `t1`.`email` FROM `users` AS `t1`",
-            []
-        );
-        assert_pg!(
-            &stmt,
-            r#"SELECT "t1"."id", "t1"."name", "t1"."email" FROM "users" AS "t1""#,
-            []
-        );
-        assert_sqlite!(
-            &stmt,
-            r#"SELECT "t1"."id", "t1"."name", "t1"."email" FROM "users" AS "t1""#,
-            []
-        );
-    }
-
-    #[test]
-    fn test_select_with_literal() {
-        let stmt = SelectStatement::from(&*USERS).select([Literal::from(1), Literal::from("hello")]);
-        assert_mysql!(&stmt, "SELECT 1, 'hello' FROM `users` AS `t1`", []);
-        assert_pg!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "t1""#, []);
-        assert_sqlite!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "t1""#, []);
-    }
+#[test]
+fn test_select_all() {
+    let stmt = SelectStatement::from(&*USERS);
+    assert_mysql!(&stmt, "SELECT * FROM `users` AS `t1`", []);
+    assert_pg!(&stmt, r#"SELECT * FROM "users" AS "t1""#, []);
+    assert_sqlite!(&stmt, r#"SELECT * FROM "users" AS "t1""#, []);
 }
 
-mod where_test {
-    use super::*;
-    #[test]
-    fn test_where() {
-        let id = USERS.column("id");
-        let age = USERS.column("age");
-        let score = USERS.column("score");
-        let name = USERS.column("name");
-        let country = USERS.column("country");
-        let email = USERS.column("email");
-        let ext = USERS.column("ext");
+#[test]
+fn test_select_single_column() {
+    let stmt = SelectStatement::from(&*USERS).select(USERS.column("id"));
+    assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1`", []);
+    assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1""#, []);
+    assert_sqlite!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1""#, []);
+}
 
-        let stmt = SelectStatement::from(&*USERS)
-            .select(&id)
-            .where_(id.eq(5))
-            .where_(id.not_eq(10))
-            .where_(age.gt(20))
-            .where_(age.lt(100))
-            .where_(score.gte(60))
-            .where_(score.lte(96))
-            .where_(name.like("%John%"))
-            .where_(name.not_like("%Lucy%"))
-            .where_(country.in_(vec!["China", "Japan"]))
-            .where_(country.not_in(["USA", "England"]))
-            .where_(email.not_eq(None::<i32>))
-            .where_(ext.eq(None::<i32>));
+#[test]
+fn test_select_multiple_columns() {
+    let stmt = SelectStatement::from(&*USERS).select(USERS.columns(["id", "name", "email"]));
+    assert_mysql!(
+        &stmt,
+        "SELECT `t1`.`id`, `t1`.`name`, `t1`.`email` FROM `users` AS `t1`",
+        []
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "t1"."id", "t1"."name", "t1"."email" FROM "users" AS "t1""#,
+        []
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "t1"."id", "t1"."name", "t1"."email" FROM "users" AS "t1""#,
+        []
+    );
+}
 
-        assert_mysql!(
-            &stmt,
-            "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`id` = ? AND `t1`.`id` <> ? AND `t1`.`age` > ? AND `t1`.`age` < ? AND `t1`.`score` >= ? AND `t1`.`score` <= ? AND `t1`.`name` LIKE ? AND `t1`.`name` NOT LIKE ? AND `t1`.`country` IN (?, ?) AND `t1`.`country` NOT IN (?, ?) AND `t1`.`email` IS NOT NULL AND `t1`.`ext` IS NULL",
-            [
-                5_i64, 10_i64, 20_i64, 100_i64, 60_i64, 96_i64, "%John%", "%Lucy%", "China", "Japan", "USA", "England"
-            ]
-        );
-        assert_pg!(
-            &stmt,
-            r#"SELECT "t1"."id" FROM "users" AS "t1" WHERE "t1"."id" = $1 AND "t1"."id" <> $2 AND "t1"."age" > $3 AND "t1"."age" < $4 AND "t1"."score" >= $5 AND "t1"."score" <= $6 AND "t1"."name" LIKE $7 AND "t1"."name" NOT LIKE $8 AND "t1"."country" IN ($9, $10) AND "t1"."country" NOT IN ($11, $12) AND "t1"."email" IS NOT NULL AND "t1"."ext" IS NULL"#,
-            [
-                5_i64, 10_i64, 20_i64, 100_i64, 60_i64, 96_i64, "%John%", "%Lucy%", "China", "Japan", "USA", "England"
-            ]
-        );
-        assert_sqlite!(
-            &stmt,
-            r#"SELECT "t1"."id" FROM "users" AS "t1" WHERE "t1"."id" = ? AND "t1"."id" <> ? AND "t1"."age" > ? AND "t1"."age" < ? AND "t1"."score" >= ? AND "t1"."score" <= ? AND "t1"."name" LIKE ? AND "t1"."name" NOT LIKE ? AND "t1"."country" IN (?, ?) AND "t1"."country" NOT IN (?, ?) AND "t1"."email" IS NOT NULL AND "t1"."ext" IS NULL"#,
-            [
-                5_i64, 10_i64, 20_i64, 100_i64, 60_i64, 96_i64, "%John%", "%Lucy%", "China", "Japan", "USA", "England"
-            ]
-        );
-    }
+#[test]
+fn test_select_with_literal() {
+    let stmt = SelectStatement::from(&*USERS).select([Literal::from(1), Literal::from("hello")]);
+    assert_mysql!(&stmt, "SELECT 1, 'hello' FROM `users` AS `t1`", []);
+    assert_pg!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "t1""#, []);
+    assert_sqlite!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "t1""#, []);
+}
 
-    #[test]
-    fn test_where_logic() {
-        let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).where_(
-            USERS
-                .column("active")
-                .eq(true)
-                .and(
-                    USERS
-                        .column("role")
-                        .eq("admin")
-                        .or(USERS.column("role").eq("superadmin")),
-                )
-                .and(!USERS.column("age").lt(18).or(!USERS.column("age").gt(12))),
-        );
-        assert_mysql!(
-            &stmt,
-            "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`active` = ? AND (`t1`.`role` = ? OR `t1`.`role` = ?) AND NOT (`t1`.`age` < ? OR NOT `t1`.`age` > ?)",
-            [true, "admin", "superadmin", 18, 12]
-        );
-    }
+#[test]
+fn test_where() {
+    let id = USERS.column("id");
+    let age = USERS.column("age");
+    let score = USERS.column("score");
+    let name = USERS.column("name");
+    let country = USERS.column("country");
+    let email = USERS.column("email");
+    let ext = USERS.column("ext");
 
-    #[test]
-    fn test_complex_precedence_auto_grouping() {
-        let age_limit = USERS.column("age").lt(18).or(USERS.column("age").gt(60));
-        let stmt = SelectStatement::from(&*USERS).where_(age_limit.and(USERS.column("status").eq("active")));
-        assert_mysql!(
-            &stmt,
-            "SELECT * FROM `users` AS `t1` WHERE (`t1`.`age` < ? OR `t1`.`age` > ?) AND `t1`.`status` = ?",
-            [18, 60, "active"]
-        );
-    }
+    let stmt = SelectStatement::from(&*USERS)
+        .select(&id)
+        .where_(id.eq(5))
+        .where_(id.not_eq(10))
+        .where_(age.gt(20))
+        .where_(age.lt(100))
+        .where_(score.gte(60))
+        .where_(score.lte(96))
+        .where_(name.like("%John%"))
+        .where_(name.not_like("%Lucy%"))
+        .where_(country.in_(vec!["China", "Japan"]))
+        .where_(country.not_in(["USA", "England"]))
+        .where_(email.not_eq(None::<i32>))
+        .where_(ext.eq(None::<i32>));
 
-    #[test]
-    fn test_nested_not_precedence() {
-        let condition = !USERS
-            .column("status")
-            .eq("pending")
-            .or(USERS.column("status").eq("deleted"));
+    assert_mysql!(
+        &stmt,
+        "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`id` = ? AND `t1`.`id` <> ? AND `t1`.`age` > ? AND `t1`.`age` < ? AND `t1`.`score` >= ? AND `t1`.`score` <= ? AND `t1`.`name` LIKE ? AND `t1`.`name` NOT LIKE ? AND `t1`.`country` IN (?, ?) AND `t1`.`country` NOT IN (?, ?) AND `t1`.`email` IS NOT NULL AND `t1`.`ext` IS NULL",
+        [
+            5_i64, 10_i64, 20_i64, 100_i64, 60_i64, 96_i64, "%John%", "%Lucy%", "China", "Japan", "USA", "England"
+        ]
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "t1"."id" FROM "users" AS "t1" WHERE "t1"."id" = $1 AND "t1"."id" <> $2 AND "t1"."age" > $3 AND "t1"."age" < $4 AND "t1"."score" >= $5 AND "t1"."score" <= $6 AND "t1"."name" LIKE $7 AND "t1"."name" NOT LIKE $8 AND "t1"."country" IN ($9, $10) AND "t1"."country" NOT IN ($11, $12) AND "t1"."email" IS NOT NULL AND "t1"."ext" IS NULL"#,
+        [
+            5_i64, 10_i64, 20_i64, 100_i64, 60_i64, 96_i64, "%John%", "%Lucy%", "China", "Japan", "USA", "England"
+        ]
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "t1"."id" FROM "users" AS "t1" WHERE "t1"."id" = ? AND "t1"."id" <> ? AND "t1"."age" > ? AND "t1"."age" < ? AND "t1"."score" >= ? AND "t1"."score" <= ? AND "t1"."name" LIKE ? AND "t1"."name" NOT LIKE ? AND "t1"."country" IN (?, ?) AND "t1"."country" NOT IN (?, ?) AND "t1"."email" IS NOT NULL AND "t1"."ext" IS NULL"#,
+        [
+            5_i64, 10_i64, 20_i64, 100_i64, 60_i64, 96_i64, "%John%", "%Lucy%", "China", "Japan", "USA", "England"
+        ]
+    );
+}
 
-        let stmt = SelectStatement::from(&*USERS).where_(condition);
+#[test]
+fn test_where_logic() {
+    let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).where_(
+        USERS
+            .column("active")
+            .eq(true)
+            .and(
+                USERS
+                    .column("role")
+                    .eq("admin")
+                    .or(USERS.column("role").eq("superadmin")),
+            )
+            .and(!USERS.column("age").lt(18).or(!USERS.column("age").gt(12))),
+    );
+    assert_mysql!(
+        &stmt,
+        "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`active` = ? AND (`t1`.`role` = ? OR `t1`.`role` = ?) AND NOT (`t1`.`age` < ? OR NOT `t1`.`age` > ?)",
+        [true, "admin", "superadmin", 18, 12]
+    );
+}
 
-        // 因为 10 (OR) < 40 (NOT)，所以括号必须出现
-        assert_mysql!(
-            &stmt,
-            "SELECT * FROM `users` AS `t1` WHERE NOT (`t1`.`status` = ? OR `t1`.`status` = ?)",
-            ["pending", "deleted"]
-        );
-    }
+#[test]
+fn test_where_complex_precedence_auto_grouping() {
+    let age_limit = USERS.column("age").lt(18).or(USERS.column("age").gt(60));
+    let stmt = SelectStatement::from(&*USERS).where_(age_limit.and(USERS.column("status").eq("active")));
+    assert_mysql!(
+        &stmt,
+        "SELECT * FROM `users` AS `t1` WHERE (`t1`.`age` < ? OR `t1`.`age` > ?) AND `t1`.`status` = ?",
+        [18, 60, "active"]
+    );
+}
+
+#[test]
+fn test_where_nested_not_precedence() {
+    let condition = !USERS
+        .column("status")
+        .eq("pending")
+        .or(USERS.column("status").eq("deleted"));
+
+    let stmt = SelectStatement::from(&*USERS).where_(condition);
+
+    // 因为 10 (OR) < 40 (NOT)，所以括号必须出现
+    assert_mysql!(
+        &stmt,
+        "SELECT * FROM `users` AS `t1` WHERE NOT (`t1`.`status` = ? OR `t1`.`status` = ?)",
+        ["pending", "deleted"]
+    );
 }
 
 // #[test]
