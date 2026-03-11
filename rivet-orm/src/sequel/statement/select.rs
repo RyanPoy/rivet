@@ -125,4 +125,4 @@ impl SelectStatement {
 
 #[cfg(test)]
 #[path = "./select_test.rs"]
-mod select_test;
+mod tests;

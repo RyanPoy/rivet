@@ -1,7 +1,3 @@
-// ============================================================================
-// 辅助宏 - 用于验证 SQL 生成（仅在本测试文件内使用）
-// ============================================================================
-
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::literal::Literal;
 use crate::sequel::term::table::Table;
