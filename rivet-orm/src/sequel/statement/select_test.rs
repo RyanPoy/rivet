@@ -39,6 +39,7 @@ static USERS: LazyLock<Table> = LazyLock::new(|| Table::new("users"));
 static ORDERS: LazyLock<Table> = LazyLock::new(|| Table::new("orders"));
 static PRODUCTS: LazyLock<Table> = LazyLock::new(|| Table::new("products"));
 static CATEGORIES: LazyLock<Table> = LazyLock::new(|| Table::new("categories"));
+static COMPANIES: LazyLock<Table> = LazyLock::new(|| Table::new("companies"));
 
 #[test]
 fn test_select_all() {
@@ -180,97 +181,33 @@ fn test_where_nested_not_precedence() {
         ["pending", "deleted"]
     );
 }
+#[test]
+fn test_cross_join() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(vec![USERS.column("id"), PRODUCTS.column("name")])
+        .cross_join(&*PRODUCTS);
+    assert_mysql!(
+        &stmt,
+        "SELECT `t1`.`id`, `t2`.`name` FROM `users` AS `t1` CROSS JOIN `products` AS `t2`",
+        []
+    );
+}
 
-// #[test]
-// fn test_inner_join() {
-//     let stmt = SelectStatement::from(&*USERS)
-//         .select(vec![USERS.column("id"), ORDERS.column("total")])
-//         .join(&ORDERS, USERS.column("id").eq(ORDERS.column("user_id")));
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT `t1`.`id`, `t2`.`total` FROM `users` AS `t1` INNER JOIN `orders` AS `t2` ON `t1`.`id` = `t2`.`user_id`",
-//         []
-//     );
-// }
-//
-// #[test]
-// fn test_left_join() {
-//     let stmt = SelectStatement::from(&*USERS)
-//         .select(vec![USERS.column("id"), ORDERS.column("total")])
-//         .left_join(&ORDERS, USERS.column("id").eq(ORDERS.column("user_id")));
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT `t1`.`id`, `t2`.`total` FROM `users` AS `t1` LEFT JOIN `orders` AS `t2` ON `t1`.`id` = `t2`.`user_id`",
-//         []
-//     );
-// }
-//
-// #[test]
-// fn test_right_join() {
-//     let stmt = SelectStatement::from(&*USERS)
-//         .select(vec![USERS.column("id"), ORDERS.column("total")])
-//         .right_join(&ORDERS, USERS.column("id").eq(ORDERS.column("user_id")));
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT `t1`.`id`, `t2`.`total` FROM `users` AS `t1` RIGHT JOIN `orders` AS `t2` ON `t1`.`id` = `t2`.`user_id`",
-//         []
-//     );
-// }
-//
-// #[test]
-// fn test_full_join() {
-//     let stmt = SelectStatement::from(&*USERS)
-//         .select(vec![USERS.column("id"), ORDERS.column("total")])
-//         .full_join(&ORDERS, USERS.column("id").eq(ORDERS.column("user_id")));
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT `t1`.`id`, `t2`.`total` FROM `users` AS `t1` FULL JOIN `orders` AS `t2` ON `t1`.`id` = `t2`.`user_id`",
-//         []
-//     );
-// }
-//
-// #[test]
-// fn test_cross_join() {
-//     let stmt = SelectStatement::from(&*USERS)
-//         .select(vec![USERS.column("id"), PRODUCTS.column("name")])
-//         .cross_join(&PRODUCTS);
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT `t1`.`id`, `t2`.`name` FROM `users` AS `t1` CROSS JOIN `products` AS `t2`",
-//         []
-//     );
-// }
-//
-// #[test]
-// fn test_multiple_joins() {
-//     let stmt = SelectStatement::from(&*USERS)
-//         .select(vec![
-//             USERS.column("id"),
-//             ORDERS.column("total"),
-//             PRODUCTS.column("name"),
-//         ])
-//         .join(&ORDERS, USERS.column("id").eq(ORDERS.column("user_id")))
-//         .join(&PRODUCTS, ORDERS.column("product_id").eq(PRODUCTS.column("id")));
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT `t1`.`id`, `t2`.`total`, `t3`.`name` FROM `users` AS `t1` INNER JOIN `orders` AS `t2` ON `t1`.`id` = `t2`.`user_id` INNER JOIN `products` AS `t3` ON `t2`.`product_id` = `t3`.`id`",
-//         []
-//     );
-// }
-//
-// #[test]
-// fn test_mixed_join_types() {
-//     let stmt = SelectStatement::from(&*USERS)
-//         .select(vec![USERS.column("id"), ORDERS.column("total")])
-//         .left_join(&ORDERS, USERS.column("id").eq(ORDERS.column("user_id")))
-//         .inner_join(&PRODUCTS, ORDERS.column("product_id").eq(PRODUCTS.column("id")));
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT `t1`.`id`, `t2`.`total` FROM `users` AS `t1` LEFT JOIN `orders` AS `t2` ON `t1`.`id` = `t2`.`user_id` INNER JOIN `products` AS `t3` ON `t2`.`product_id` = `t3`.`id`",
-//         []
-//     );
-// }
-//
+#[test]
+fn test_join() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select([USERS.column("id"), ORDERS.column("total"), PRODUCTS.column("name")])
+        .join(&*ORDERS, USERS.column("id").eq(ORDERS.column("user_id")))
+        .left_join(&*PRODUCTS, ORDERS.column("id").eq(PRODUCTS.column("order_id")))
+        .right_join(&*CATEGORIES, CATEGORIES.column("id").eq(PRODUCTS.column("category_id")))
+        .full_join(&*COMPANIES, COMPANIES.column("id").eq(USERS.column("company_id")));
+    assert_mysql!(
+        &stmt,
+        "SELECT `t1`.`id`, `t2`.`total`, `t3`.`name` FROM `users` AS `t1` INNER JOIN `orders` AS `t2` ON `t1`.`id` = `t2`.`user_id` LEFT JOIN `products` AS `t3` ON `t2`.`id` = `t3`.`order_id` RIGHT JOIN `categories` AS `t4` ON `t4`.`id` = `t3`.`category_id` FULL JOIN `companies` AS `t5` ON `t5`.`id` = `t1`.`company_id`",
+        []
+    );
+}
+
 // // ============================================================================
 // // 4. DISTINCT 测试
 // // ============================================================================

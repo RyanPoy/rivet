@@ -215,7 +215,11 @@ impl<D: Dialect> Visitor<D> {
             JoinType::Right => self.push(" RIGHT JOIN "),
             JoinType::Full => self.push(" FULL JOIN "),
         };
-        self.visit_table(&join.right)
+        self.visit_table(&join.right);
+        if let Some(on) = &join.on {
+            self.push(" ON ").visit_expr(on, false, 0);
+        }
+        self
     }
 
     pub fn visit_select_item(&mut self, item: &SelectItem) -> &mut Self {
