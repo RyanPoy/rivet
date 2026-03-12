@@ -192,6 +192,18 @@ fn test_cross_join() {
         []
     );
 }
+#[test]
+fn test_cross_join_with_same_table() {
+    let u2 = Table::new("users");
+    let stmt = SelectStatement::from(&*USERS)
+        .select(vec![USERS.column("id"), u2.column("name")])
+        .cross_join(&u2);
+    assert_mysql!(
+        &stmt,
+        "SELECT `t1`.`id`, `t2`.`name` FROM `users` AS `t1` CROSS JOIN `users` AS `t2`",
+        []
+    );
+}
 
 #[test]
 fn test_join() {
