@@ -223,7 +223,9 @@ impl<D: Dialect> Visitor<D> {
             Expr::In { expr, list, negated } => self
                 .visit_expr(expr, inline, current_precedence)
                 .visit_binary_op(if *negated { &BinaryOp::NotIn } else { &BinaryOp::In })
-                .visit_expr_list(list, inline),
+                .push("(")
+                .visit_expr_list(list, inline, 0)
+                .push(")"),
             Expr::Unary { op, expr } => self.visit_unary_op(op).visit_expr(expr, inline, current_precedence),
             Expr::Func(f) => self.visit_func(f, inline),
             Expr::Subquery(sq) => self.visit_select_statement(sq),
@@ -260,8 +262,7 @@ impl<D: Dialect> Visitor<D> {
         }
     }
 
-    pub fn visit_expr_list(&mut self, expr_list: &Vec<Expr>, inline: bool) -> &mut Self {
-        self.push("(");
+    pub fn visit_expr_list(&mut self, expr_list: &Vec<Expr>, inline: bool, parent_precedence: i32) -> &mut Self {
         let mut iter = expr_list.iter();
         if let Some(expr) = iter.next() {
             self.visit_expr(expr, inline, 0);
@@ -269,7 +270,6 @@ impl<D: Dialect> Visitor<D> {
         for expr in iter {
             self.push(", ").visit_expr(expr, inline, 0);
         }
-        self.push(")");
         self
     }
 
@@ -285,23 +285,9 @@ impl<D: Dialect> Visitor<D> {
     pub fn visit_distinct(&mut self, distinct: &Distinct) -> &mut Self {
         match distinct {
             Distinct::None => self,
-            Distinct::Simple => self.push("DISTINCT "),
-            Distinct::On(cols) => {
-                if self.dialect.caps().distinct_on {
-                    self.push("DISTINCT ON (");
-                    let mut iter = cols.iter();
-                    if let Some(item) = iter.next() {
-                        self.visit_column_ref(item);
-                        for item in iter {
-                            self.push(", ");
-                            self.visit_column_ref(item);
-                        }
-                    }
-                    self.push(") ")
-                } else {
-                    self.push("DISTINCT ")
-                }
-            },
+            Distinct::All => self.push("DISTINCT "),
+            Distinct::On(_) if !self.dialect.caps().distinct_on => self.push("DISTINCT "),
+            Distinct::On(cols) => self.push("DISTINCT ON (").visit_expr_list(cols, true, 0).push(") "),
         }
     }
 

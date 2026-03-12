@@ -1,8 +1,8 @@
-use crate::sequel::term::column::Column;
+use crate::sequel::term::expr::Expr;
 
 #[derive(Clone, Debug)]
 pub enum Distinct {
     None,
-    Simple,
-    On(Vec<Column>),
+    All,
+    On(Vec<Expr>),
 }

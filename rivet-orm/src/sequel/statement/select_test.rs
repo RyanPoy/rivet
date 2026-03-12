@@ -221,36 +221,36 @@ fn test_join() {
     );
 }
 
-// ============================================================================
-// 4. DISTINCT 测试
-// ============================================================================
-//
-// #[test]
-// fn test_distinct() {
-//     let stmt = SelectStatement::from(&*USERS).select(USERS.column("city")).distinct();
-//     assert_mysql!(&stmt, "SELECT DISTINCT `users0`.`city` FROM `users` AS `users0`", []);
-//     assert_pg!(&stmt, r#"SELECT DISTINCT "users0"."city" FROM "users" AS "users0""#, []);
-// }
-//
-// #[test]
-// fn test_distinct_on_postgres() {
-//     let stmt = SelectStatement::from(&*USERS)
-//         .select(vec![USERS.column("city"), USERS.column("name")])
-//         .distinct_on(vec![USERS.column("city")]);
-//     // PostgreSQL 支持 DISTINCT ON
-//     assert_pg!(
-//         &stmt,
-//         r#"SELECT DISTINCT ON ("t1"."city") "t1"."city", "t1"."name" FROM "users" AS "t1""#,
-//         []
-//     );
-//     // MySQL/SQLite 会退化为普通 DISTINCT
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT DISTINCT `t1`.`city`, `t1`.`name` FROM `users` AS `t1`",
-//         []
-//     );
-// }
-//
+#[test]
+fn test_distinct() {
+    let stmt = SelectStatement::from(&*USERS).select(USERS.column("city")).distinct();
+    assert_mysql!(&stmt, "SELECT DISTINCT `users0`.`city` FROM `users` AS `users0`", []);
+    assert_pg!(&stmt, r#"SELECT DISTINCT "users0"."city" FROM "users" AS "users0""#, []);
+}
+
+#[test]
+fn test_distinct_on() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(vec![USERS.column("city"), USERS.column("name")])
+        .distinct_on(vec![USERS.column("city"), USERS.column("age")]);
+
+    assert_mysql!(
+        &stmt,
+        "SELECT DISTINCT `users0`.`city`, `users0`.`name` FROM `users` AS `users0`",
+        []
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT DISTINCT ON ("users0"."city", "users0"."age") "users0"."city", "users0"."name" FROM "users" AS "users0""#,
+        []
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT DISTINCT "users0"."city", "users0"."name" FROM "users" AS "users0""#,
+        []
+    );
+}
+
 // // ============================================================================
 // // 5. LIMIT 和 OFFSET 测试
 // // ============================================================================
@@ -258,7 +258,7 @@ fn test_join() {
 // #[test]
 // fn test_limit_only() {
 //     let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).limit(10);
-//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1` LIMIT 10", []);
+//     assert_mysql!(&stmt, "SELECT `users0`.`id` FROM `users` AS `t1` LIMIT 10", []);
 //     assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" LIMIT 10"#, []);
 //     assert_sqlite!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" LIMIT 10"#, []);
 // }
@@ -736,29 +736,4 @@ fn test_abs_ceil_floor() {
 //     assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" LIMIT 10 OFFSET 5"#, []);
 //     assert_sqlite!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" LIMIT 10 OFFSET 5"#, []);
 // }
-//
-// #[test]
-// fn test_postgresql_distinct_on() {
-//     let stmt = SelectStatement::from(&*USERS)
-//         .select(vec![USERS.column("city"), USERS.column("name")])
-//         .distinct_on(vec![USERS.column("city")]);
-//
-//     // PostgreSQL 支持 DISTINCT ON
-//     assert_pg!(
-//         &stmt,
-//         r#"SELECT DISTINCT ON ("t1"."city") "t1"."city", "t1"."name" FROM "users" AS "t1""#,
-//         []
-//     );
-//
-//     // MySQL/SQLite 会退化为普通 DISTINCT
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT DISTINCT `t1`.`city`, `t1`.`name` FROM `users` AS `t1`",
-//         []
-//     );
-//     assert_sqlite!(
-//         &stmt,
-//         r#"SELECT DISTINCT "t1"."city", "t1"."name" FROM "users" AS "t1""#,
-//         []
-//     );
-// }
+

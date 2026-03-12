@@ -1,6 +1,5 @@
 pub mod calendar;
 pub mod column;
-pub mod distinct;
 pub mod expr;
 pub mod func;
 pub mod index;
@@ -10,3 +9,4 @@ pub mod lock;
 pub mod ops;
 pub mod select_item;
 pub mod table;
+pub mod distinct;

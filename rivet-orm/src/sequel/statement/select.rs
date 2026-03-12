@@ -1,4 +1,3 @@
-use crate::sequel::term::column::Column;
 use crate::sequel::term::distinct::Distinct;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::index::Index;
@@ -35,10 +34,15 @@ impl SelectStatement {
         }
     }
     pub fn distinct(mut self) -> Self {
-        self.distinct = Distinct::Simple;
+        self.distinct = Distinct::All;
         self
     }
-    pub fn distinct_on(mut self, cols: Vec<Column>) -> Self {
+    pub fn distinct_on<T, I>(mut self, cols: I) -> Self
+    where
+        T: Into<Expr>,
+        I: IntoIterator<Item = T>,
+    {
+        let cols = cols.into_iter().map(|c| c.into()).collect();
         self.distinct = Distinct::On(cols);
         self
     }
