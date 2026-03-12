@@ -10,44 +10,9 @@ use crate::sequel::term::lock::{Lock, Wait};
 use crate::sequel::term::ops::{BinaryOp, UnaryOp};
 use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::{Table, TableInner};
+use crate::sequel::visitor::alias_cache::AliasCache;
 use crate::sequel::visitor::builder::Builder;
 use crate::sequel::visitor::dialect::{Dialect, MySQL, PostgreSQL, SQLite};
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
-struct AliasCache {
-    all_alias: HashMap<String, usize>,
-    mapping: HashMap<usize, (String, Option<String>)>,
-}
-impl AliasCache {
-    fn new() -> Self {
-        Self {
-            all_alias: HashMap::new(),
-            mapping: HashMap::new(),
-        }
-    }
-    fn add(&mut self, table_inner: &Arc<TableInner>, name: String, default_alias: Option<String>) {
-        let addr = Arc::as_ptr(table_inner) as usize;
-        if !self.mapping.contains_key(&addr) {
-            let mut n = *self.all_alias.get(&name).unwrap_or(&0);
-            self.mapping.insert(addr, (format!("{}{}", name, n), default_alias));
-            self.all_alias.insert(name, n + 1);
-        }
-    }
-
-    fn alias_of(&self, table_inner: &Arc<TableInner>) -> Option<String> {
-        let addr = Arc::as_ptr(table_inner) as usize;
-        if let Some((name, alias)) = self.mapping.get(&addr) {
-            if let Some(a) = alias {
-                alias.clone()
-            } else {
-                Some(name.clone())
-            }
-        } else {
-            None
-        }
-    }
-}
-
 pub fn mysql() -> Visitor<MySQL> {
     Visitor::new(MySQL {})
 }

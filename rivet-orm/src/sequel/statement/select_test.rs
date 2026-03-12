@@ -1,4 +1,5 @@
 use crate::sequel::statement::select::SelectStatement;
+use crate::sequel::term::func::{abs, avg, ceil, count, count_all, floor, lower, max, min, sqrt, sum, upper};
 use crate::sequel::term::literal::Literal;
 use crate::sequel::term::table::Table;
 use crate::sequel::visitor::visitor;
@@ -220,9 +221,9 @@ fn test_join() {
     );
 }
 
-// // ============================================================================
-// // 4. DISTINCT 测试
-// // ============================================================================
+// ============================================================================
+// 4. DISTINCT 测试
+// ============================================================================
 //
 // #[test]
 // fn test_distinct() {
@@ -283,82 +284,55 @@ fn test_join() {
 //     assert_sqlite!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" LIMIT 10 OFFSET 20"#, []);
 // }
 //
-// // ============================================================================
-// // 6. 聚合函数测试
-// // ============================================================================
-//
-// #[test]
-// fn test_count_all() {
-//     let stmt = SelectStatement::from(&*USERS).select(count_all());
-//     assert_mysql!(&stmt, "SELECT COUNT(*) FROM `users` AS `t1`", []);
-//     assert_pg!(&stmt, r#"SELECT COUNT(*) FROM "users" AS "t1""#, []);
-//     assert_sqlite!(&stmt, r#"SELECT COUNT(*) FROM "users" AS "t1""#, []);
-// }
-//
-// #[test]
-// fn test_count_column() {
-//     let stmt = SelectStatement::from(&*USERS).select(count(USERS.column("email")));
-//     assert_mysql!(&stmt, "SELECT COUNT(`t1`.`email`) FROM `users` AS `t1`", []);
-//     assert_pg!(&stmt, r#"SELECT COUNT("t1"."email") FROM "users" AS "t1""#, []);
-// }
-//
+
+// ============================================================================
+// 6. 聚合函数测试
+// ============================================================================
+
+#[test]
+fn test_count_all() {
+    let stmt = SelectStatement::from(&*USERS).select(count_all());
+    assert_mysql!(&stmt, "SELECT COUNT(*) FROM `users` AS `users0`", []);
+    assert_pg!(&stmt, r#"SELECT COUNT(*) FROM "users" AS "users0""#, []);
+    assert_sqlite!(&stmt, r#"SELECT COUNT(*) FROM "users" AS "users0""#, []);
+}
+
+#[test]
+fn test_count_column() {
+    let stmt = SelectStatement::from(&*USERS).select(count(USERS.column("email")));
+    assert_mysql!(&stmt, "SELECT COUNT(`users0`.`email`) FROM `users` AS `users0`", []);
+    assert_pg!(&stmt, r#"SELECT COUNT("users0"."email") FROM "users" AS "users0""#, []);
+    assert_pg!(&stmt, r#"SELECT COUNT("users0"."email") FROM "users" AS "users0""#, []);
+}
+
 // #[test]
 // fn test_count_distinct() {
 //     let stmt = SelectStatement::from(&*USERS).select(count(USERS.column("city").distinct()));
 //     assert_mysql!(&stmt, "SELECT COUNT(DISTINCT `t1`.`city`) FROM `users` AS `t1`", []);
 //     assert_pg!(&stmt, r#"SELECT COUNT(DISTINCT "t1"."city") FROM "users" AS "t1""#, []);
 // }
-//
-// #[test]
-// fn test_sum_avg() {
-//     let stmt = SelectStatement::from(&*ORDERS).select(vec![sum(ORDERS.column("total")), avg(ORDERS.column("price"))]);
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT SUM(`t1`.`total`), AVG(`t1`.`price`) FROM `orders` AS `t1`",
-//         []
-//     );
-// }
-//
-// #[test]
-// fn test_max_min() {
-//     let stmt = SelectStatement::from(&*ORDERS).select(vec![max(ORDERS.column("total")), min(ORDERS.column("price"))]);
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT MAX(`t1`.`total`), MIN(`t1`.`price`) FROM `orders` AS `t1`",
-//         []
-//     );
-// }
-//
-// #[test]
-// fn test_upper_lower() {
-//     let stmt = SelectStatement::from(&*USERS).select(vec![upper(USERS.column("name")), lower(USERS.column("email"))]);
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT UPPER(`t1`.`name`), LOWER(`t1`.`email`) FROM `users` AS `t1`",
-//         []
-//     );
-// }
-//
-// #[test]
-// fn test_abs_ceil_floor() {
-//     let stmt = SelectStatement::from(&*ORDERS).select(vec![
-//         abs(ORDERS.column("discount")),
-//         ceil(ORDERS.column("price")),
-//         floor(ORDERS.column("tax")),
-//     ]);
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT ABS(`t1`.`discount`), CEIL(`t1`.`price`), FLOOR(`t1`.`tax`) FROM `orders` AS `t1`",
-//         []
-//     );
-// }
-//
-// #[test]
-// fn test_sqrt() {
-//     let stmt = SelectStatement::from(&*ORDERS).select(sqrt(ORDERS.column("quantity")));
-//     assert_mysql!(&stmt, "SELECT SQRT(`t1`.`quantity`) FROM `orders` AS `t1`", []);
-// }
-//
+
+#[test]
+fn test_abs_ceil_floor() {
+    let stmt = SelectStatement::from(&*ORDERS).select(vec![
+        sum(ORDERS.column("total")),
+        avg(ORDERS.column("price")),
+        max(ORDERS.column("total")),
+        min(ORDERS.column("price")),
+        abs(ORDERS.column("discount")),
+        ceil(ORDERS.column("price")),
+        floor(ORDERS.column("tax")),
+        lower(ORDERS.column("name")),
+        upper(ORDERS.column("brand_name")),
+        sqrt(ORDERS.column("quantity")),
+    ]);
+    assert_mysql!(
+        &stmt,
+        "SELECT SUM(`orders0`.`total`), AVG(`orders0`.`price`), MAX(`orders0`.`total`), MIN(`orders0`.`price`), ABS(`orders0`.`discount`), CEIL(`orders0`.`price`), FLOOR(`orders0`.`tax`), LOWER(`orders0`.`name`), UPPER(`orders0`.`brand_name`), SQRT(`orders0`.`quantity`) FROM `orders` AS `orders0`",
+        []
+    );
+}
+
 // // ============================================================================
 // // 7. 自定义函数测试
 // // ============================================================================
