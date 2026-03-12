@@ -1,4 +1,5 @@
 use crate::sequel::statement::select::SelectStatement;
+use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::{abs, avg, ceil, count, count_all, floor, lower, max, min, sqrt, sum, upper};
 use crate::sequel::term::literal::Literal;
 use crate::sequel::term::table::Table;
@@ -226,13 +227,17 @@ fn test_distinct() {
     let stmt = SelectStatement::from(&*USERS).select(USERS.column("city")).distinct();
     assert_mysql!(&stmt, "SELECT DISTINCT `users0`.`city` FROM `users` AS `users0`", []);
     assert_pg!(&stmt, r#"SELECT DISTINCT "users0"."city" FROM "users" AS "users0""#, []);
+    assert_sqlite!(&stmt, r#"SELECT DISTINCT "users0"."city" FROM "users" AS "users0""#, []);
 }
 
 #[test]
 fn test_distinct_on() {
     let stmt = SelectStatement::from(&*USERS)
         .select(vec![USERS.column("city"), USERS.column("name")])
-        .distinct_on(vec![USERS.column("city"), USERS.column("age")]);
+        .distinct_on(vec![
+            Expr::from(upper(USERS.column("city"))),
+            USERS.column("age").into(),
+        ]);
 
     assert_mysql!(
         &stmt,
@@ -241,7 +246,7 @@ fn test_distinct_on() {
     );
     assert_pg!(
         &stmt,
-        r#"SELECT DISTINCT ON ("users0"."city", "users0"."age") "users0"."city", "users0"."name" FROM "users" AS "users0""#,
+        r#"SELECT DISTINCT ON (UPPER("users0"."city"), "users0"."age") "users0"."city", "users0"."name" FROM "users" AS "users0""#,
         []
     );
     assert_sqlite!(
@@ -299,18 +304,34 @@ fn test_count_all() {
 
 #[test]
 fn test_count_column() {
-    let stmt = SelectStatement::from(&*USERS).select(count(USERS.column("email")));
+    let c = USERS.column("email");
+    let count = count(c);
+    let expr: Expr = count.into();
+    let stmt = SelectStatement::from(&*USERS).select(expr);
     assert_mysql!(&stmt, "SELECT COUNT(`users0`.`email`) FROM `users` AS `users0`", []);
     assert_pg!(&stmt, r#"SELECT COUNT("users0"."email") FROM "users" AS "users0""#, []);
-    assert_pg!(&stmt, r#"SELECT COUNT("users0"."email") FROM "users" AS "users0""#, []);
+    assert_sqlite!(&stmt, r#"SELECT COUNT("users0"."email") FROM "users" AS "users0""#, []);
 }
 
-// #[test]
-// fn test_count_distinct() {
-//     let stmt = SelectStatement::from(&*USERS).select(count(USERS.column("city").distinct()));
-//     assert_mysql!(&stmt, "SELECT COUNT(DISTINCT `t1`.`city`) FROM `users` AS `t1`", []);
-//     assert_pg!(&stmt, r#"SELECT COUNT(DISTINCT "t1"."city") FROM "users" AS "t1""#, []);
-// }
+#[test]
+fn test_count_distinct() {
+    let stmt = SelectStatement::from(&*USERS).select(count(USERS.column("city")).distinct());
+    assert_mysql!(
+        &stmt,
+        "SELECT COUNT(DISTINCT `users0`.`city`) FROM `users` AS `users0`",
+        []
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT COUNT(DISTINCT "users0"."city") FROM "users" AS "users0""#,
+        []
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT COUNT(DISTINCT "users0"."city") FROM "users" AS "users0""#,
+        []
+    );
+}
 
 #[test]
 fn test_abs_ceil_floor() {
@@ -736,4 +757,3 @@ fn test_abs_ceil_floor() {
 //     assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" LIMIT 10 OFFSET 5"#, []);
 //     assert_sqlite!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" LIMIT 10 OFFSET 5"#, []);
 // }
-

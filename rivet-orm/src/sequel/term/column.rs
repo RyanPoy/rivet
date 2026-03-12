@@ -1,5 +1,4 @@
 use crate::sequel::term::expr::Expr;
-use crate::sequel::term::func::FuncArg;
 use crate::sequel::term::literal::Literal;
 use crate::sequel::term::ops::BinaryOp;
 use crate::sequel::term::select_item::SelectItem;
@@ -30,10 +29,6 @@ impl Column {
             expr: Expr::Column(self),
             alias: Some(alias.into()),
         }
-    }
-
-    pub fn distinct(self) -> FuncArg {
-        Expr::Column(self).distinct()
     }
 
     pub fn eq<T>(&self, rhs: T) -> Expr

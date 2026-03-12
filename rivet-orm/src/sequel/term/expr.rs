@@ -76,13 +76,6 @@ impl Expr {
         }
     }
 
-    pub fn distinct(self) -> FuncArg {
-        FuncArg::Expr {
-            expr: self,
-            distinct: true,
-        }
-    }
-
     pub fn and<T>(self, rhs: T) -> Expr
     where
         T: Into<Expr>,
@@ -124,6 +117,11 @@ impl From<SelectStatement> for Expr {
 impl From<Column> for Expr {
     fn from(value: Column) -> Self {
         Expr::Column(value)
+    }
+}
+impl From<Func> for Expr {
+    fn from(value: Func) -> Self {
+        Expr::Func(value)
     }
 }
 impl<T> From<T> for Expr

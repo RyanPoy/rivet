@@ -60,7 +60,7 @@ impl<D: Dialect> Visitor<D> {
             Expr::Func(func) => {
                 for arg in &func.args {
                     match arg {
-                        FuncArg::Expr { expr, .. } => self.register_table_from_expr(expr),
+                        FuncArg::Expr(expr) => self.register_table_from_expr(expr),
                         FuncArg::Subquery(sq) => self.register_tables(sq),
                         FuncArg::Wildcard => {},
                     }
@@ -238,6 +238,10 @@ impl<D: Dialect> Visitor<D> {
 
     pub fn visit_func(&mut self, f: &Func, inline: bool) -> &mut Self {
         self.push(&f.name).push("(");
+        if f.distinct {
+            self.push("DISTINCT ");
+        }
+
         let mut iter = f.args.iter();
         if let Some(arg) = iter.next() {
             self.visit_func_arg(arg, inline);
@@ -251,12 +255,7 @@ impl<D: Dialect> Visitor<D> {
 
     pub fn visit_func_arg(&mut self, arg: &FuncArg, inline: bool) -> &mut Self {
         match arg {
-            FuncArg::Expr { expr, distinct } => {
-                if *distinct {
-                    self.push("DISTINCT ");
-                }
-                self.visit_expr(expr, inline, 0)
-            },
+            FuncArg::Expr(expr) => self.visit_expr(expr, inline, 0),
             FuncArg::Wildcard => self.push("*"),
             FuncArg::Subquery(sq) => self.visit_select_statement(sq),
         }
