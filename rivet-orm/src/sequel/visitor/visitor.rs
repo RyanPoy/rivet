@@ -12,8 +12,41 @@ use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::{Table, TableInner};
 use crate::sequel::visitor::builder::Builder;
 use crate::sequel::visitor::dialect::{Dialect, MySQL, PostgreSQL, SQLite};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+struct AliasCache {
+    all_alias: HashMap<String, usize>,
+    mapping: HashMap<usize, (String, Option<String>)>,
+}
+impl AliasCache {
+    fn new() -> Self {
+        Self {
+            all_alias: HashMap::new(),
+            mapping: HashMap::new(),
+        }
+    }
+    fn add(&mut self, table_inner: &Arc<TableInner>, name: String, default_alias: Option<String>) {
+        let addr = Arc::as_ptr(table_inner) as usize;
+        if !self.mapping.contains_key(&addr) {
+            let mut n = *self.all_alias.get(&name).unwrap_or(&0);
+            self.mapping.insert(addr, (format!("{}{}", name, n), default_alias));
+            self.all_alias.insert(name, n + 1);
+        }
+    }
+
+    fn alias_of(&self, table_inner: &Arc<TableInner>) -> Option<String> {
+        let addr = Arc::as_ptr(table_inner) as usize;
+        if let Some((name, alias)) = self.mapping.get(&addr) {
+            if let Some(a) = alias {
+                alias.clone()
+            } else {
+                Some(name.clone())
+            }
+        } else {
+            None
+        }
+    }
+}
 
 pub fn mysql() -> Visitor<MySQL> {
     Visitor::new(MySQL {})
@@ -30,7 +63,7 @@ pub fn sqlite() -> Visitor<SQLite> {
 pub struct Visitor<D> {
     builder: Builder,
     dialect: D,
-    alias_mapping: HashMap<usize, (usize, Option<String>)>,
+    alias_cache: AliasCache,
 }
 
 impl<D: Dialect> Visitor<D> {
@@ -38,7 +71,7 @@ impl<D: Dialect> Visitor<D> {
         Self {
             builder: Builder::new(),
             dialect,
-            alias_mapping: HashMap::new(),
+            alias_cache: AliasCache::new(),
         }
     }
 
@@ -84,15 +117,9 @@ impl<D: Dialect> Visitor<D> {
     }
     fn register_table_inner(&mut self, table: &Table) {
         let inner = &table.inner;
-        let alias = &table.alias;
-
         match &inner.as_ref() {
             TableInner::Named(name) => {
-                let addr = Arc::as_ptr(inner) as usize;
-                if !self.alias_mapping.contains_key(&addr) {
-                    let n = self.alias_mapping.len() + 1;
-                    self.alias_mapping.insert(addr, (n, alias.clone()));
-                }
+                self.alias_cache.add(inner, name.clone(), table.alias.clone());
             },
             TableInner::Subquery(sq) => {
                 self.register_tables(sq);
@@ -103,19 +130,6 @@ impl<D: Dialect> Visitor<D> {
                 self.register_table_inner(&join.right);
             },
         };
-    }
-
-    fn alias_of(&self, table_inner: &Arc<TableInner>) -> Option<String> {
-        let addr = Arc::as_ptr(table_inner) as usize;
-        if let Some((num, alias)) = self.alias_mapping.get(&addr) {
-            if let Some(a) = alias {
-                alias.clone()
-            } else {
-                Some(format!("t{}", num))
-            }
-        } else {
-            None
-        }
     }
 
     pub fn visit_select_statement(&mut self, select_stmt: &SelectStatement) -> &mut Self {
@@ -202,7 +216,7 @@ impl<D: Dialect> Visitor<D> {
             TableInner::Subquery(subquery) => self.push("(").visit_select_statement(subquery).push(")"),
             TableInner::Join(join) => self.visit_join(join),
         };
-        let alias = self.alias_of(&table.inner);
+        let alias = self.alias_cache.alias_of(&table.inner);
         self.visit_alias(&alias)
     }
 
@@ -328,7 +342,7 @@ impl<D: Dialect> Visitor<D> {
 
     pub fn visit_column_ref(&mut self, col: &Column) -> &mut Self {
         if let Some(table) = &col.table_inner {
-            let alias = self.alias_of(table);
+            let alias = self.alias_cache.alias_of(table);
             if let Some(alias) = alias {
                 self.push_quote(&alias).push(".");
             }

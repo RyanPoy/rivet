@@ -44,17 +44,17 @@ static COMPANIES: LazyLock<Table> = LazyLock::new(|| Table::new("companies"));
 #[test]
 fn test_select_all() {
     let stmt = SelectStatement::from(&*USERS);
-    assert_mysql!(&stmt, "SELECT * FROM `users` AS `t1`", []);
-    assert_pg!(&stmt, r#"SELECT * FROM "users" AS "t1""#, []);
-    assert_sqlite!(&stmt, r#"SELECT * FROM "users" AS "t1""#, []);
+    assert_mysql!(&stmt, "SELECT * FROM `users` AS `users0`", []);
+    assert_pg!(&stmt, r#"SELECT * FROM "users" AS "users0""#, []);
+    assert_sqlite!(&stmt, r#"SELECT * FROM "users" AS "users0""#, []);
 }
 
 #[test]
 fn test_select_single_column() {
     let stmt = SelectStatement::from(&*USERS).select(USERS.column("id"));
-    assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1`", []);
-    assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1""#, []);
-    assert_sqlite!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1""#, []);
+    assert_mysql!(&stmt, "SELECT `users0`.`id` FROM `users` AS `users0`", []);
+    assert_pg!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#, []);
+    assert_sqlite!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#, []);
 }
 
 #[test]
@@ -62,17 +62,17 @@ fn test_select_multiple_columns() {
     let stmt = SelectStatement::from(&*USERS).select(USERS.columns(["id", "name", "email"]));
     assert_mysql!(
         &stmt,
-        "SELECT `t1`.`id`, `t1`.`name`, `t1`.`email` FROM `users` AS `t1`",
+        "SELECT `users0`.`id`, `users0`.`name`, `users0`.`email` FROM `users` AS `users0`",
         []
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "t1"."id", "t1"."name", "t1"."email" FROM "users" AS "t1""#,
+        r#"SELECT "users0"."id", "users0"."name", "users0"."email" FROM "users" AS "users0""#,
         []
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "t1"."id", "t1"."name", "t1"."email" FROM "users" AS "t1""#,
+        r#"SELECT "users0"."id", "users0"."name", "users0"."email" FROM "users" AS "users0""#,
         []
     );
 }
@@ -80,9 +80,9 @@ fn test_select_multiple_columns() {
 #[test]
 fn test_select_with_literal() {
     let stmt = SelectStatement::from(&*USERS).select([Literal::from(1), Literal::from("hello")]);
-    assert_mysql!(&stmt, "SELECT 1, 'hello' FROM `users` AS `t1`", []);
-    assert_pg!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "t1""#, []);
-    assert_sqlite!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "t1""#, []);
+    assert_mysql!(&stmt, "SELECT 1, 'hello' FROM `users` AS `users0`", []);
+    assert_pg!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "users0""#, []);
+    assert_sqlite!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "users0""#, []);
 }
 
 #[test]
@@ -112,21 +112,21 @@ fn test_where() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`id` = ? AND `t1`.`id` <> ? AND `t1`.`age` > ? AND `t1`.`age` < ? AND `t1`.`score` >= ? AND `t1`.`score` <= ? AND `t1`.`name` LIKE ? AND `t1`.`name` NOT LIKE ? AND `t1`.`country` IN (?, ?) AND `t1`.`country` NOT IN (?, ?) AND `t1`.`email` IS NOT NULL AND `t1`.`ext` IS NULL",
+        "SELECT `users0`.`id` FROM `users` AS `users0` WHERE `users0`.`id` = ? AND `users0`.`id` <> ? AND `users0`.`age` > ? AND `users0`.`age` < ? AND `users0`.`score` >= ? AND `users0`.`score` <= ? AND `users0`.`name` LIKE ? AND `users0`.`name` NOT LIKE ? AND `users0`.`country` IN (?, ?) AND `users0`.`country` NOT IN (?, ?) AND `users0`.`email` IS NOT NULL AND `users0`.`ext` IS NULL",
         [
             5_i64, 10_i64, 20_i64, 100_i64, 60_i64, 96_i64, "%John%", "%Lucy%", "China", "Japan", "USA", "England"
         ]
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "t1"."id" FROM "users" AS "t1" WHERE "t1"."id" = $1 AND "t1"."id" <> $2 AND "t1"."age" > $3 AND "t1"."age" < $4 AND "t1"."score" >= $5 AND "t1"."score" <= $6 AND "t1"."name" LIKE $7 AND "t1"."name" NOT LIKE $8 AND "t1"."country" IN ($9, $10) AND "t1"."country" NOT IN ($11, $12) AND "t1"."email" IS NOT NULL AND "t1"."ext" IS NULL"#,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE "users0"."id" = $1 AND "users0"."id" <> $2 AND "users0"."age" > $3 AND "users0"."age" < $4 AND "users0"."score" >= $5 AND "users0"."score" <= $6 AND "users0"."name" LIKE $7 AND "users0"."name" NOT LIKE $8 AND "users0"."country" IN ($9, $10) AND "users0"."country" NOT IN ($11, $12) AND "users0"."email" IS NOT NULL AND "users0"."ext" IS NULL"#,
         [
             5_i64, 10_i64, 20_i64, 100_i64, 60_i64, 96_i64, "%John%", "%Lucy%", "China", "Japan", "USA", "England"
         ]
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "t1"."id" FROM "users" AS "t1" WHERE "t1"."id" = ? AND "t1"."id" <> ? AND "t1"."age" > ? AND "t1"."age" < ? AND "t1"."score" >= ? AND "t1"."score" <= ? AND "t1"."name" LIKE ? AND "t1"."name" NOT LIKE ? AND "t1"."country" IN (?, ?) AND "t1"."country" NOT IN (?, ?) AND "t1"."email" IS NOT NULL AND "t1"."ext" IS NULL"#,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE "users0"."id" = ? AND "users0"."id" <> ? AND "users0"."age" > ? AND "users0"."age" < ? AND "users0"."score" >= ? AND "users0"."score" <= ? AND "users0"."name" LIKE ? AND "users0"."name" NOT LIKE ? AND "users0"."country" IN (?, ?) AND "users0"."country" NOT IN (?, ?) AND "users0"."email" IS NOT NULL AND "users0"."ext" IS NULL"#,
         [
             5_i64, 10_i64, 20_i64, 100_i64, 60_i64, 96_i64, "%John%", "%Lucy%", "China", "Japan", "USA", "England"
         ]
@@ -149,7 +149,7 @@ fn test_where_logic() {
     );
     assert_mysql!(
         &stmt,
-        "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`active` = ? AND (`t1`.`role` = ? OR `t1`.`role` = ?) AND NOT (`t1`.`age` < ? OR NOT `t1`.`age` > ?)",
+        "SELECT `users0`.`id` FROM `users` AS `users0` WHERE `users0`.`active` = ? AND (`users0`.`role` = ? OR `users0`.`role` = ?) AND NOT (`users0`.`age` < ? OR NOT `users0`.`age` > ?)",
         [true, "admin", "superadmin", 18, 12]
     );
 }
@@ -160,7 +160,7 @@ fn test_where_complex_precedence_auto_grouping() {
     let stmt = SelectStatement::from(&*USERS).where_(age_limit.and(USERS.column("status").eq("active")));
     assert_mysql!(
         &stmt,
-        "SELECT * FROM `users` AS `t1` WHERE (`t1`.`age` < ? OR `t1`.`age` > ?) AND `t1`.`status` = ?",
+        "SELECT * FROM `users` AS `users0` WHERE (`users0`.`age` < ? OR `users0`.`age` > ?) AND `users0`.`status` = ?",
         [18, 60, "active"]
     );
 }
@@ -177,7 +177,7 @@ fn test_where_nested_not_precedence() {
     // 因为 10 (OR) < 40 (NOT)，所以括号必须出现
     assert_mysql!(
         &stmt,
-        "SELECT * FROM `users` AS `t1` WHERE NOT (`t1`.`status` = ? OR `t1`.`status` = ?)",
+        "SELECT * FROM `users` AS `users0` WHERE NOT (`users0`.`status` = ? OR `users0`.`status` = ?)",
         ["pending", "deleted"]
     );
 }
@@ -188,7 +188,7 @@ fn test_cross_join() {
         .cross_join(&*PRODUCTS);
     assert_mysql!(
         &stmt,
-        "SELECT `t1`.`id`, `t2`.`name` FROM `users` AS `t1` CROSS JOIN `products` AS `t2`",
+        "SELECT `users0`.`id`, `products0`.`name` FROM `users` AS `users0` CROSS JOIN `products` AS `products0`",
         []
     );
 }
@@ -200,7 +200,7 @@ fn test_cross_join_with_same_table() {
         .cross_join(&u2);
     assert_mysql!(
         &stmt,
-        "SELECT `t1`.`id`, `t2`.`name` FROM `users` AS `t1` CROSS JOIN `users` AS `t2`",
+        "SELECT `users0`.`id`, `users1`.`name` FROM `users` AS `users0` CROSS JOIN `users` AS `users1`",
         []
     );
 }
@@ -215,7 +215,7 @@ fn test_join() {
         .full_join(&*COMPANIES, COMPANIES.column("id").eq(USERS.column("company_id")));
     assert_mysql!(
         &stmt,
-        "SELECT `t1`.`id`, `t2`.`total`, `t3`.`name` FROM `users` AS `t1` INNER JOIN `orders` AS `t2` ON `t1`.`id` = `t2`.`user_id` LEFT JOIN `products` AS `t3` ON `t2`.`id` = `t3`.`order_id` RIGHT JOIN `categories` AS `t4` ON `t4`.`id` = `t3`.`category_id` FULL JOIN `companies` AS `t5` ON `t5`.`id` = `t1`.`company_id`",
+        "SELECT `users0`.`id`, `orders0`.`total`, `products0`.`name` FROM `users` AS `users0` INNER JOIN `orders` AS `orders0` ON `users0`.`id` = `orders0`.`user_id` LEFT JOIN `products` AS `products0` ON `orders0`.`id` = `products0`.`order_id` RIGHT JOIN `categories` AS `categories0` ON `categories0`.`id` = `products0`.`category_id` FULL JOIN `companies` AS `companies0` ON `companies0`.`id` = `users0`.`company_id`",
         []
     );
 }
@@ -227,8 +227,8 @@ fn test_join() {
 // #[test]
 // fn test_distinct() {
 //     let stmt = SelectStatement::from(&*USERS).select(USERS.column("city")).distinct();
-//     assert_mysql!(&stmt, "SELECT DISTINCT `t1`.`city` FROM `users` AS `t1`", []);
-//     assert_pg!(&stmt, r#"SELECT DISTINCT "t1"."city" FROM "users" AS "t1""#, []);
+//     assert_mysql!(&stmt, "SELECT DISTINCT `users0`.`city` FROM `users` AS `users0`", []);
+//     assert_pg!(&stmt, r#"SELECT DISTINCT "users0"."city" FROM "users" AS "users0""#, []);
 // }
 //
 // #[test]
