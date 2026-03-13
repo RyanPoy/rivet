@@ -8,11 +8,11 @@ use std::sync::Arc;
 #[derive(Debug, Clone)]
 pub struct Column {
     pub name: String,
-    pub table_inner: Option<Arc<TableInner>>,
+    pub table_inner: Arc<TableInner>,
 }
 
 impl Column {
-    pub fn new(name: impl Into<String>, table: Option<Arc<TableInner>>) -> Self {
+    pub fn new(name: impl Into<String>, table: Arc<TableInner>) -> Self {
         Column {
             name: name.into(),
             table_inner: table,

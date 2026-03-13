@@ -44,16 +44,8 @@ impl Table {
     pub fn column(&self, name: impl Into<String>) -> Column {
         Column {
             name: name.into(),
-            table_inner: Some(self.inner.clone()),
+            table_inner: self.inner.clone(),
         }
-    }
-
-    pub fn columns<T, I>(&self, names: I) -> Vec<Column>
-    where
-        T: Into<String>,
-        I: IntoIterator<Item = T>,
-    {
-        names.into_iter().map(|e| self.column(e)).collect()
     }
 
     pub fn alias(mut self, name: impl Into<String>) -> Self {

@@ -291,11 +291,9 @@ impl<D: Dialect> Visitor<D> {
     }
 
     pub fn visit_column_ref(&mut self, col: &Column) -> &mut Self {
-        if let Some(table) = &col.table_inner {
-            let alias = self.alias_cache.alias_of(table);
-            if let Some(alias) = alias {
-                self.push_quote(&alias).push(".");
-            }
+        let alias = self.alias_cache.alias_of(&col.table_inner);
+        if let Some(alias) = alias {
+            self.push_quote(&alias).push(".");
         }
         self.push_quote(&col.name)
     }

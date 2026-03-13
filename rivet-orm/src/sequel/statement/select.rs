@@ -2,7 +2,7 @@ use crate::sequel::term::distinct::Distinct;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::index::Index;
 use crate::sequel::term::lock::{Lock, Wait};
-use crate::sequel::term::select_item::{IntoSelectItems, SelectItem};
+use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::{IntoTables, Table};
 
 #[derive(Clone, Debug)]
@@ -47,11 +47,8 @@ impl SelectStatement {
         self
     }
 
-    pub fn select<C>(mut self, c: C) -> Self
-    where
-        C: IntoSelectItems,
-    {
-        self.select_clause.extend(c.into_select_items());
+    pub fn select(mut self, c: impl Into<SelectItem>) -> Self {
+        self.select_clause.push(c.into());
         self
     }
 

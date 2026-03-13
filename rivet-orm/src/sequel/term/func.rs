@@ -10,23 +10,23 @@ pub enum FuncArg {
     Subquery(Box<SelectStatement>),
 }
 
-// impl From<Column> for FuncArg {
-//     fn from(col: Column) -> Self {
-//         Self::Expr(Expr::Column(col))
-//     }
-// }
-//
-// impl From<Expr> for FuncArg {
-//     fn from(expr: Expr) -> Self {
-//         FuncArg::Expr(expr)
-//     }
-// }
-//
-// impl From<SelectStatement> for FuncArg {
-//     fn from(stmt: SelectStatement) -> Self {
-//         FuncArg::Subquery(Box::from(stmt))
-//     }
-// }
+impl From<Column> for FuncArg {
+    fn from(col: Column) -> Self {
+        Self::Expr(Expr::Column(col))
+    }
+}
+
+impl From<Expr> for FuncArg {
+    fn from(expr: Expr) -> Self {
+        FuncArg::Expr(expr)
+    }
+}
+
+impl From<SelectStatement> for FuncArg {
+    fn from(stmt: SelectStatement) -> Self {
+        FuncArg::Subquery(Box::from(stmt))
+    }
+}
 
 pub trait IntoFuncArgs {
     fn into_func_args(self) -> Vec<FuncArg>;

@@ -53,6 +53,27 @@ impl From<i64> for Literal {
     }
 }
 
+impl From<u8> for Literal {
+    fn from(v: u8) -> Self {
+        Literal::Int(v as i64)
+    }
+}
+impl From<u16> for Literal {
+    fn from(v: u16) -> Self {
+        Literal::Int(v as i64)
+    }
+}
+impl From<u32> for Literal {
+    fn from(v: u32) -> Self {
+        Literal::Int(v as i64)
+    }
+}
+impl From<u64> for Literal {
+    fn from(v: u64) -> Self {
+        Literal::Int(v as i64)
+    }
+}
+
 // 浮点
 impl From<f32> for Literal {
     fn from(v: f32) -> Self {

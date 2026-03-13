@@ -61,7 +61,10 @@ fn test_select_single_column() {
 
 #[test]
 fn test_select_multiple_columns() {
-    let stmt = SelectStatement::from(&*USERS).select(USERS.columns(["id", "name", "email"]));
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .select(USERS.column("name"))
+        .select(USERS.column("email"));
     assert_mysql!(
         &stmt,
         "SELECT `users0`.`id`, `users0`.`name`, `users0`.`email` FROM `users` AS `users0`",
@@ -81,7 +84,7 @@ fn test_select_multiple_columns() {
 
 #[test]
 fn test_select_with_literal() {
-    let stmt = SelectStatement::from(&*USERS).select([Literal::from(1), Literal::from("hello")]);
+    let stmt = SelectStatement::from(&*USERS).select(1).select(Literal::from("hello"));
     assert_mysql!(&stmt, "SELECT 1, 'hello' FROM `users` AS `users0`", []);
     assert_pg!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "users0""#, []);
     assert_sqlite!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "users0""#, []);
@@ -186,7 +189,8 @@ fn test_where_nested_not_precedence() {
 #[test]
 fn test_cross_join() {
     let stmt = SelectStatement::from(&*USERS)
-        .select(vec![USERS.column("id"), PRODUCTS.column("name")])
+        .select(USERS.column("id"))
+        .select(PRODUCTS.column("name"))
         .cross_join(&*PRODUCTS);
     assert_mysql!(
         &stmt,
@@ -198,7 +202,8 @@ fn test_cross_join() {
 fn test_cross_join_with_same_table() {
     let u2 = Table::new("users");
     let stmt = SelectStatement::from(&*USERS)
-        .select(vec![USERS.column("id"), u2.column("name")])
+        .select(USERS.column("id"))
+        .select(u2.column("name"))
         .cross_join(&u2);
     assert_mysql!(
         &stmt,
@@ -210,7 +215,9 @@ fn test_cross_join_with_same_table() {
 #[test]
 fn test_join() {
     let stmt = SelectStatement::from(&*USERS)
-        .select([USERS.column("id"), ORDERS.column("total"), PRODUCTS.column("name")])
+        .select(USERS.column("id"))
+        .select(ORDERS.column("total"))
+        .select(PRODUCTS.column("name"))
         .join(&*ORDERS, USERS.column("id").eq(ORDERS.column("user_id")))
         .left_join(&*PRODUCTS, ORDERS.column("id").eq(PRODUCTS.column("order_id")))
         .right_join(&*CATEGORIES, CATEGORIES.column("id").eq(PRODUCTS.column("category_id")))
@@ -233,7 +240,8 @@ fn test_distinct() {
 #[test]
 fn test_distinct_on() {
     let stmt = SelectStatement::from(&*USERS)
-        .select(vec![USERS.column("city"), USERS.column("name")])
+        .select(USERS.column("city"))
+        .select(USERS.column("name"))
         .distinct_on(vec![
             Expr::from(upper(USERS.column("city"))),
             USERS.column("age").into(),
@@ -335,18 +343,17 @@ fn test_count_distinct() {
 
 #[test]
 fn test_abs_ceil_floor() {
-    let stmt = SelectStatement::from(&*ORDERS).select(vec![
-        sum(ORDERS.column("total")),
-        avg(ORDERS.column("price")),
-        max(ORDERS.column("total")),
-        min(ORDERS.column("price")),
-        abs(ORDERS.column("discount")),
-        ceil(ORDERS.column("price")),
-        floor(ORDERS.column("tax")),
-        lower(ORDERS.column("name")),
-        upper(ORDERS.column("brand_name")),
-        sqrt(ORDERS.column("quantity")),
-    ]);
+    let stmt = SelectStatement::from(&*ORDERS)
+        .select(sum(ORDERS.column("total")))
+        .select(avg(ORDERS.column("price")))
+        .select(max(ORDERS.column("total")))
+        .select(min(ORDERS.column("price")))
+        .select(abs(ORDERS.column("discount")))
+        .select(ceil(ORDERS.column("price")))
+        .select(floor(ORDERS.column("tax")))
+        .select(lower(ORDERS.column("name")))
+        .select(upper(ORDERS.column("brand_name")))
+        .select(sqrt(ORDERS.column("quantity")));
     assert_mysql!(
         &stmt,
         "SELECT SUM(`orders0`.`total`), AVG(`orders0`.`price`), MAX(`orders0`.`total`), MIN(`orders0`.`price`), ABS(`orders0`.`discount`), CEIL(`orders0`.`price`), FLOOR(`orders0`.`tax`), LOWER(`orders0`.`name`), UPPER(`orders0`.`brand_name`), SQRT(`orders0`.`quantity`) FROM `orders` AS `orders0`",

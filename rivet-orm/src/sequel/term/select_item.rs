@@ -16,6 +16,13 @@ impl From<Column> for SelectItem {
         }
     }
 }
+
+impl From<Expr> for SelectItem {
+    fn from(expr: Expr) -> Self {
+        Self { expr, alias: None }
+    }
+}
+
 impl From<Literal> for SelectItem {
     fn from(value: Literal) -> Self {
         Self {
@@ -24,39 +31,20 @@ impl From<Literal> for SelectItem {
         }
     }
 }
-impl From<Expr> for SelectItem {
-    fn from(expr: Expr) -> Self {
-        Self { expr, alias: None }
-    }
+
+// 处理 Rust 原生类型 (作为 Literal)
+// 只有这些类型被明确视为 Literal，避免了把 Column 也卷进来
+// e.g. "username" 这个应该是 Column("username") 而不是 Literal("username")
+macro_rules! impl_from_base_type_for_select_item {
+    ($($t:ty),*) => {
+        $(
+            impl From<$t> for SelectItem {
+                fn from(value: $t) -> Self {
+                    Self { expr: Expr::Literal(Literal::from(value)), alias: None }
+                }
+            }
+        )*
+    };
 }
 
-pub trait IntoSelectItems {
-    fn into_select_items(self) -> Vec<SelectItem>;
-}
-
-impl<T> IntoSelectItems for T
-where
-    T: Into<SelectItem>,
-{
-    fn into_select_items(self) -> Vec<SelectItem> {
-        vec![self.into()]
-    }
-}
-
-impl<T> IntoSelectItems for Vec<T>
-where
-    T: Into<SelectItem>,
-{
-    fn into_select_items(self) -> Vec<SelectItem> {
-        self.into_iter().map(Into::into).collect()
-    }
-}
-
-impl<T, const N: usize> IntoSelectItems for [T; N]
-where
-    T: Into<SelectItem>,
-{
-    fn into_select_items(self) -> Vec<SelectItem> {
-        self.into_iter().map(Into::into).collect()
-    }
-}
+impl_from_base_type_for_select_item!(i8, i16, i32, i64, u8, u16, u32, u64, f32, f64, bool);
