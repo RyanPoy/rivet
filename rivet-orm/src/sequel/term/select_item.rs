@@ -8,51 +8,25 @@ pub struct SelectItem {
     pub alias: Option<String>,
 }
 
-macro_rules! impl_from_for_select_item {
-    ($($t:ty => $variant:ident), *) => {
-        $(
-            impl From<$t> for SelectItem {
-                fn from(value: $t) -> Self {
-                    SelectItem{expr: Expr::$variant(value), alias: None}
-                }
-            }
-            impl From<&$t> for SelectItem {
-                fn from(value: &$t) -> Self {
-                    SelectItem{expr: Expr::$variant(value.clone()), alias: None}
-                }
-            }
-        )*
-    };
-}
-
-impl_from_for_select_item!(
-    Column => Column,
-    Literal => Literal
-);
-
-impl From<&str> for SelectItem {
-    fn from(value: &str) -> Self {
-        let (name, alias) = match value.split_once(".") {
-            Some((prefix, name)) => (name, Some(prefix.to_string())),
-            None => (value, None),
-        };
-        let expr = Expr::from(Column::from(name));
-        SelectItem { expr, alias }
-    }
-}
-
-impl From<Expr> for SelectItem {
-    fn from(expr: Expr) -> Self {
-        SelectItem { expr, alias: None }
-    }
-}
-
-impl From<&Expr> for SelectItem {
-    fn from(expr: &Expr) -> Self {
-        SelectItem {
-            expr: expr.clone(),
+impl From<Column> for SelectItem {
+    fn from(value: Column) -> Self {
+        Self {
+            expr: Expr::Column(value),
             alias: None,
         }
+    }
+}
+impl From<Literal> for SelectItem {
+    fn from(value: Literal) -> Self {
+        Self {
+            expr: Expr::Literal(value),
+            alias: None,
+        }
+    }
+}
+impl From<Expr> for SelectItem {
+    fn from(expr: Expr) -> Self {
+        Self { expr, alias: None }
     }
 }
 

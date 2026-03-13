@@ -20,10 +20,14 @@ impl Literal {
     }
 
     pub fn is_null(&self) -> bool {
-        match &self {
-            Self::Null => true,
-            _ => false,
-        }
+        matches!(self, Self::Null)
+    }
+}
+
+// 空
+impl From<()> for Literal {
+    fn from(_: ()) -> Self {
+        Literal::Null
     }
 }
 

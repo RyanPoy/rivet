@@ -6,7 +6,7 @@ hard_tabs = false                     # 使用空格而非制表符 (Go 风格)
 tab_spaces = 4                         # 缩进空格数
 newline_style = "Unix"                # 统一换行符
 
-# === 核心布局：满足你之前的需求，并借鉴 Rust 官方仓库 ===
+# === 核心布局：并借鉴 Rust 官方仓库 ===
 fn_single_line = true                 # 允许单行函数，这正是你想要的！
 brace_style = "SameLineWhere"         # 函数大括号位置 (Rust 官方风格)
 control_brace_style = "AlwaysSameLine" # 控制流 if/while 等的大括号风格

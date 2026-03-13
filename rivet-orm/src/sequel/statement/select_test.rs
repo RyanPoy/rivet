@@ -98,7 +98,7 @@ fn test_where() {
     let ext = USERS.column("ext");
 
     let stmt = SelectStatement::from(&*USERS)
-        .select(&id)
+        .select(id.clone())
         .where_(id.eq(5))
         .where_(id.not_eq(10))
         .where_(age.gt(20))

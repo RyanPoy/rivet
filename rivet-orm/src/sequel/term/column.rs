@@ -11,12 +11,6 @@ pub struct Column {
     pub table_inner: Option<Arc<TableInner>>,
 }
 
-impl From<&str> for Column {
-    fn from(value: &str) -> Self {
-        Self::new(value, None)
-    }
-}
-
 impl Column {
     pub fn new(name: impl Into<String>, table: Option<Arc<TableInner>>) -> Self {
         Column {
