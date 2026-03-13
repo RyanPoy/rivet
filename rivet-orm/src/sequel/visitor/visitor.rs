@@ -61,7 +61,6 @@ impl<D: Dialect> Visitor<D> {
                 for arg in &func.args {
                     match arg {
                         FuncArg::Expr(expr) => self.register_table_from_expr(expr),
-                        FuncArg::Subquery(sq) => self.register_tables(sq),
                         FuncArg::Wildcard => {},
                     }
                 }
@@ -257,7 +256,6 @@ impl<D: Dialect> Visitor<D> {
         match arg {
             FuncArg::Expr(expr) => self.visit_expr(expr, inline, 0),
             FuncArg::Wildcard => self.push("*"),
-            FuncArg::Subquery(sq) => self.visit_select_statement(sq),
         }
     }
 

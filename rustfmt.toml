@@ -31,6 +31,8 @@ use_try_shorthand = true                # 使用 `?` 代替 `try!` 宏[citation:
 trailing_comma = "Vertical"             # 多行列表末尾自动加逗号
 match_block_trailing_comma = true       # match 分支末尾加逗号
 
+enum_discrim_align_threshold = 20
+
 # === 忽略文件 (像 .gitignore 一样) ===
 # 遵循 gitignore 语法，对自动生成的代码或第三方代码取消格式化
 ignore = [

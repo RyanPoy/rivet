@@ -1,5 +1,6 @@
 use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
+use crate::sequel::term::func::Func;
 use crate::sequel::term::literal::Literal;
 
 #[derive(Clone, Debug)]
@@ -12,6 +13,15 @@ impl From<Column> for SelectItem {
     fn from(value: Column) -> Self {
         Self {
             expr: Expr::Column(value),
+            alias: None,
+        }
+    }
+}
+
+impl From<Func> for SelectItem {
+    fn from(value: Func) -> Self {
+        Self {
+            expr: Expr::Func(value),
             alias: None,
         }
     }

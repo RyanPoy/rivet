@@ -1,0 +1,102 @@
+use crate::sequel::statement::select::SelectStatement;
+use crate::sequel::statement::select::tests::helper::{ORDERS, USERS};
+use crate::sequel::term::func::{abs, avg, ceil, count, count_all, floor, lower, max, min, sqrt, sum, upper};
+
+#[test]
+fn test_count_all() {
+    let stmt = SelectStatement::from(&*USERS).select(count_all());
+    assert_mysql!(&stmt, "SELECT COUNT(*) FROM `users` AS `users0`", []);
+    assert_pg!(&stmt, r#"SELECT COUNT(*) FROM "users" AS "users0""#, []);
+    assert_sqlite!(&stmt, r#"SELECT COUNT(*) FROM "users" AS "users0""#, []);
+}
+
+#[test]
+fn test_count_column() {
+    let c = USERS.column("email");
+    let stmt = SelectStatement::from(&*USERS).select(count(c));
+    assert_mysql!(&stmt, "SELECT COUNT(`users0`.`email`) FROM `users` AS `users0`", []);
+    assert_pg!(&stmt, r#"SELECT COUNT("users0"."email") FROM "users" AS "users0""#, []);
+    assert_sqlite!(&stmt, r#"SELECT COUNT("users0"."email") FROM "users" AS "users0""#, []);
+}
+
+#[test]
+fn test_count_distinct() {
+    let stmt = SelectStatement::from(&*USERS).select(count(USERS.column("city")).distinct());
+    assert_mysql!(
+        &stmt,
+        "SELECT COUNT(DISTINCT `users0`.`city`) FROM `users` AS `users0`",
+        []
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT COUNT(DISTINCT "users0"."city") FROM "users" AS "users0""#,
+        []
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT COUNT(DISTINCT "users0"."city") FROM "users" AS "users0""#,
+        []
+    );
+}
+
+#[test]
+fn test_abs_ceil_floor() {
+    let stmt = SelectStatement::from(&*ORDERS)
+        .select(sum(ORDERS.column("total")))
+        .select(avg(ORDERS.column("price")))
+        .select(max(ORDERS.column("total")))
+        .select(min(ORDERS.column("price")))
+        .select(abs(ORDERS.column("discount")))
+        .select(ceil(ORDERS.column("price")))
+        .select(floor(ORDERS.column("tax")))
+        .select(lower(ORDERS.column("name")))
+        .select(upper(ORDERS.column("brand_name")))
+        .select(sqrt(ORDERS.column("quantity")));
+    assert_mysql!(
+        &stmt,
+        "SELECT SUM(`orders0`.`total`), AVG(`orders0`.`price`), MAX(`orders0`.`total`), MIN(`orders0`.`price`), ABS(`orders0`.`discount`), CEIL(`orders0`.`price`), FLOOR(`orders0`.`tax`), LOWER(`orders0`.`name`), UPPER(`orders0`.`brand_name`), SQRT(`orders0`.`quantity`) FROM `orders` AS `orders0`",
+        []
+    );
+}
+
+// // ============================================================================
+// // 7. 自定义函数测试
+// // ============================================================================
+//
+// #[test]
+// fn test_custom_func() {
+//     let stmt = SelectStatement::from(&*USERS).select(func(
+//         "CONCAT",
+//         vec![USERS.column("first_name"), USERS.column("last_name")],
+//     ));
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT CONCAT(`t1`.`first_name`, `t1`.`last_name`) FROM `users` AS `t1`",
+//         []
+//     );
+// }
+//
+// #[test]
+// fn test_coalesce() {
+//     let stmt = SelectStatement::from(&*USERS).select(coalesce![USERS.column("email"), Literal::from("no-email")]);
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT COALESCE(`t1`.`email`, ?) FROM `users` AS `t1`",
+//         ["no-email"]
+//     );
+// }
+//
+// #[test]
+// fn test_coalesce_multiple() {
+//     let stmt = SelectStatement::from(&*USERS).select(coalesce![
+//         USERS.column("email"),
+//         USERS.column("phone"),
+//         Literal::from("no-contact")
+//     ]);
+//     assert_mysql!(
+//         &stmt,
+//         "SELECT COALESCE(`t1`.`email`, `t1`.`phone`, ?) FROM `users` AS `t1`",
+//         ["no-contact"]
+//     );
+// }
+//

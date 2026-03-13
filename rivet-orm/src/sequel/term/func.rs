@@ -1,13 +1,11 @@
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
-use crate::sequel::term::select_item::SelectItem;
 
 #[derive(Debug, Clone)]
 pub enum FuncArg {
     Wildcard,
     Expr(Expr),
-    Subquery(Box<SelectStatement>),
 }
 
 impl From<Column> for FuncArg {
@@ -15,16 +13,14 @@ impl From<Column> for FuncArg {
         Self::Expr(Expr::Column(col))
     }
 }
-
 impl From<Expr> for FuncArg {
     fn from(expr: Expr) -> Self {
         FuncArg::Expr(expr)
     }
 }
-
 impl From<SelectStatement> for FuncArg {
     fn from(stmt: SelectStatement) -> Self {
-        FuncArg::Subquery(Box::from(stmt))
+        Self::Expr(Expr::Subquery(Box::new(stmt)))
     }
 }
 
@@ -32,29 +28,20 @@ pub trait IntoFuncArgs {
     fn into_func_args(self) -> Vec<FuncArg>;
 }
 
-impl IntoFuncArgs for FuncArg {
-    fn into_func_args(self) -> Vec<FuncArg> {
-        vec![self]
-    }
+macro_rules! impl_into_func_args_for_single {
+    ($($t:ty),*) => {
+        $(
+            impl IntoFuncArgs for $t {
+                fn into_func_args(self) -> Vec<FuncArg> {
+                    vec![self.into()] // 直接利用已经定义好的 From<$t> for FuncArg
+                }
+            }
+        )*
+    };
 }
 
-impl IntoFuncArgs for Column {
-    fn into_func_args(self) -> Vec<FuncArg> {
-        vec![FuncArg::Expr(self.into())]
-    }
-}
-
-impl IntoFuncArgs for Expr {
-    fn into_func_args(self) -> Vec<FuncArg> {
-        vec![FuncArg::Expr(self.into())]
-    }
-}
-
-impl IntoFuncArgs for SelectStatement {
-    fn into_func_args(self) -> Vec<FuncArg> {
-        vec![FuncArg::Expr(self.into())]
-    }
-}
+// 定义哪些类型可以作为单数参数传入函数
+impl_into_func_args_for_single!(FuncArg, Column, Expr, SelectStatement);
 
 impl<T> IntoFuncArgs for Vec<T>
 where
@@ -88,11 +75,11 @@ impl Func {
     }
 }
 
-pub fn func(name: impl Into<String>, args: impl IntoFuncArgs, distinct: bool) -> Func {
+pub fn func(name: impl Into<String>, args: impl IntoFuncArgs) -> Func {
     Func {
         name: name.into(),
         args: args.into_func_args(),
-        distinct,
+        distinct: false,
     }
 }
 
@@ -102,36 +89,15 @@ macro_rules! define_functions {
             #[inline]
             pub fn $name(args: impl IntoFuncArgs) -> Func {
                 // 使用 stringify!($name).to_uppercase() 自动转为大写
-                func(stringify!($name).to_uppercase(), args.into_func_args(), false)
+                func(stringify!($name).to_uppercase(), args.into_func_args())
             }
         )*
     };
 }
 define_functions!(sum, avg, sqrt, abs, upper, lower, max, min, ceil, floor, exists, count);
 
-#[macro_export]
-macro_rules! coalesce {
-    ($($arg:expr),*) => {
-        {
-            let mut args = Vec::new();
-            $(
-                // 利用 Into<Expr> 自动处理 Subquery, ColumnRef, Literal 等
-                let expr: $crate::sequel::term::expr::Expr = $arg.into();
-                args.push($crate::sequel::term::func::FuncArg::Expr{ expr, distinct:false });
-            )*
-            $crate::sequel::term::func::func("COALESCE", args)
-        }
-    };
-}
-
 // 处理 count(*)
 #[inline]
 pub fn count_all() -> Func {
-    func("COUNT", vec![FuncArg::Wildcard], false)
-}
-
-impl Into<SelectItem> for Func {
-    fn into(self) -> SelectItem {
-        Expr::Func(self).into()
-    }
+    func("COUNT", vec![FuncArg::Wildcard])
 }
