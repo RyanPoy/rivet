@@ -12,7 +12,7 @@ use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::{Table, TableInner};
 use crate::sequel::visitor::alias_cache::AliasCache;
 use crate::sequel::visitor::builder::Builder;
-use crate::sequel::visitor::dialect::{Dialect, MySQL, PostgreSQL, SQLite};
+use crate::sequel::visitor::dialect::{CountDistinctCap, Dialect, MySQL, PostgreSQL, SQLite};
 pub fn mysql() -> Visitor<MySQL> {
     Visitor::new(MySQL {})
 }
@@ -234,22 +234,48 @@ impl<D: Dialect> Visitor<D> {
         }
         self
     }
-
     pub fn visit_func(&mut self, f: &Func, inline: bool) -> &mut Self {
-        self.push(&f.name).push("(");
-        if f.distinct {
-            self.push("DISTINCT ");
+        if !f.distinct {
+            // isn't distinct
+            return self.push(&f.name).push("(").push_func_args(&f.args, inline).push(")");
         }
 
-        let mut iter = f.args.iter();
-        if let Some(arg) = iter.next() {
-            self.visit_func_arg(arg, inline);
-            for arg in iter {
-                self.push(", ");
-                self.visit_func_arg(arg, inline);
-            }
+        if f.args.len() <= 1 || !f.name.eq_ignore_ascii_case("count") {
+            // distinct, but not count and multiple columns。
+            return self
+                .push(&f.name)
+                .push("(DISTINCT ")
+                .push_func_args(&f.args, inline)
+                .push(")");
+        }
+        // count distinct multiple columns
+        self.push(&f.name).push("(DISTINCT ");
+        match self.dialect.caps().count_distinct {
+            CountDistinctCap::OneColumn => {
+                if let Some(arg) = f.args.first() {
+                    self.visit_func_arg(arg, inline);
+                }
+            },
+            CountDistinctCap::Merge => {
+                self.push("(").push_func_args(&f.args, inline).push(")");
+            },
+            CountDistinctCap::Extend => {
+                self.push_func_args(&f.args, inline);
+            },
         }
         self.push(")")
+    }
+
+    fn push_func_args(&mut self, args: &[FuncArg], inline: bool) -> &mut Self {
+        let mut iter = args.iter();
+        if let Some(arg) = iter.next() {
+            self.visit_func_arg(arg, inline);
+        }
+        for arg in iter {
+            self.push(", ");
+            self.visit_func_arg(arg, inline);
+        }
+        self
     }
 
     pub fn visit_func_arg(&mut self, arg: &FuncArg, inline: bool) -> &mut Self {

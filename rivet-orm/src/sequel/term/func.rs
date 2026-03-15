@@ -1,6 +1,7 @@
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
+use std::ascii::AsciiExt;
 
 #[derive(Debug, Clone)]
 pub enum FuncArg {
@@ -101,3 +102,4 @@ define_functions!(sum, avg, sqrt, abs, upper, lower, max, min, ceil, floor, exis
 pub fn count_all() -> Func {
     func("COUNT", vec![FuncArg::Wildcard])
 }
+

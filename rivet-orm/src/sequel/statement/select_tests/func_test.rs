@@ -1,6 +1,6 @@
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::statement::select::tests::helper::{ORDERS, USERS};
-use crate::sequel::term::func::{abs, avg, ceil, count, count_all, floor, lower, max, min, sqrt, sum, upper};
+use crate::sequel::term::func::{abs, avg, ceil, count, count_all, floor, func, lower, max, min, sqrt, sum, upper};
 
 #[test]
 fn test_count_all() {
@@ -40,6 +40,28 @@ fn test_count_distinct() {
 }
 
 #[test]
+fn test_count_distinct_multiple() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(count([USERS.column("city"), USERS.column("username"), USERS.column("id")]).distinct())
+        .select(USERS.column("id"));
+    assert_mysql!(
+        &stmt,
+        "SELECT COUNT(DISTINCT `users0`.`city`, `users0`.`username`, `users0`.`id`), `users0`.`id` FROM `users` AS `users0`",
+        []
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT COUNT(DISTINCT ("users0"."city", "users0"."username", "users0"."id")), "users0"."id" FROM "users" AS "users0""#,
+        []
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT COUNT(DISTINCT "users0"."city"), "users0"."id" FROM "users" AS "users0""#,
+        []
+    );
+}
+
+#[test]
 fn test_abs_ceil_floor() {
     let stmt = SelectStatement::from(&*ORDERS)
         .select(sum(ORDERS.column("total")))
@@ -59,23 +81,19 @@ fn test_abs_ceil_floor() {
     );
 }
 
-// // ============================================================================
-// // 7. 自定义函数测试
-// // ============================================================================
-//
-// #[test]
-// fn test_custom_func() {
-//     let stmt = SelectStatement::from(&*USERS).select(func(
-//         "CONCAT",
-//         vec![USERS.column("first_name"), USERS.column("last_name")],
-//     ));
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT CONCAT(`t1`.`first_name`, `t1`.`last_name`) FROM `users` AS `t1`",
-//         []
-//     );
-// }
-//
+#[test]
+fn test_custom_func() {
+    let stmt = SelectStatement::from(&*USERS).select(func(
+        "CONCAT",
+        vec![USERS.column("first_name"), USERS.column("last_name")],
+    ));
+    assert_mysql!(
+        &stmt,
+        "SELECT CONCAT(`users0`.`first_name`, `users0`.`last_name`) FROM `users` AS `users0`",
+        []
+    );
+}
+
 // #[test]
 // fn test_coalesce() {
 //     let stmt = SelectStatement::from(&*USERS).select(coalesce![USERS.column("email"), Literal::from("no-email")]);
@@ -85,7 +103,7 @@ fn test_abs_ceil_floor() {
 //         ["no-email"]
 //     );
 // }
-//
+
 // #[test]
 // fn test_coalesce_multiple() {
 //     let stmt = SelectStatement::from(&*USERS).select(coalesce![
