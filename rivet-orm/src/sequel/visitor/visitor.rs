@@ -13,6 +13,8 @@ use crate::sequel::term::table::{Table, TableInner};
 use crate::sequel::visitor::alias_cache::AliasCache;
 use crate::sequel::visitor::builder::Builder;
 use crate::sequel::visitor::dialect::{CountDistinctCap, Dialect, MySQL, PostgreSQL, SQLite};
+use crate::sequel::visitor::rewriter::{normalize, rewrite_count_distinct};
+
 pub fn mysql() -> Visitor<MySQL> {
     Visitor::new(MySQL {})
 }
@@ -50,7 +52,7 @@ impl<D: Dialect> Visitor<D> {
         }
 
         // 3. 处理 WHERE 子句中的子查询 (测试用例中的 EXISTS 在这里)
-        // if let Some(where_expr) = &stmt.where_clause {
+        // for where_expr in &stmt.where_clause {
         //     self.register_table_from_expr(where_expr);
         // }
     }
@@ -86,6 +88,7 @@ impl<D: Dialect> Visitor<D> {
                 self.alias_cache.add(inner, name.clone(), table.alias.clone());
             },
             TableInner::Subquery(sq) => {
+                self.alias_cache.add(inner, "sq".to_string(), None);
                 self.register_tables(sq);
             },
             TableInner::Join(join) => {
@@ -97,6 +100,9 @@ impl<D: Dialect> Visitor<D> {
     }
 
     pub fn visit_select_statement(&mut self, select_stmt: &SelectStatement) -> &mut Self {
+        let select_stmt = normalize(select_stmt);
+        let select_stmt = rewrite_count_distinct(select_stmt, &self.dialect);
+
         self.register_tables(&select_stmt);
 
         self.push("SELECT ");
@@ -251,17 +257,13 @@ impl<D: Dialect> Visitor<D> {
         // count distinct multiple columns
         self.push(&f.name).push("(DISTINCT ");
         match self.dialect.caps().count_distinct {
-            CountDistinctCap::OneColumn => {
-                if let Some(arg) = f.args.first() {
-                    self.visit_func_arg(arg, inline);
-                }
-            },
             CountDistinctCap::Merge => {
                 self.push("(").push_func_args(&f.args, inline).push(")");
             },
             CountDistinctCap::Extend => {
                 self.push_func_args(&f.args, inline);
             },
+            _ => unreachable!(),
         }
         self.push(")")
     }

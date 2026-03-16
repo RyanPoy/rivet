@@ -6,12 +6,12 @@ pub enum PlaceHolderStyle {
     QuestionMark,
     Numbered,
 }
-#[derive(Clone, Debug, Copy, Default)]
+#[derive(Clone, Debug, Copy, Default, PartialEq, Eq)]
 pub enum CountDistinctCap {
     #[default]
-    OneColumn,
     Extend,
     Merge,
+    Rewrite,
 }
 #[derive(Clone, Debug, Copy, Default)]
 pub struct Capability {
@@ -112,6 +112,7 @@ impl Dialect for SQLite {
         Capability {
             returning: true,
             standalone_offset: true,
+            count_distinct: CountDistinctCap::Rewrite,
             ..Capability::default()
         }
     }
