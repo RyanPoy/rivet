@@ -13,7 +13,7 @@ use crate::sequel::term::table::{Table, TableInner};
 use crate::sequel::visitor::alias_cache::AliasCache;
 use crate::sequel::visitor::builder::Builder;
 use crate::sequel::visitor::dialect::{CountDistinctCap, Dialect, MySQL, PostgreSQL, SQLite};
-use crate::sequel::visitor::rewriter::{normalize, rewrite_count_distinct};
+use crate::sequel::visitor::rewriter::rewrite_count_distinct;
 
 pub fn mysql() -> Visitor<MySQL> {
     Visitor::new(MySQL {})
@@ -243,7 +243,7 @@ impl<D: Dialect> Visitor<D> {
     pub fn visit_func(&mut self, f: &Func, inline: bool) -> &mut Self {
         if !f.distinct {
             // isn't distinct
-            return self.push(&f.name).push("(").push_func_args(&f.args, false).push(")");
+            return self.push(&f.name).push("(").push_func_args(&f.args, inline).push(")");
         }
 
         if f.args.len() <= 1 || !f.name.eq_ignore_ascii_case("count") {
@@ -251,7 +251,7 @@ impl<D: Dialect> Visitor<D> {
             return self
                 .push(&f.name)
                 .push("(DISTINCT ")
-                .push_func_args(&f.args, false)
+                .push_func_args(&f.args, inline)
                 .push(")");
         }
         // count distinct multiple columns

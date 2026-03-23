@@ -1,7 +1,6 @@
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
-use std::ascii::AsciiExt;
 
 #[derive(Debug, Clone)]
 pub enum FuncArg {
@@ -101,16 +100,12 @@ macro_rules! define_functions {
         )*
     };
 }
-define_functions!(sum, avg, sqrt, abs, upper, lower, max, min, ceil, floor, exists, count);
+define_functions!(
+    sum, avg, sqrt, abs, upper, lower, max, min, ceil, floor, exists, count, coalesce
+);
 
 // 处理 count(*)
 #[inline]
 pub fn count_all() -> Func {
     func("COUNT", vec![FuncArg::Wildcard])
-}
-
-/// COALESCE 函数 - 返回第一个非 NULL 的值
-#[inline]
-pub fn coalesce(args: impl IntoFuncArgs) -> Func {
-    func("COALESCE", args.into_func_args())
 }

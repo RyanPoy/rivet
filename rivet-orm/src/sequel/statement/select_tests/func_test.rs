@@ -1,7 +1,9 @@
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::statement::select::tests::helper::{ORDERS, USERS};
 use crate::sequel::term::expr::Expr;
-use crate::sequel::term::func::{abs, avg, ceil, coalesce, count, count_all, floor, func, lower, max, min, sqrt, sum, upper};
+use crate::sequel::term::func::{
+    abs, avg, ceil, coalesce, count, count_all, floor, func, lower, max, min, sqrt, sum, upper,
+};
 use crate::sequel::term::literal::Literal;
 
 #[test]
@@ -104,18 +106,18 @@ fn test_coalesce() {
     ]));
     assert_mysql!(
         &stmt,
-        "SELECT COALESCE(`users0`.`email`, ?) FROM `users` AS `users0`",
-        ["no-email"]
+        "SELECT COALESCE(`users0`.`email`, 'no-email') FROM `users` AS `users0`",
+        []
     );
     assert_pg!(
         &stmt,
-        r#"SELECT COALESCE("users0"."email", $1) FROM "users" AS "users0""#,
-        ["no-email"]
+        r#"SELECT COALESCE("users0"."email", 'no-email') FROM "users" AS "users0""#,
+        []
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT COALESCE("users0"."email", ?) FROM "users" AS "users0""#,
-        ["no-email"]
+        r#"SELECT COALESCE("users0"."email", 'no-email') FROM "users" AS "users0""#,
+        []
     );
 }
 
@@ -128,17 +130,17 @@ fn test_coalesce_multiple() {
     ]));
     assert_mysql!(
         &stmt,
-        "SELECT COALESCE(`users0`.`email`, `users0`.`phone`, ?) FROM `users` AS `users0`",
-        ["no-contact"]
+        "SELECT COALESCE(`users0`.`email`, `users0`.`phone`, 'no-contact') FROM `users` AS `users0`",
+        []
     );
     assert_pg!(
         &stmt,
-        r#"SELECT COALESCE("users0"."email", "users0"."phone", $1) FROM "users" AS "users0""#,
-        ["no-contact"]
+        r#"SELECT COALESCE("users0"."email", "users0"."phone", 'no-contact') FROM "users" AS "users0""#,
+        []
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT COALESCE("users0"."email", "users0"."phone", ?) FROM "users" AS "users0""#,
-        ["no-contact"]
+        r#"SELECT COALESCE("users0"."email", "users0"."phone", 'no-contact') FROM "users" AS "users0""#,
+        []
     );
 }
