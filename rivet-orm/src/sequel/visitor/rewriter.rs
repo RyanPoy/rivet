@@ -56,13 +56,13 @@ fn collect_outer_columns(stmt: &SelectStatement) -> Vec<Expr> {
         })
         .collect()
 }
-pub fn rewrite_count_distinct(stmt: SelectStatement, dialect: &dyn Dialect) -> SelectStatement {
-    if dialect.caps().count_distinct == CountDistinctCap::Extend {
-        return stmt;
+pub fn rewrite_count_distinct(stmt: &SelectStatement, dialect: &dyn Dialect) -> SelectStatement {
+    if [CountDistinctCap::Extend, CountDistinctCap::Merge].contains(&dialect.caps().count_distinct) {
+        return stmt.clone();
     }
 
     let Some(count_cols) = find_multi_count(&stmt) else {
-        return stmt;
+        return stmt.clone();
     };
 
     let outer_cols = collect_outer_columns(&stmt);

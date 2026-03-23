@@ -100,7 +100,7 @@ impl<D: Dialect> Visitor<D> {
     }
 
     pub fn visit_select_statement(&mut self, select_stmt: &SelectStatement) -> &mut Self {
-        let select_stmt = normalize(select_stmt);
+        // let select_stmt = normalize(select_stmt);
         let select_stmt = rewrite_count_distinct(select_stmt, &self.dialect);
 
         self.register_tables(&select_stmt);
@@ -243,7 +243,7 @@ impl<D: Dialect> Visitor<D> {
     pub fn visit_func(&mut self, f: &Func, inline: bool) -> &mut Self {
         if !f.distinct {
             // isn't distinct
-            return self.push(&f.name).push("(").push_func_args(&f.args, inline).push(")");
+            return self.push(&f.name).push("(").push_func_args(&f.args, false).push(")");
         }
 
         if f.args.len() <= 1 || !f.name.eq_ignore_ascii_case("count") {
@@ -251,7 +251,7 @@ impl<D: Dialect> Visitor<D> {
             return self
                 .push(&f.name)
                 .push("(DISTINCT ")
-                .push_func_args(&f.args, inline)
+                .push_func_args(&f.args, false)
                 .push(")");
         }
         // count distinct multiple columns

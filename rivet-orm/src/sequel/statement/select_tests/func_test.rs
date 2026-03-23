@@ -1,6 +1,8 @@
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::statement::select::tests::helper::{ORDERS, USERS};
-use crate::sequel::term::func::{abs, avg, ceil, count, count_all, floor, func, lower, max, min, sqrt, sum, upper};
+use crate::sequel::term::expr::Expr;
+use crate::sequel::term::func::{abs, avg, ceil, coalesce, count, count_all, floor, func, lower, max, min, sqrt, sum, upper};
+use crate::sequel::term::literal::Literal;
 
 #[test]
 fn test_count_all() {
@@ -94,27 +96,49 @@ fn test_custom_func() {
     );
 }
 
-// #[test]
-// fn test_coalesce() {
-//     let stmt = SelectStatement::from(&*USERS).select(coalesce![USERS.column("email"), Literal::from("no-email")]);
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT COALESCE(`t1`.`email`, ?) FROM `users` AS `t1`",
-//         ["no-email"]
-//     );
-// }
+#[test]
+fn test_coalesce() {
+    let stmt = SelectStatement::from(&*USERS).select(coalesce(vec![
+        Expr::Column(USERS.column("email")),
+        Literal::from("no-email").into(),
+    ]));
+    assert_mysql!(
+        &stmt,
+        "SELECT COALESCE(`users0`.`email`, ?) FROM `users` AS `users0`",
+        ["no-email"]
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT COALESCE("users0"."email", $1) FROM "users" AS "users0""#,
+        ["no-email"]
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT COALESCE("users0"."email", ?) FROM "users" AS "users0""#,
+        ["no-email"]
+    );
+}
 
-// #[test]
-// fn test_coalesce_multiple() {
-//     let stmt = SelectStatement::from(&*USERS).select(coalesce![
-//         USERS.column("email"),
-//         USERS.column("phone"),
-//         Literal::from("no-contact")
-//     ]);
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT COALESCE(`t1`.`email`, `t1`.`phone`, ?) FROM `users` AS `t1`",
-//         ["no-contact"]
-//     );
-// }
-//
+#[test]
+fn test_coalesce_multiple() {
+    let stmt = SelectStatement::from(&*USERS).select(coalesce(vec![
+        Expr::Column(USERS.column("email")),
+        Expr::Column(USERS.column("phone")),
+        Literal::from("no-contact").into(),
+    ]));
+    assert_mysql!(
+        &stmt,
+        "SELECT COALESCE(`users0`.`email`, `users0`.`phone`, ?) FROM `users` AS `users0`",
+        ["no-contact"]
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT COALESCE("users0"."email", "users0"."phone", $1) FROM "users" AS "users0""#,
+        ["no-contact"]
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT COALESCE("users0"."email", "users0"."phone", ?) FROM "users" AS "users0""#,
+        ["no-contact"]
+    );
+}

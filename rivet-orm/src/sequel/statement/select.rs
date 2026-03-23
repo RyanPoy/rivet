@@ -72,6 +72,7 @@ impl SelectStatement {
         self.from_clause = self.from_clause.left_join(other.clone(), on);
         self
     }
+
     pub fn right_join<T>(mut self, other: &T, on: Expr) -> Self
     where
         T: Clone + Into<Table>,
@@ -79,6 +80,7 @@ impl SelectStatement {
         self.from_clause = self.from_clause.right_join(other.clone(), on);
         self
     }
+
     pub fn full_join<T>(mut self, other: &T, on: Expr) -> Self
     where
         T: Clone + Into<Table>,

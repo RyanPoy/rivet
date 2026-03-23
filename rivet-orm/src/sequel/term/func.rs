@@ -25,6 +25,12 @@ impl From<SelectStatement> for FuncArg {
     }
 }
 
+impl From<crate::sequel::term::literal::Literal> for FuncArg {
+    fn from(lit: crate::sequel::term::literal::Literal) -> Self {
+        Self::Expr(Expr::Literal(lit))
+    }
+}
+
 pub trait IntoFuncArgs {
     fn into_func_args(self) -> Vec<FuncArg>;
 }
@@ -103,3 +109,8 @@ pub fn count_all() -> Func {
     func("COUNT", vec![FuncArg::Wildcard])
 }
 
+/// COALESCE 函数 - 返回第一个非 NULL 的值
+#[inline]
+pub fn coalesce(args: impl IntoFuncArgs) -> Func {
+    func("COALESCE", args.into_func_args())
+}
