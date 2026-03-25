@@ -24,12 +24,12 @@ where
 macro_rules! impl_into_vec_for {
     (
         $(
-            $key:ident => [ $($val:ident),* $(,)? ]
+            $key:ident => [ $($val:ty),* $(,)? ]
         ),* $(,)?
     ) => {
         $(
             $(
-                impl IntoVec<$key> for $val
+                impl rivet_utils::into_vec::IntoVec<$key> for $val
                 where
                     $val: Into<$key>,
                 {

@@ -3,7 +3,8 @@ use crate::sequel::term::expr::Expr;
 use crate::sequel::term::index::Index;
 use crate::sequel::term::lock::{Lock, Wait};
 use crate::sequel::term::select_item::SelectItem;
-use crate::sequel::term::table::{IntoTables, Table};
+use crate::sequel::term::table::Table;
+use rivet_utils::into_vec::IntoVec;
 
 #[derive(Clone, Debug)]
 pub struct SelectStatement {
@@ -88,8 +89,8 @@ impl SelectStatement {
         self.from_clause = self.from_clause.full_join(other.clone(), on);
         self
     }
-    pub fn cross_join(mut self, others: impl IntoTables) -> Self {
-        let tables = others.into_table_refs();
+    pub fn cross_join(mut self, others: impl IntoVec<Table>) -> Self {
+        let tables = others.to_vec();
         for t in tables {
             self.from_clause = self.from_clause.cross_join(t);
         }

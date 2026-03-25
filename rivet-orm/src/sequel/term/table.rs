@@ -2,13 +2,8 @@ use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::join::{Join, JoinType};
+use rivet_utils::impl_into_vec_for;
 use std::sync::Arc;
-
-#[derive(Debug, Clone)]
-pub struct Table {
-    pub inner: Arc<TableInner>,
-    pub alias: Option<String>,
-}
 
 #[derive(Debug, Clone)]
 pub enum TableInner {
@@ -16,6 +11,13 @@ pub enum TableInner {
     Subquery(Box<SelectStatement>),
     Join(Join),
 }
+
+#[derive(Debug, Clone)]
+pub struct Table {
+    pub inner: Arc<TableInner>,
+    pub alias: Option<String>,
+}
+impl_into_vec_for!(Table => [Table]);
 
 impl From<&str> for Table {
     fn from(value: &str) -> Self {
@@ -88,44 +90,5 @@ impl Table {
     }
     pub fn cross_join(self, other: impl Into<Table>) -> Self {
         self.join(other, JoinType::Cross, None)
-    }
-}
-
-pub trait IntoTables {
-    fn into_table_refs(self) -> Vec<Table>;
-}
-
-impl IntoTables for Table {
-    fn into_table_refs(self) -> Vec<Table> {
-        vec![self]
-    }
-}
-impl IntoTables for &Table {
-    fn into_table_refs(self) -> Vec<Table> {
-        vec![self.clone()]
-    }
-}
-
-impl IntoTables for &str {
-    fn into_table_refs(self) -> Vec<Table> {
-        vec![self.into()]
-    }
-}
-
-impl<T> IntoTables for Vec<T>
-where
-    T: Into<Table>,
-{
-    fn into_table_refs(self) -> Vec<Table> {
-        self.into_iter().map(Into::into).collect()
-    }
-}
-
-impl<T, const N: usize> IntoTables for [T; N]
-where
-    T: Into<Table>,
-{
-    fn into_table_refs(self) -> Vec<Table> {
-        self.into_iter().map(Into::into).collect()
     }
 }

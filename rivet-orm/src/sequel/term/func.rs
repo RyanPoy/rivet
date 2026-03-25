@@ -10,7 +10,7 @@ pub enum FuncArg {
     Wildcard,
     Expr(Expr),
 }
-impl_into_vec_for!(FuncArg => [Column, Expr, SelectStatement, Literal]);
+impl_into_vec_for!(FuncArg => [Column, Expr, SelectStatement, Literal, FuncArg]);
 
 impl From<Column> for FuncArg {
     fn from(col: Column) -> Self {
@@ -60,9 +60,7 @@ macro_rules! define_functions {
     ($($name:ident),*) => {
         $(
             #[inline]
-            pub fn $name(args: impl IntoVec<FuncArg>) -> Func {
-                func(stringify!($name).to_uppercase(), args)
-            }
+            pub fn $name(args: impl IntoVec<FuncArg>) -> Func { func(stringify!($name).to_uppercase(), args) }
         )*
     };
 }

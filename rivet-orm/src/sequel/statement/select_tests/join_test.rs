@@ -7,7 +7,7 @@ fn test_cross_join() {
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("id"))
         .select(PRODUCTS.column("name"))
-        .cross_join(&*PRODUCTS);
+        .cross_join((*PRODUCTS).clone());
     assert_mysql!(
         &stmt,
         "SELECT `users0`.`id`, `products0`.`name` FROM `users` AS `users0` CROSS JOIN `products` AS `products0`",
@@ -20,7 +20,7 @@ fn test_cross_join_with_same_table() {
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("id"))
         .select(u2.column("name"))
-        .cross_join(&u2);
+        .cross_join(u2);
     assert_mysql!(
         &stmt,
         "SELECT `users0`.`id`, `users1`.`name` FROM `users` AS `users0` CROSS JOIN `users` AS `users1`",
