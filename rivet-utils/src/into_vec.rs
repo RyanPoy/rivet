@@ -1,12 +1,12 @@
 pub trait IntoVec<T> {
-    fn to_vec(self) -> Vec<T>;
+    fn into_vec(self) -> Vec<T>;
 }
 
 impl<T, I> IntoVec<T> for Vec<I>
 where
     I: Into<T>,
 {
-    fn to_vec(self) -> Vec<T> {
+    fn into_vec(self) -> Vec<T> {
         self.into_iter().map(Into::into).collect()
     }
 }
@@ -15,7 +15,7 @@ impl<T, I, const N: usize> IntoVec<T> for [I; N]
 where
     I: Into<T>,
 {
-    fn to_vec(self) -> Vec<T> {
+    fn into_vec(self) -> Vec<T> {
         self.into_iter().map(Into::into).collect()
     }
 }
@@ -33,7 +33,7 @@ macro_rules! impl_into_vec_for {
                 where
                     $val: Into<$key>,
                 {
-                    fn to_vec(self) -> Vec<$key> {
+                    fn into_vec(self) -> Vec<$key> {
                         vec![self.into()]
                     }
                 }

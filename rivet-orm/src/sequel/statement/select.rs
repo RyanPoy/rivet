@@ -90,7 +90,7 @@ impl SelectStatement {
         self
     }
     pub fn cross_join(mut self, others: impl IntoVec<Table>) -> Self {
-        let tables = others.to_vec();
+        let tables = others.into_vec();
         for t in tables {
             self.from_clause = self.from_clause.cross_join(t);
         }

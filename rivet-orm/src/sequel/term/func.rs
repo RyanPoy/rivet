@@ -52,7 +52,7 @@ impl Func {
 pub fn func(name: impl Into<String>, args: impl IntoVec<FuncArg>) -> Func {
     Func {
         name: name.into(),
-        args: args.to_vec(),
+        args: args.into_vec(),
         distinct: false,
     }
 }
