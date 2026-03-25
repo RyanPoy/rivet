@@ -16,7 +16,7 @@ impl AliasCache {
     pub fn add(&mut self, table_inner: &Arc<TableInner>, name: String, default_alias: Option<String>) {
         let addr = Arc::as_ptr(table_inner) as usize;
         if !self.mapping.contains_key(&addr) {
-            let mut n = *self.all_alias.get(&name).unwrap_or(&0);
+            let n = *self.all_alias.get(&name).unwrap_or(&0);
             self.mapping.insert(addr, (format!("{}{}", name, n), default_alias));
             self.all_alias.insert(name, n + 1);
         }

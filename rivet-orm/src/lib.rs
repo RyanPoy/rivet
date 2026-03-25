@@ -1,5 +1,6 @@
 pub mod schema;
 pub mod sequel;
+
 extern crate core;
 
 #[cfg(test)]
