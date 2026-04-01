@@ -9,3 +9,4 @@ mod limit_test;
 mod select_test;
 // mod subquery_test;
 mod where_test;
+mod alias_test;

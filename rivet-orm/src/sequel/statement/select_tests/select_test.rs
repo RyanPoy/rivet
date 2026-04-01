@@ -1,36 +1,4 @@
 // // ============================================================================
-// // 9. 列别名测试
-// // ============================================================================
-//
-// #[test]
-// fn test_column_alias() {
-//     let stmt = SelectStatement::from(&*USERS).select(USERS.column("name").alias("username"));
-//     assert_mysql!(&stmt, "SELECT `t1`.`name` AS `username` FROM `users` AS `t1`", []);
-//     assert_pg!(&stmt, r#"SELECT "t1"."name" AS "username" FROM "users" AS "t1""#, []);
-// }
-//
-// #[test]
-// fn test_expression_alias() {
-//     let stmt = SelectStatement::from(&*USERS)
-//         .select((USERS.column("first_name").clone() + USERS.column("last_name").clone()).alias("full_name"));
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT `t1`.`first_name` + `t1`.`last_name` AS `full_name` FROM `users` AS `t1`",
-//         []
-//     );
-// }
-//
-// #[test]
-// fn test_func_alias() {
-//     let stmt = SelectStatement::from(&*USERS).select(upper(USERS.column("name")).alias("upper_name"));
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT UPPER(`t1`.`name`) AS `upper_name` FROM `users` AS `t1`",
-//         []
-//     );
-// }
-//
-// // ============================================================================
 // // 10. 字面量表达式测试
 // // ============================================================================
 //

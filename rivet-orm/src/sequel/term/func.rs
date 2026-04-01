@@ -2,6 +2,7 @@ use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::literal::Literal;
+use crate::sequel::term::select_item::SelectItem;
 use rivet_utils::impl_into_vec_for;
 use rivet_utils::into_vec::IntoVec;
 
@@ -47,6 +48,10 @@ impl Func {
         self.distinct = true;
         self
     }
+
+    pub fn alias(self, alias: impl Into<String>) -> SelectItem {
+        Expr::from(self).alias(alias)
+    }
 }
 
 pub fn func(name: impl Into<String>, args: impl IntoVec<FuncArg>) -> Func {
@@ -56,6 +61,7 @@ pub fn func(name: impl Into<String>, args: impl IntoVec<FuncArg>) -> Func {
         distinct: false,
     }
 }
+
 macro_rules! define_functions {
     ($($name:ident),*) => {
         $(
