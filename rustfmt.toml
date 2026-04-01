@@ -14,7 +14,7 @@ where_single_line = false              # where 从句保持多行，提高可读
 
 # === 导入分组 (Go 风格强调清晰分组) ===
 reorder_imports = true                 # 必须启用，才能进行重排
-imports_granularity = "Crate"          # 合并为同一个 crate 的导入
+imports_granularity = "Item"          # 合并为同一个 crate 的导入
 group_imports = "StdExternalCrate"    # 按 标准库、外部crate、本地crate 分组 (官方推荐[citation:7][citation:9])
 # 效果：use 语句会像 Go 一样清晰分组，告别混乱
 

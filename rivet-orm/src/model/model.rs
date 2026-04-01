@@ -1,32 +1,32 @@
+use crate::{
+    model::objects::Objects,
+    sequel::term::table::Table
+};
 
-pub trait Model: Sized{
-    type Objects;
 
-    fn objects() -> Self::Objects;
+
+pub trait Model: Sized {
+    const TABLE_NAME: &'static str;
+
+    fn objects()    -> Objects<Self> { Objects::new(&Self::table()) }
+    fn table_name() -> &'static str  { Self::TABLE_NAME }
+    fn table()      -> Table         { Table::from(Self::TABLE_NAME) }
 }
+
 
 #[cfg(test)]
 mod tests {
-    use crate::{model::objects::Objects, sequel::term::table::Table};
-
     use super::*;
 
     struct User { id: u64, name: String }
-    struct UserObjects { inner: Objects<User> }
 
     impl Model for User {
-        type Objects = UserObjects;
-
-
-        fn objects() -> Self::Objects {
-           const TABLE_NAME: &str = "users";
-           let t = Table::from(TABLE_NAME);
-           UserObjects { inner: Objects::new(&t) }
-        }
+        const TABLE_NAME: &'static str = "users";
     }
 
     #[test]
-    fn test_model_objects() {
-        let users = User::objects();
+    fn test_model() {
+        let _: Objects<User> = User::objects();
+        assert_eq!("users", User::table_name());
     }
 }

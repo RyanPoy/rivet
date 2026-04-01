@@ -1,11 +1,11 @@
 use rivet_utils::into_vec::IntoVec;
-
- use crate::model::model::Model;
- use crate::sequel::statement::select::SelectStatement;
+use crate::model::model::Model;
+use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::expr::Expr;
- use crate::sequel::term::lock::{Lock, Wait};
- use crate::sequel::term::select_item::SelectItem;
- use crate::sequel::term::table::Table;
+use crate::sequel::term::lock::{Lock, Wait};
+use crate::sequel::term::select_item::SelectItem;
+use crate::sequel::term::table::Table;
+
 
 pub struct Objects<M> {
     select: SelectStatement,
