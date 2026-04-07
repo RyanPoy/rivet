@@ -1,8 +1,9 @@
 use crate::sequel::term::calendar::{Date, DateTime, Time};
+use crate::sequel::term::comparable::Comparable;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::select_item::SelectItem;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum Literal {
     Null,
     Int(i64),
@@ -22,6 +23,10 @@ impl Literal {
     pub fn is_null(&self) -> bool {
         matches!(self, Self::Null)
     }
+}
+
+impl Comparable for Literal {
+   fn into_expr(&self) -> Expr { Expr::Literal(self.clone()) }
 }
 
 // 空

@@ -24,21 +24,9 @@ fn test_select_multiple_columns() {
         .select(USERS.column("id"))
         .select(USERS.column("name"))
         .select(USERS.column("email"));
-    assert_mysql!(
-        &stmt,
-        "SELECT `users0`.`id`, `users0`.`name`, `users0`.`email` FROM `users` AS `users0`",
-        []
-    );
-    assert_pg!(
-        &stmt,
-        r#"SELECT "users0"."id", "users0"."name", "users0"."email" FROM "users" AS "users0""#,
-        []
-    );
-    assert_sqlite!(
-        &stmt,
-        r#"SELECT "users0"."id", "users0"."name", "users0"."email" FROM "users" AS "users0""#,
-        []
-    );
+    assert_mysql!(&stmt, "SELECT `users0`.`id`, `users0`.`name`, `users0`.`email` FROM `users` AS `users0`", []);
+    assert_pg!(&stmt, r#"SELECT "users0"."id", "users0"."name", "users0"."email" FROM "users" AS "users0""#, []);
+    assert_sqlite!(&stmt, r#"SELECT "users0"."id", "users0"."name", "users0"."email" FROM "users" AS "users0""#, []);
 }
 
 #[test]

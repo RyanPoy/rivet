@@ -10,3 +10,4 @@ mod select_test;
 // mod subquery_test;
 mod where_test;
 mod alias_test;
+mod test_sqlalchemy;
