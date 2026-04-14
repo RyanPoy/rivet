@@ -48,8 +48,10 @@ impl SelectStatement {
         self
     }
 
-    pub fn select(mut self, c: impl Into<SelectItem>) -> Self {
-        self.select_clause.push(c.into());
+    pub fn select(mut self, columns: impl IntoVec<SelectItem>) -> Self {
+        for item in columns.into_vec() {
+            self.select_clause.push(item);
+        }
         self
     }
 

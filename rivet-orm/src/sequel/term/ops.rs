@@ -4,7 +4,7 @@ pub enum BinaryOp {
     Sub,
     Mul,
     Div,
-    Mod,
+    Rem,
     Eq,
     NotEq,
     Gt,
@@ -27,7 +27,7 @@ impl BinaryOp {
             Self::Sub => "-",
             Self::Mul => "*",
             Self::Div => "/",
-            Self::Mod => "%",
+            Self::Rem => "%",
 
             Self::Eq => "=",
             Self::NotEq => "<>",

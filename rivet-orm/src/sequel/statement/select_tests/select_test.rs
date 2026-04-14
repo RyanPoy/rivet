@@ -1,50 +1,4 @@
-// // ============================================================================
-// // 10. 字面量表达式测试
-// // ============================================================================
-//
-// #[test]
-// fn test_arithmetic_operations() {
-//     let stmt = SelectStatement::from(&*ORDERS).select(ORDERS.column("price") * ORDERS.column("quantity"));
-//     assert_mysql!(&stmt, "SELECT `t1`.`price` * `t1`.`quantity` FROM `orders` AS `t1`", []);
-// }
-//
-// #[test]
-// fn test_addition_subtraction() {
-//     let stmt = SelectStatement::from(&*ORDERS).select(vec![
-//         ORDERS.column("price") + ORDERS.column("tax"),
-//         ORDERS.column("price") - ORDERS.column("discount"),
-//     ]);
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT `t1`.`price` + `t1`.`tax`, `t1`.`price` - `t1`.`discount` FROM `orders` AS `t1`",
-//         []
-//     );
-// }
-//
-// #[test]
-// fn test_division_modulo() {
-//     let stmt = SelectStatement::from(&*ORDERS).select(vec![
-//         ORDERS.column("total") / ORDERS.column("quantity"),
-//         ORDERS.column("total") % ORDERS.column("quantity"),
-//     ]);
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT `t1`.`total` / `t1`.`quantity`, `t1`.`total` % `t1`.`quantity` FROM `orders` AS `t1`",
-//         []
-//     );
-// }
-//
-// #[test]
-// fn test_mixed_arithmetic() {
-//     let stmt = SelectStatement::from(&*ORDERS)
-//         .select((ORDERS.column("price") * ORDERS.column("quantity") + ORDERS.column("tax")) * Literal::from(0.9));
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT `t1`.`price` * `t1`.`quantity` + `t1`.`tax` * ? FROM `orders` AS `t1`",
-//         [0.9f64]
-//     );
-// }
-//
+
 // // ============================================================================
 // // 11. 表别名测试
 // // ============================================================================
@@ -264,21 +218,4 @@
 //         "SELECT `t1`.`id` FROM `orders` AS `t1` WHERE `t1`.`created_at` = ?",
 //         [datetime]
 //     );
-// }
-//
-// // ============================================================================
-// // 16. 多数据库方言差异测试
-// // ============================================================================
-//
-// #[test]
-// fn test_dialect_differences() {
-//     let stmt = SelectStatement::from(&*USERS)
-//         .select(USERS.column("id"))
-//         .limit(10)
-//         .offset(5);
-//
-//     // 所有数据库都支持 LIMIT + OFFSET
-//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1` LIMIT 10 OFFSET 5", []);
-//     assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" LIMIT 10 OFFSET 5"#, []);
-//     assert_sqlite!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" LIMIT 10 OFFSET 5"#, []);
 // }

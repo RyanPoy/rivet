@@ -4,7 +4,6 @@ use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::TableInner;
 use std::sync::Arc;
 
-
 #[derive(Debug, Clone)]
 pub struct Column {
     pub name: String,
@@ -24,9 +23,10 @@ impl Column {
             alias: Some(alias.into()),
         }
     }
-
 }
 
 impl Comparable for Column {
-   fn into_expr(&self) -> Expr { Expr::Column(self.clone()) }
+    fn into_expr(&self) -> Expr {
+        Expr::Column(self.clone())
+    }
 }

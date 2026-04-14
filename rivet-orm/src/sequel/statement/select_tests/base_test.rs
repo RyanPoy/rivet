@@ -24,14 +24,28 @@ fn test_select_multiple_columns() {
         .select(USERS.column("id"))
         .select(USERS.column("name"))
         .select(USERS.column("email"));
-    assert_mysql!(&stmt, "SELECT `users0`.`id`, `users0`.`name`, `users0`.`email` FROM `users` AS `users0`", []);
-    assert_pg!(&stmt, r#"SELECT "users0"."id", "users0"."name", "users0"."email" FROM "users" AS "users0""#, []);
-    assert_sqlite!(&stmt, r#"SELECT "users0"."id", "users0"."name", "users0"."email" FROM "users" AS "users0""#, []);
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id`, `users0`.`name`, `users0`.`email` FROM `users` AS `users0`",
+        []
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "users0"."id", "users0"."name", "users0"."email" FROM "users" AS "users0""#,
+        []
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id", "users0"."name", "users0"."email" FROM "users" AS "users0""#,
+        []
+    );
 }
 
 #[test]
 fn test_select_with_literal() {
-    let stmt = SelectStatement::from(&*USERS).select(1).select(Literal::from("hello"));
+    let stmt = SelectStatement::from(&*USERS)
+        .select(Literal::from(1))
+        .select(Literal::from("hello"));
     assert_mysql!(&stmt, "SELECT 1, 'hello' FROM `users` AS `users0`", []);
     assert_pg!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "users0""#, []);
     assert_sqlite!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "users0""#, []);

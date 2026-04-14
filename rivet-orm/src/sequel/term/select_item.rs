@@ -2,12 +2,14 @@ use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::Func;
 use crate::sequel::term::literal::Literal;
+use rivet_utils::impl_into_vec_for;
 
 #[derive(Clone, Debug)]
 pub struct SelectItem {
     pub expr: Expr,
     pub alias: Option<String>,
 }
+impl_into_vec_for!(SelectItem => [Column, Func, Expr, Literal, SelectItem]);
 
 impl From<Column> for SelectItem {
     fn from(value: Column) -> Self {

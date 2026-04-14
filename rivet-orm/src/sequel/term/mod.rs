@@ -11,3 +11,4 @@ pub mod select_item;
 pub mod table;
 pub mod distinct;
 pub mod comparable;
+mod arithmetic;
