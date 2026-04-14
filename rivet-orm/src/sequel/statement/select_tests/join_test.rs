@@ -8,7 +8,7 @@ fn test_cross_join() {
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("id"))
         .select(PRODUCTS.column("name"))
-        .cross_join((*PRODUCTS).clone());
+        .cross_join(&*PRODUCTS);
     assert_mysql!(
         &stmt,
         "SELECT `users0`.`id`, `products0`.`name` FROM `users` AS `users0` CROSS JOIN `products` AS `products0`",

@@ -62,7 +62,7 @@ impl SelectStatement {
     where
         T: Clone + Into<Table>,
     {
-        self.from_clause = self.from_clause.inner_join(other.clone(), on);
+        self.from_clause = self.from_clause.join(other, on);
         self
     }
 
@@ -70,7 +70,7 @@ impl SelectStatement {
     where
         T: Clone + Into<Table>,
     {
-        self.from_clause = self.from_clause.left_join(other.clone(), on);
+        self.from_clause = self.from_clause.left_join(other, on);
         self
     }
 
@@ -78,7 +78,7 @@ impl SelectStatement {
     where
         T: Clone + Into<Table>,
     {
-        self.from_clause = self.from_clause.right_join(other.clone(), on);
+        self.from_clause = self.from_clause.right_join(other, on);
         self
     }
 
@@ -86,13 +86,13 @@ impl SelectStatement {
     where
         T: Clone + Into<Table>,
     {
-        self.from_clause = self.from_clause.full_join(other.clone(), on);
+        self.from_clause = self.from_clause.full_join(other, on);
         self
     }
     pub fn cross_join(mut self, others: impl IntoVec<Table>) -> Self {
         let tables = others.into_vec();
         for t in tables {
-            self.from_clause = self.from_clause.cross_join(t);
+            self.from_clause = self.from_clause.cross_join(&t);
         }
         self
     }

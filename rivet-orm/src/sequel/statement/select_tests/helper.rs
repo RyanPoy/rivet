@@ -1,8 +1,8 @@
-use std::sync::LazyLock;
 use crate::model::model::Model;
 use crate::sequel::term::calendar::{Date, DateTime};
 use crate::sequel::term::literal::Literal;
 use crate::sequel::term::table::Table;
+use std::sync::LazyLock;
 
 pub fn compare_params(actual: Vec<Literal>, expected: Vec<Literal>) -> bool {
     if actual.len() != expected.len() {
@@ -51,7 +51,6 @@ macro_rules! assert_sqlite {
 // ============================================================================
 // 基础表定义
 // ============================================================================
-
 pub static USERS: LazyLock<Table> = LazyLock::new(|| Table::new("users"));
 pub static ORDERS: LazyLock<Table> = LazyLock::new(|| Table::new("orders"));
 pub static PRODUCTS: LazyLock<Table> = LazyLock::new(|| Table::new("products"));
@@ -66,11 +65,31 @@ pub static GRANDCHILD: LazyLock<Table> = LazyLock::new(|| Table::new("grandchild
 pub static GRANDCHILD_W_PARENT: LazyLock<Table> = LazyLock::new(|| Table::new("grandchildwparent"));
 pub static TBL: LazyLock<Table> = LazyLock::new(|| Table::new("tbl"));
 
-pub struct User { id: u32, username: String, age: u32, company_id: u32 }
-pub struct Order { id: u32, user_id: u32, created_at: DateTime }
-pub struct Product { id: u32, name: String, expired_on: Date, category_id: u32 }
-pub struct Category { id: u32, name: String, }
-pub struct Company { id: u32, name: String }
+pub struct User {
+    id: u32,
+    username: String,
+    age: u32,
+    company_id: u32,
+}
+pub struct Order {
+    id: u32,
+    user_id: u32,
+    created_at: DateTime,
+}
+pub struct Product {
+    id: u32,
+    name: String,
+    expired_on: Date,
+    category_id: u32,
+}
+pub struct Category {
+    id: u32,
+    name: String,
+}
+pub struct Company {
+    id: u32,
+    name: String,
+}
 
 impl Model for User {
     const TABLE_NAME: &'static str = "users";

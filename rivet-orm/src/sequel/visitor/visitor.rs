@@ -141,13 +141,13 @@ impl<D: Dialect> Visitor<D> {
         if let Some(f) = iter.next() {
             self.push(" WHERE ");
             match f {
-                Expr::Literal(lit) => self.visit_literal(lit, false).push(" = ").visit_literal(lit, false),
+                Expr::Literal(lit) => self.visit_literal(lit, true).push(" = ").visit_literal(lit, true),
                 _ => self.visit_expr(f, false, 0),
             };
             for f in iter {
                 self.push(" AND ");
                 match f {
-                    Expr::Literal(lit) => self.visit_literal(lit, false).push(" = ").visit_literal(lit, false),
+                    Expr::Literal(lit) => self.visit_literal(lit, true).push(" = ").visit_literal(lit, true),
                     _ => self.visit_expr(f, false, 0),
                 };
             }
@@ -199,7 +199,17 @@ impl<D: Dialect> Visitor<D> {
             JoinType::Right => self.push(" RIGHT JOIN "),
             JoinType::Full => self.push(" FULL JOIN "),
         };
+        let add_paren = match &join.right.inner.as_ref() {
+            TableInner::Join(join) => true,
+            _ => false,
+        };
+        if add_paren {
+            self.push("(");
+        }
         self.visit_table(&join.right);
+        if add_paren {
+            self.push(")");
+        }
         if let Some(on) = &join.on {
             self.push(" ON ").visit_expr(on, false, 0);
         }
@@ -221,10 +231,17 @@ impl<D: Dialect> Visitor<D> {
         match expr {
             Expr::Column(c) => self.visit_column_ref(c),
             Expr::Literal(l) => self.visit_literal(l, inline),
-            Expr::Binary { left, op, right } => self
-                .visit_expr(left, inline, current_precedence)
-                .visit_binary_op(op)
-                .visit_expr(right, inline, current_precedence),
+            Expr::Binary { left, op, right } => match &**left {
+                Expr::Literal(l) => {
+                    self.visit_literal(&l, true)
+                        .visit_binary_op(op)
+                        .visit_expr(right, inline, current_precedence)
+                },
+                _ => self
+                    .visit_expr(left, inline, current_precedence)
+                    .visit_binary_op(op)
+                    .visit_expr(right, inline, current_precedence),
+            },
             Expr::In { expr, list, negated } => self
                 .visit_expr(expr, inline, current_precedence)
                 .visit_binary_op(if *negated { &BinaryOp::NotIn } else { &BinaryOp::In })

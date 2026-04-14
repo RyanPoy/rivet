@@ -56,7 +56,7 @@ impl Func {
 
 pub fn func(name: impl Into<String>, args: impl IntoVec<FuncArg>) -> Func {
     Func {
-        name: name.into(),
+        name: name.into().to_uppercase(),
         args: args.into_vec(),
         distinct: false,
     }
@@ -66,7 +66,7 @@ macro_rules! define_functions {
     ($($name:ident),*) => {
         $(
             #[inline]
-            pub fn $name(args: impl IntoVec<FuncArg>) -> Func { func(stringify!($name).to_uppercase(), args) }
+            pub fn $name(args: impl IntoVec<FuncArg>) -> Func { func(stringify!($name), args) }
         )*
     };
 }
