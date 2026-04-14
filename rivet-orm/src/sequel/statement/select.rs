@@ -55,8 +55,11 @@ impl SelectStatement {
         self
     }
 
-    pub fn where_(mut self, c: Expr) -> Self {
-        self.where_clause.push(c);
+    pub fn where_<T>(mut self, c: T) -> Self
+    where
+        T: Into<Expr> + Clone,
+    {
+        self.where_clause.push(c.into());
         self
     }
 

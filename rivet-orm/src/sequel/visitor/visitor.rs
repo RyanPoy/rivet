@@ -250,7 +250,7 @@ impl<D: Dialect> Visitor<D> {
                 .push(")"),
             Expr::Unary { op, expr } => self.visit_unary_op(op).visit_expr(expr, inline, current_precedence),
             Expr::Func(f) => self.visit_func(f, inline),
-            Expr::Subquery(sq) => self.visit_select_statement(sq),
+            Expr::Subquery(sq) => self.push("(").visit_select_statement(sq).push(")"),
         };
         if need_parens {
             self.push(")");

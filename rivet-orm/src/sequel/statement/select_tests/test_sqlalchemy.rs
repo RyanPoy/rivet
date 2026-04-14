@@ -60,21 +60,21 @@ fn test_select_no_columns_select_from_where_exists() {
     let exists_stmt = SelectStatement::from(&*TBL).where_(TBL.column("id").eq(123_i64));
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("id"))
-        .where_(exists(exists_stmt).into());
+        .where_(exists(exists_stmt));
 
     assert_mysql!(
         &stmt,
-        "SELECT `users0`.`id` FROM `users` AS `users0` WHERE EXISTS(SELECT * FROM `tbl` AS `tbl0` WHERE `tbl0`.`id` = ?)",
+        "SELECT `users0`.`id` FROM `users` AS `users0` WHERE EXISTS((SELECT * FROM `tbl` AS `tbl0` WHERE `tbl0`.`id` = ?))",
         [123_i64]
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE EXISTS(SELECT * FROM "tbl" AS "tbl0" WHERE "tbl0"."id" = $1)"#,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE EXISTS((SELECT * FROM "tbl" AS "tbl0" WHERE "tbl0"."id" = $1))"#,
         [123_i64]
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE EXISTS(SELECT * FROM "tbl" AS "tbl0" WHERE "tbl0"."id" = ?)"#,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE EXISTS((SELECT * FROM "tbl" AS "tbl0" WHERE "tbl0"."id" = ?))"#,
         [123_i64]
     );
 }
