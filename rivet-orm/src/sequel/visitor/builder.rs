@@ -1,9 +1,9 @@
+use crate::sequel::term::literal::{Literal, LiteralData};
 use crate::sequel::visitor::dialect::{Dialect, PlaceHolderStyle};
-use crate::sequel::term::literal::Literal;
 
 pub struct Builder {
     pub buff: String,
-    pub binder: Vec<Literal>,
+    pub binder: Vec<LiteralData>,
 }
 
 impl Builder {
@@ -22,7 +22,7 @@ impl Builder {
         self
     }
 
-    pub fn bind(&mut self, value: Literal, dialect: &impl Dialect) -> &mut Self {
+    pub fn bind(&mut self, value: LiteralData, dialect: &impl Dialect) -> &mut Self {
         self.binder.push(value);
         match dialect.placeholder_style() {
             PlaceHolderStyle::QuestionMark => self.buff.push_str("?"),

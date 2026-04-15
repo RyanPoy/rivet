@@ -1,50 +1,36 @@
 use crate::model::model::Model;
 use crate::sequel::term::calendar::{Date, DateTime};
-use crate::sequel::term::literal::Literal;
+use crate::sequel::term::literal::LiteralData;
 use crate::sequel::term::table::Table;
 use std::sync::LazyLock;
 
-pub fn compare_params(actual: Vec<Literal>, expected: Vec<Literal>) -> bool {
-    if actual.len() != expected.len() {
-        return false;
-    }
-    for (a, e) in actual.iter().zip(expected.iter()) {
-        match (a, e) {
-            (Literal::Int(a), Literal::Int(e)) if a == e => continue,
-            (Literal::Float(a), Literal::Float(e)) if a == e => continue,
-            (Literal::String(a), Literal::String(e)) if a == e => continue,
-            (Literal::Bool(a), Literal::Bool(e)) if a == e => continue,
-            (Literal::Null, Literal::Null) => continue,
-            _ => return false,
-        }
-    }
-    true
-}
-
 macro_rules! assert_mysql {
     ($stmt:expr, $expected_sql:expr, [$($params:expr),*]) => {
-        let (sql, params) = crate::sequel::visitor::visitor::mysql().visit_select_statement($stmt).finish();
+        let (sql, params_relt) = crate::sequel::visitor::visitor::mysql().visit_select_statement($stmt).finish();
         assert_eq!(sql, $expected_sql.to_string());
         let expected: Vec<crate::sequel::term::literal::Literal> = vec![$($params.into()),*];
-        assert!(super::helper::compare_params(params, expected), "params mismatch");
+        let expected: Vec<crate::sequel::term::literal::LiteralData> = expected.iter().map(|item: &crate::sequel::term::literal::Literal| item.data().unwrap().clone()).collect();
+        assert_eq!(params_relt, expected);
     };
 }
 
 macro_rules! assert_pg {
     ($stmt:expr, $expected_sql:expr, [$($params:expr),*]) => {
-        let (sql, params) = crate::sequel::visitor::visitor::postgre().visit_select_statement($stmt).finish();
+        let (sql, params_relt) = crate::sequel::visitor::visitor::postgre().visit_select_statement($stmt).finish();
         assert_eq!(sql, $expected_sql.to_string());
         let expected: Vec<crate::sequel::term::literal::Literal> = vec![$($params.into()),*];
-        assert!(super::helper::compare_params(params, expected), "params mismatch");
+        let expected: Vec<crate::sequel::term::literal::LiteralData> = expected.iter().map(|item: &crate::sequel::term::literal::Literal| item.data().unwrap().clone()).collect();
+        assert_eq!(params_relt, expected);
     };
 }
 
 macro_rules! assert_sqlite {
     ($stmt:expr, $expected_sql:expr, [$($params:expr),*]) => {
-        let (sql, params) = crate::sequel::visitor::visitor::sqlite().visit_select_statement($stmt).finish();
+        let (sql, params_relt) = crate::sequel::visitor::visitor::sqlite().visit_select_statement($stmt).finish();
         assert_eq!(sql, $expected_sql.to_string());
         let expected: Vec<crate::sequel::term::literal::Literal> = vec![$($params.into()),*];
-        assert!(super::helper::compare_params(params, expected), "params mismatch");
+        let expected: Vec<crate::sequel::term::literal::LiteralData> = expected.iter().map(|item: &crate::sequel::term::literal::Literal| item.data().unwrap().clone()).collect();
+        assert_eq!(params_relt, expected);
     };
 }
 

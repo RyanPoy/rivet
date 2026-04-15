@@ -5,7 +5,7 @@ use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::{Func, FuncArg};
 use crate::sequel::term::index::Index;
 use crate::sequel::term::join::{Join, JoinType};
-use crate::sequel::term::literal::Literal;
+use crate::sequel::term::literal::{Literal, LiteralData};
 use crate::sequel::term::lock::{Lock, Wait};
 use crate::sequel::term::ops::{BinaryOp, UnaryOp};
 use crate::sequel::term::select_item::SelectItem;
@@ -141,14 +141,14 @@ impl<D: Dialect> Visitor<D> {
         if let Some(f) = iter.next() {
             self.push(" WHERE ");
             match f {
-                Expr::Literal(lit) => self.visit_literal(lit, true).push(" = ").visit_literal(lit, true),
-                _ => self.visit_expr(f, false, 0),
+                Expr::Literal(lit) => self.visit_literal(lit).push(" = ").visit_literal(lit),
+                _ => self.visit_expr(f, 0),
             };
             for f in iter {
                 self.push(" AND ");
                 match f {
-                    Expr::Literal(lit) => self.visit_literal(lit, true).push(" = ").visit_literal(lit, true),
-                    _ => self.visit_expr(f, false, 0),
+                    Expr::Literal(lit) => self.visit_literal(lit).push(" = ").visit_literal(lit),
+                    _ => self.visit_expr(f, 0),
                 };
             }
         }
@@ -211,18 +211,18 @@ impl<D: Dialect> Visitor<D> {
             self.push(")");
         }
         if let Some(on) = &join.on {
-            self.push(" ON ").visit_expr(on, false, 0);
+            self.push(" ON ").visit_expr(on, 0);
         }
         self
     }
 
     pub fn visit_select_item(&mut self, item: &SelectItem) -> &mut Self {
         match item {
-            SelectItem { expr, alias } => self.visit_expr(expr, true, 0).visit_alias(alias),
+            SelectItem { expr, alias } => self.visit_expr(expr, 0).visit_alias(alias),
         }
     }
 
-    pub fn visit_expr(&mut self, expr: &Expr, inline: bool, parent_precedence: i32) -> &mut Self {
+    pub fn visit_expr(&mut self, expr: &Expr, parent_precedence: i32) -> &mut Self {
         let current_precedence = expr.precedence();
         let need_parens = current_precedence < parent_precedence;
         if need_parens {
@@ -230,26 +230,25 @@ impl<D: Dialect> Visitor<D> {
         }
         match expr {
             Expr::Column(c) => self.visit_column_ref(c),
-            Expr::Literal(l) => self.visit_literal(l, inline),
+            Expr::Literal(l) => self.visit_literal(l),
             Expr::Binary { left, op, right } => match &**left {
-                Expr::Literal(l) => {
-                    self.visit_literal(&l, true)
-                        .visit_binary_op(op)
-                        .visit_expr(right, inline, current_precedence)
-                },
-                _ => self
-                    .visit_expr(left, inline, current_precedence)
+                Expr::Literal(l) => self
+                    .visit_literal(&l)
                     .visit_binary_op(op)
-                    .visit_expr(right, inline, current_precedence),
+                    .visit_expr(right, current_precedence),
+                _ => self
+                    .visit_expr(left, current_precedence)
+                    .visit_binary_op(op)
+                    .visit_expr(right, current_precedence),
             },
             Expr::In { expr, list, negated } => self
-                .visit_expr(expr, inline, current_precedence)
+                .visit_expr(expr, current_precedence)
                 .visit_binary_op(if *negated { &BinaryOp::NotIn } else { &BinaryOp::In })
                 .push("(")
-                .visit_expr_list(list, inline, 0)
+                .visit_expr_list(list, 0)
                 .push(")"),
-            Expr::Unary { op, expr } => self.visit_unary_op(op).visit_expr(expr, inline, current_precedence),
-            Expr::Func(f) => self.visit_func(f, inline),
+            Expr::Unary { op, expr } => self.visit_unary_op(op).visit_expr(expr, current_precedence),
+            Expr::Func(f) => self.visit_func(f),
             Expr::Subquery(sq) => self.push("(").visit_select_statement(sq).push(")"),
         };
         if need_parens {
@@ -257,60 +256,56 @@ impl<D: Dialect> Visitor<D> {
         }
         self
     }
-    pub fn visit_func(&mut self, f: &Func, inline: bool) -> &mut Self {
+    pub fn visit_func(&mut self, f: &Func) -> &mut Self {
         if !f.distinct {
             // isn't distinct
-            return self.push(&f.name).push("(").push_func_args(&f.args, inline).push(")");
+            return self.push(&f.name).push("(").push_func_args(&f.args).push(")");
         }
 
         if f.args.len() <= 1 || !f.name.eq_ignore_ascii_case("count") {
             // distinct, but not count and multiple columns。
-            return self
-                .push(&f.name)
-                .push("(DISTINCT ")
-                .push_func_args(&f.args, inline)
-                .push(")");
+            return self.push(&f.name).push("(DISTINCT ").push_func_args(&f.args).push(")");
         }
         // count distinct multiple columns
         self.push(&f.name).push("(DISTINCT ");
         match self.dialect.caps().count_distinct {
             CountDistinctCap::Merge => {
-                self.push("(").push_func_args(&f.args, inline).push(")");
+                self.push("(").push_func_args(&f.args).push(")");
             },
             CountDistinctCap::Extend => {
-                self.push_func_args(&f.args, inline);
+                self.push_func_args(&f.args);
             },
             _ => unreachable!(),
         }
         self.push(")")
     }
 
-    fn push_func_args(&mut self, args: &[FuncArg], inline: bool) -> &mut Self {
+    fn push_func_args(&mut self, args: &[FuncArg]) -> &mut Self {
         let mut iter = args.iter();
         if let Some(arg) = iter.next() {
-            self.visit_func_arg(arg, inline);
+            self.visit_func_arg(arg);
         }
         for arg in iter {
             self.push(", ");
-            self.visit_func_arg(arg, inline);
+            self.visit_func_arg(arg);
         }
         self
     }
 
-    pub fn visit_func_arg(&mut self, arg: &FuncArg, inline: bool) -> &mut Self {
+    pub fn visit_func_arg(&mut self, arg: &FuncArg) -> &mut Self {
         match arg {
-            FuncArg::Expr(expr) => self.visit_expr(expr, inline, 0),
+            FuncArg::Expr(expr) => self.visit_expr(expr, 0),
             FuncArg::Wildcard => self.push("*"),
         }
     }
 
-    pub fn visit_expr_list(&mut self, expr_list: &Vec<Expr>, inline: bool, parent_precedence: i32) -> &mut Self {
+    pub fn visit_expr_list(&mut self, expr_list: &Vec<Expr>, parent_precedence: i32) -> &mut Self {
         let mut iter = expr_list.iter();
         if let Some(expr) = iter.next() {
-            self.visit_expr(expr, inline, 0);
+            self.visit_expr(expr, 0);
         }
         for expr in iter {
-            self.push(", ").visit_expr(expr, inline, 0);
+            self.push(", ").visit_expr(expr, 0);
         }
         self
     }
@@ -329,7 +324,7 @@ impl<D: Dialect> Visitor<D> {
             Distinct::None => self,
             Distinct::All => self.push("DISTINCT "),
             Distinct::On(_) if !self.dialect.caps().distinct_on => self.push("DISTINCT "),
-            Distinct::On(cols) => self.push("DISTINCT ON (").visit_expr_list(cols, true, 0).push(") "),
+            Distinct::On(cols) => self.push("DISTINCT ON (").visit_expr_list(cols, 0).push(") "),
         }
     }
 
@@ -341,21 +336,19 @@ impl<D: Dialect> Visitor<D> {
         self.push_quote(&col.name)
     }
 
-    pub fn visit_literal(&mut self, lit: &Literal, inline: bool) -> &mut Self {
-        if !inline && !lit.is_null() {
-            self.builder.bind(lit.clone(), &self.dialect);
-            return self;
-        }
-
+    pub fn visit_literal(&mut self, lit: &Literal) -> &mut Self {
         match lit {
             Literal::Null => self.push("NULL"),
-            Literal::Int(v) => self.push(&v.to_string()),
-            Literal::Float(v) => self.push(&v.to_string()),
-            Literal::Bool(v) => self.push(self.dialect.bool_str(*v)),
-            Literal::String(v) => self.push("'").push_escape(&v).push("'"),
-            Literal::Date(v) => self.push("'").push(&v.to_string()).push("'"),
-            Literal::DateTime(v) => self.push("'").push(&v.to_string()).push("'"),
-            Literal::Time(v) => self.push("'").push(&v.to_string()).push("'"),
+            Literal::Param(data) => self.bind(data.clone()),
+            Literal::Lit(data) => match data {
+                LiteralData::Int(v) => self.push(&v.to_string()),
+                LiteralData::Float(v) => self.push(&v.to_string()),
+                LiteralData::Bool(v) => self.push(self.dialect.bool_str(*v)),
+                LiteralData::String(v) => self.push("'").push_escape(&v).push("'"),
+                LiteralData::Date(v) => self.push("'").push(&v.to_string()).push("'"),
+                LiteralData::DateTime(v) => self.push("'").push(&v.to_string()).push("'"),
+                LiteralData::Time(v) => self.push("'").push(&v.to_string()).push("'"),
+            },
         }
     }
 
@@ -368,7 +361,7 @@ impl<D: Dialect> Visitor<D> {
     }
 
     #[inline]
-    pub fn finish(&self) -> (String, Vec<Literal>) {
+    pub fn finish(&self) -> (String, Vec<LiteralData>) {
         (self.builder.buff.clone(), self.builder.binder.clone())
     }
 
@@ -381,6 +374,12 @@ impl<D: Dialect> Visitor<D> {
     #[inline]
     fn push(&mut self, v: &str) -> &mut Self {
         self.builder.push(v);
+        self
+    }
+
+    #[inline]
+    fn bind(&mut self, v: LiteralData) -> &mut Self {
+        self.builder.bind(v, &self.dialect);
         self
     }
 

@@ -48,7 +48,7 @@ fn test_select_no_columns_select_from_where() {
 
 #[test]
 fn test_select_no_columns_where_true() {
-    let item = Literal::Int(1_i64);
+    let item = Literal::from(1_i64);
     let stmt = SelectStatement::from(&*TBL).where_(item.eq(1_i64));
     assert_mysql!(&stmt, "SELECT * FROM `tbl` AS `tbl0` WHERE 1 = ?", [1]);
     assert_pg!(&stmt, r#"SELECT * FROM "tbl" AS "tbl0" WHERE 1 = $1"#, [1]);
@@ -581,18 +581,18 @@ fn test_filter_by_from_binary_equivalent() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `mytable0`.`myid` = 5 AS `anon_1` FROM `mytable` AS `mytable0` WHERE `mytable0`.`name` = ?",
-        ["foo"]
+        "SELECT `mytable0`.`myid` = ? AS `anon_1` FROM `mytable` AS `mytable0` WHERE `mytable0`.`name` = ?",
+        [5, "foo"]
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "mytable0"."myid" = 5 AS "anon_1" FROM "mytable" AS "mytable0" WHERE "mytable0"."name" = $1"#,
-        ["foo"]
+        r#"SELECT "mytable0"."myid" = $1 AS "anon_1" FROM "mytable" AS "mytable0" WHERE "mytable0"."name" = $2"#,
+        [5, "foo"]
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "mytable0"."myid" = 5 AS "anon_1" FROM "mytable" AS "mytable0" WHERE "mytable0"."name" = ?"#,
-        ["foo"]
+        r#"SELECT "mytable0"."myid" = ? AS "anon_1" FROM "mytable" AS "mytable0" WHERE "mytable0"."name" = ?"#,
+        [5, "foo"]
     );
 }
 

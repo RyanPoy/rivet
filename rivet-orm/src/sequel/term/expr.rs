@@ -1,7 +1,7 @@
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::column::Column;
 use crate::sequel::term::func::Func;
-use crate::sequel::term::literal::Literal;
+use crate::sequel::term::literal::{Literal, LiteralData};
 use crate::sequel::term::ops::{BinaryOp, UnaryOp};
 use crate::sequel::term::select_item::SelectItem;
 

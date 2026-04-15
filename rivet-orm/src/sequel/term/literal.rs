@@ -3,9 +3,8 @@ use crate::sequel::term::comparable::Comparable;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::select_item::SelectItem;
 
-#[derive(Debug, Clone)]
-pub enum Literal {
-    Null,
+#[derive(Debug, Clone, PartialEq)]
+pub enum LiteralData {
     Int(i64),
     Float(f64),
     Bool(bool),
@@ -15,114 +14,152 @@ pub enum Literal {
     Time(Time),
 }
 
+#[derive(Clone, Debug)]
+pub enum Literal {
+    Lit(LiteralData),
+    Param(LiteralData),
+    Null,
+}
+
 impl Literal {
+    pub fn lit(v: impl Into<LiteralData>) -> Self {
+        Self::Lit(v.into())
+    }
+    pub fn param(v: impl Into<LiteralData>) -> Self {
+        Self::Param(v.into())
+    }
+
     pub fn alias(self, alias: impl Into<String>) -> SelectItem {
         Expr::Literal(self).alias(alias)
     }
 
+    #[inline]
+    pub fn to_param(self) -> Self {
+        match self {
+            Literal::Lit(d) => Self::Param(d),
+            _ => self,
+        }
+    }
+    #[inline]
+    pub fn to_lit(self) -> Self {
+        match self {
+            Literal::Param(d) => Self::Lit(d),
+            _ => self,
+        }
+    }
+    #[inline]
     pub fn is_null(&self) -> bool {
         matches!(self, Self::Null)
+    }
+
+    pub fn data(&self) -> Option<&LiteralData> {
+        match self {
+            Self::Lit(data) | Self::Param(data) => Some(data),
+            Self::Null => None,
+        }
     }
 }
 
 impl Comparable for Literal {
-   fn into_expr(&self) -> Expr { Expr::Literal(self.clone()) }
+    fn into_expr(&self) -> Expr {
+        Expr::Literal(self.clone())
+    }
 }
 
 // 空
 impl From<()> for Literal {
     fn from(_: ()) -> Self {
-        Literal::Null
+        Self::Null
     }
 }
 
 // 整数
 impl From<i8> for Literal {
     fn from(v: i8) -> Self {
-        Literal::Int(v as i64)
+        Self::Lit(LiteralData::Int(v as i64))
     }
 }
 impl From<i16> for Literal {
     fn from(v: i16) -> Self {
-        Literal::Int(v as i64)
+        Self::Lit(LiteralData::Int(v as i64))
     }
 }
 impl From<i32> for Literal {
     fn from(v: i32) -> Self {
-        Literal::Int(v as i64)
+        Self::Lit(LiteralData::Int(v as i64))
     }
 }
 impl From<i64> for Literal {
     fn from(v: i64) -> Self {
-        Literal::Int(v)
+        Self::Lit(LiteralData::Int(v))
     }
 }
 
 impl From<u8> for Literal {
     fn from(v: u8) -> Self {
-        Literal::Int(v as i64)
+        Self::Lit(LiteralData::Int(v as i64))
     }
 }
 impl From<u16> for Literal {
     fn from(v: u16) -> Self {
-        Literal::Int(v as i64)
+        Self::Lit(LiteralData::Int(v as i64))
     }
 }
 impl From<u32> for Literal {
     fn from(v: u32) -> Self {
-        Literal::Int(v as i64)
+        Self::Lit(LiteralData::Int(v as i64))
     }
 }
 impl From<u64> for Literal {
     fn from(v: u64) -> Self {
-        Literal::Int(v as i64)
+        Self::Lit(LiteralData::Int(v as i64))
     }
 }
 
 // 浮点
 impl From<f32> for Literal {
     fn from(v: f32) -> Self {
-        Literal::Float(v as f64)
+        Self::Lit(LiteralData::Float(v as f64))
     }
 }
 impl From<f64> for Literal {
     fn from(v: f64) -> Self {
-        Literal::Float(v)
+        Self::Lit(LiteralData::Float(v))
     }
 }
 
 // 字符串
 impl From<&str> for Literal {
     fn from(v: &str) -> Self {
-        Literal::String(v.into())
+        Self::lit(LiteralData::String(v.into()))
     }
 }
 impl From<String> for Literal {
     fn from(v: String) -> Self {
-        Literal::String(v)
+        Self::Lit(LiteralData::String(v))
     }
 }
 
 // 布尔值
 impl From<bool> for Literal {
     fn from(v: bool) -> Self {
-        Literal::Bool(v)
+        Self::Lit(LiteralData::Bool(v))
     }
 }
 
 // 时间和日期
 impl From<Date> for Literal {
     fn from(v: Date) -> Self {
-        Literal::Date(v)
+        Self::Lit(LiteralData::Date(v))
     }
 }
 impl From<DateTime> for Literal {
     fn from(v: DateTime) -> Self {
-        Literal::DateTime(v)
+        Self::Lit(LiteralData::DateTime(v))
     }
 }
 impl From<Time> for Literal {
     fn from(v: Time) -> Self {
-        Literal::Time(v)
+        Self::Lit(LiteralData::Time(v))
     }
 }
