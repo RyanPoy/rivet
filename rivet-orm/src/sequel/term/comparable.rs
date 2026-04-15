@@ -6,7 +6,7 @@ pub trait Comparable {
     fn into_expr(&self) -> Expr;
 
     fn eq(&self, rhs: impl Into<Expr>) -> Expr {
-        let right = into_expr_with_param(rhs.into());
+        let right = rhs.into();
         let op = match &right {
             Expr::Literal(Literal::Null) => BinaryOp::Is,
             _ => BinaryOp::Eq,
@@ -20,7 +20,7 @@ pub trait Comparable {
     }
 
     fn not_eq(&self, rhs: impl Into<Expr>) -> Expr {
-        let right = into_expr_with_param(rhs.into());
+        let right = rhs.into();
         let op = match &right {
             Expr::Literal(Literal::Null) => BinaryOp::IsNot,
             _ => BinaryOp::NotEq,
@@ -37,7 +37,7 @@ pub trait Comparable {
         Expr::Binary {
             left: Box::new(self.into_expr()),
             op: BinaryOp::Gt,
-            right: Box::new(into_expr_with_param(rhs.into())),
+            right: Box::new(rhs.into()),
         }
     }
 
@@ -45,7 +45,7 @@ pub trait Comparable {
         Expr::Binary {
             left: Box::new(self.into_expr()),
             op: BinaryOp::Gte,
-            right: Box::new(into_expr_with_param(rhs.into())),
+            right: Box::new(rhs.into()),
         }
     }
 
@@ -53,7 +53,7 @@ pub trait Comparable {
         Expr::Binary {
             left: Box::new(self.into_expr()),
             op: BinaryOp::Lt,
-            right: Box::new(into_expr_with_param(rhs.into())),
+            right: Box::new(rhs.into()),
         }
     }
 
@@ -61,7 +61,7 @@ pub trait Comparable {
         Expr::Binary {
             left: Box::new(self.into_expr()),
             op: BinaryOp::Lte,
-            right: Box::new(into_expr_with_param(rhs.into())),
+            right: Box::new(rhs.into()),
         }
     }
 
@@ -69,7 +69,7 @@ pub trait Comparable {
         Expr::Binary {
             left: Box::new(self.into_expr()),
             op: BinaryOp::Like,
-            right: Box::new(into_expr_with_param(rhs.into())),
+            right: Box::new(rhs.into()),
         }
     }
 
@@ -77,7 +77,7 @@ pub trait Comparable {
         Expr::Binary {
             left: Box::new(self.into_expr()),
             op: BinaryOp::NotLike,
-            right: Box::new(into_expr_with_param(rhs.into())),
+            right: Box::new(rhs.into()),
         }
     }
 
@@ -88,7 +88,7 @@ pub trait Comparable {
     {
         Expr::In {
             expr: Box::new(self.into_expr()),
-            list: rhs.into_iter().map(|e| into_expr_with_param(e.into())).collect(),
+            list: rhs.into_iter().map(|e| e.into()).collect(),
             negated: false,
         }
     }
@@ -100,17 +100,8 @@ pub trait Comparable {
     {
         Expr::In {
             expr: Box::new(self.into_expr()),
-            list: rhs.into_iter().map(|e| into_expr_with_param(e.into())).collect(),
+            list: rhs.into_iter().map(|e| e.into()).collect(),
             negated: true,
         }
     }
-}
-
-#[inline]
-fn into_expr_with_param(expr: Expr) -> Expr {
-    expr
-    // match expr {
-    //     Expr::Literal(Literal::Lit(data)) => Expr::Literal(Literal::Param(data)),
-    //     other => other,
-    // }
 }
