@@ -4,7 +4,7 @@ use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::{
     abs, avg, ceil, coalesce, count, count_all, floor, func, lower, max, min, sqrt, sum, upper,
 };
-use crate::sequel::term::literal::Literal;
+use crate::sequel::term::literal::{Literal, lit};
 
 #[test]
 fn test_count_all() {
@@ -102,7 +102,7 @@ fn test_custom_func() {
 fn test_coalesce() {
     let stmt = SelectStatement::from(&*USERS).select(coalesce(vec![
         Expr::Column(USERS.column("email")),
-        Literal::from("no-email").into(),
+        lit("no-email").into(),
     ]));
     assert_mysql!(
         &stmt,
@@ -126,7 +126,7 @@ fn test_coalesce_multiple() {
     let stmt = SelectStatement::from(&*USERS).select(coalesce(vec![
         Expr::Column(USERS.column("email")),
         Expr::Column(USERS.column("phone")),
-        Literal::from("no-contact").into(),
+        lit("no-contact").into(),
     ]));
     assert_mysql!(
         &stmt,

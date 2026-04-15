@@ -3,7 +3,7 @@ use crate::sequel::statement::select::tests::helper::*;
 use crate::sequel::term::comparable::Comparable;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::{count, exists, func};
-use crate::sequel::term::literal::Literal;
+use crate::sequel::term::literal::{Literal, lit};
 use crate::sequel::term::table::Table;
 
 #[test]
@@ -48,7 +48,7 @@ fn test_select_no_columns_select_from_where() {
 
 #[test]
 fn test_select_no_columns_where_true() {
-    let item = Literal::from(1_i64);
+    let item = lit(1_i64);
     let stmt = SelectStatement::from(&*TBL).where_(item.eq(1_i64));
     assert_mysql!(&stmt, "SELECT * FROM `tbl` AS `tbl0` WHERE 1 = ?", [1]);
     assert_pg!(&stmt, r#"SELECT * FROM "tbl" AS "tbl0" WHERE 1 = $1"#, [1]);
@@ -552,7 +552,7 @@ fn test_filter_by_from_func_equivalent() {
 #[test]
 fn test_filter_by_from_func_not_the_first_arg_equivalent() {
     let stmt = SelectStatement::from(&*MYTABLE)
-        .select(func("bar", vec![Expr::from(true), Expr::from(MYTABLE.column("myid"))]).alias("bar_1"))
+        .select(func("bar", vec![lit(true).into(), Expr::from(MYTABLE.column("myid"))]).alias("bar_1"))
         .where_(MYTABLE.column("name").eq("foo"));
 
     // MySQL 中布尔值 true 被编译为 1

@@ -76,90 +76,94 @@ impl From<()> for Literal {
 // 整数
 impl From<i8> for Literal {
     fn from(v: i8) -> Self {
-        Self::Lit(LiteralData::Int(v as i64))
+        Self::Param(LiteralData::Int(v as i64))
     }
 }
 impl From<i16> for Literal {
     fn from(v: i16) -> Self {
-        Self::Lit(LiteralData::Int(v as i64))
+        Self::Param(LiteralData::Int(v as i64))
     }
 }
 impl From<i32> for Literal {
     fn from(v: i32) -> Self {
-        Self::Lit(LiteralData::Int(v as i64))
+        Self::Param(LiteralData::Int(v as i64))
     }
 }
 impl From<i64> for Literal {
     fn from(v: i64) -> Self {
-        Self::Lit(LiteralData::Int(v))
+        Self::Param(LiteralData::Int(v))
     }
 }
 
 impl From<u8> for Literal {
     fn from(v: u8) -> Self {
-        Self::Lit(LiteralData::Int(v as i64))
+        Self::Param(LiteralData::Int(v as i64))
     }
 }
 impl From<u16> for Literal {
     fn from(v: u16) -> Self {
-        Self::Lit(LiteralData::Int(v as i64))
+        Self::Param(LiteralData::Int(v as i64))
     }
 }
 impl From<u32> for Literal {
     fn from(v: u32) -> Self {
-        Self::Lit(LiteralData::Int(v as i64))
+        Self::Param(LiteralData::Int(v as i64))
     }
 }
 impl From<u64> for Literal {
     fn from(v: u64) -> Self {
-        Self::Lit(LiteralData::Int(v as i64))
+        Self::Param(LiteralData::Int(v as i64))
     }
 }
 
 // 浮点
 impl From<f32> for Literal {
     fn from(v: f32) -> Self {
-        Self::Lit(LiteralData::Float(v as f64))
+        Self::Param(LiteralData::Float(v as f64))
     }
 }
 impl From<f64> for Literal {
     fn from(v: f64) -> Self {
-        Self::Lit(LiteralData::Float(v))
+        Self::Param(LiteralData::Float(v))
     }
 }
 
 // 字符串
 impl From<&str> for Literal {
     fn from(v: &str) -> Self {
-        Self::lit(LiteralData::String(v.into()))
+        Self::Param(LiteralData::String(v.into()))
     }
 }
 impl From<String> for Literal {
     fn from(v: String) -> Self {
-        Self::Lit(LiteralData::String(v))
+        Self::Param(LiteralData::String(v))
     }
 }
 
 // 布尔值
 impl From<bool> for Literal {
     fn from(v: bool) -> Self {
-        Self::Lit(LiteralData::Bool(v))
+        Self::Param(LiteralData::Bool(v))
     }
 }
 
 // 时间和日期
 impl From<Date> for Literal {
     fn from(v: Date) -> Self {
-        Self::Lit(LiteralData::Date(v))
+        Self::Param(LiteralData::Date(v))
     }
 }
 impl From<DateTime> for Literal {
     fn from(v: DateTime) -> Self {
-        Self::Lit(LiteralData::DateTime(v))
+        Self::Param(LiteralData::DateTime(v))
     }
 }
 impl From<Time> for Literal {
     fn from(v: Time) -> Self {
-        Self::Lit(LiteralData::Time(v))
+        Self::Param(LiteralData::Time(v))
     }
+}
+
+pub fn lit(v: impl Into<Literal>) -> Literal {
+    v.into().to_lit()
 }

@@ -1,6 +1,6 @@
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::statement::select::tests::helper::ORDERS;
-use crate::sequel::term::literal::Literal;
+use crate::sequel::term::literal::{Literal, lit};
 
 #[test]
 fn test_arithmetic_operations() {
@@ -71,7 +71,7 @@ fn test_division_modulo() {
 #[test]
 fn test_mixed_arithmetic() {
     let stmt = SelectStatement::from(&*ORDERS)
-        .select((ORDERS.column("price") * ORDERS.column("quantity") + ORDERS.column("tax")) * Literal::from(0.9));
+        .select((ORDERS.column("price") * ORDERS.column("quantity") + ORDERS.column("tax")) * lit(0.9));
     assert_mysql!(
         &stmt,
         "SELECT `orders0`.`price` * `orders0`.`quantity` + `orders0`.`tax` * 0.9 FROM `orders` AS `orders0`",

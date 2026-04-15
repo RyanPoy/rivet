@@ -38,7 +38,7 @@ impl From<Expr> for SelectItem {
 impl From<Literal> for SelectItem {
     fn from(value: Literal) -> Self {
         Self {
-            expr: Expr::Literal(value),
+            expr: Expr::Literal(value.to_lit()),
             alias: None,
         }
     }

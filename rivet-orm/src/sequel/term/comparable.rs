@@ -108,8 +108,9 @@ pub trait Comparable {
 
 #[inline]
 fn into_expr_with_param(expr: Expr) -> Expr {
-    match expr {
-        Expr::Literal(Literal::Lit(data)) => Expr::Literal(Literal::Param(data)),
-        other => other,
-    }
+    expr
+    // match expr {
+    //     Expr::Literal(Literal::Lit(data)) => Expr::Literal(Literal::Param(data)),
+    //     other => other,
+    // }
 }
