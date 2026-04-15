@@ -1,6 +1,6 @@
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::statement::select::tests::helper::ORDERS;
-use crate::sequel::term::literal::{Literal, lit};
+use crate::sequel::term::param::{Param, lit};
 
 #[test]
 fn test_arithmetic_operations() {

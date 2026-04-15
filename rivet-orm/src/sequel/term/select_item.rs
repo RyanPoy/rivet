@@ -1,7 +1,7 @@
 use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::Func;
-use crate::sequel::term::literal::Literal;
+use crate::sequel::term::param::{Param, lit};
 use rivet_utils::impl_into_vec_for;
 
 #[derive(Clone, Debug)]
@@ -9,7 +9,7 @@ pub struct SelectItem {
     pub expr: Expr,
     pub alias: Option<String>,
 }
-impl_into_vec_for!(SelectItem => [Column, Func, Expr, Literal, SelectItem]);
+impl_into_vec_for!(SelectItem => [Column, Func, Expr, Param, SelectItem]);
 
 impl From<Column> for SelectItem {
     fn from(value: Column) -> Self {
@@ -35,10 +35,10 @@ impl From<Expr> for SelectItem {
     }
 }
 
-impl From<Literal> for SelectItem {
-    fn from(value: Literal) -> Self {
+impl From<Param> for SelectItem {
+    fn from(value: Param) -> Self {
         Self {
-            expr: Expr::Literal(value.to_lit()),
+            expr: Expr::Param(value),
             alias: None,
         }
     }
@@ -52,7 +52,7 @@ macro_rules! impl_from_base_type_for_select_item {
         $(
             impl From<$t> for SelectItem {
                 fn from(value: $t) -> Self {
-                    Self { expr: Expr::Literal(Literal::from(value)), alias: None }
+                    Self { expr: Expr::Param(lit(value)), alias: None }
                 }
             }
         )*

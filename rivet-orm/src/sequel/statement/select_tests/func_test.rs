@@ -4,7 +4,7 @@ use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::{
     abs, avg, ceil, coalesce, count, count_all, floor, func, lower, max, min, sqrt, sum, upper,
 };
-use crate::sequel::term::literal::{Literal, lit};
+use crate::sequel::term::param::{Param, lit};
 
 #[test]
 fn test_count_all() {

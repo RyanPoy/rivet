@@ -1,5 +1,5 @@
 use crate::sequel::term::expr::Expr;
-use crate::sequel::term::literal::Literal;
+use crate::sequel::term::param::Param;
 use crate::sequel::term::ops::BinaryOp;
 
 pub trait Comparable {
@@ -8,7 +8,7 @@ pub trait Comparable {
     fn eq(&self, rhs: impl Into<Expr>) -> Expr {
         let right = rhs.into();
         let op = match &right {
-            Expr::Literal(Literal::Null) => BinaryOp::Is,
+            Expr::Param(Param::Null) => BinaryOp::Is,
             _ => BinaryOp::Eq,
         };
 
@@ -22,7 +22,7 @@ pub trait Comparable {
     fn not_eq(&self, rhs: impl Into<Expr>) -> Expr {
         let right = rhs.into();
         let op = match &right {
-            Expr::Literal(Literal::Null) => BinaryOp::IsNot,
+            Expr::Param(Param::Null) => BinaryOp::IsNot,
             _ => BinaryOp::NotEq,
         };
 

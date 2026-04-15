@@ -1,6 +1,6 @@
 use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
-use crate::sequel::term::literal::Literal;
+use crate::sequel::term::param::Param;
 use crate::sequel::term::ops::BinaryOp;
 
 macro_rules! impl_arithmetic {
@@ -13,30 +13,30 @@ macro_rules! impl_arithmetic {
                 }
             }
 
-            impl std::ops::$op<Literal> for Column {
+            impl std::ops::$op<Param> for Column {
                 type Output = Expr;
-                fn $fn_name(self, rhs: Literal) -> Self::Output {
+                fn $fn_name(self, rhs: Param) -> Self::Output {
                     Expr::Binary { left: Box::new(self.into()), op: BinaryOp::$op, right: Box::new(rhs.into()), }
                 }
             }
 
-            impl std::ops::$op<Literal> for Literal {
+            impl std::ops::$op<Param> for Param {
                 type Output = Expr;
-                fn $fn_name(self, rhs: Literal) -> Self::Output {
+                fn $fn_name(self, rhs: Param) -> Self::Output {
                     Expr::Binary { left: Box::new(self.into()), op: BinaryOp::$op, right: Box::new(rhs.into()), }
                 }
             }
 
-            impl std::ops::$op<Column> for Literal {
+            impl std::ops::$op<Column> for Param {
                 type Output = Expr;
                 fn $fn_name(self, rhs: Column) -> Self::Output {
                     Expr::Binary { left: Box::new(self.into()), op: BinaryOp::$op, right: Box::new(rhs.into()), }
                 }
             }
 
-            impl std::ops::$op<Literal> for Expr {
+            impl std::ops::$op<Param> for Expr {
                 type Output = Expr;
-                fn $fn_name(self, rhs: Literal) -> Self::Output {
+                fn $fn_name(self, rhs: Param) -> Self::Output {
                     Expr::Binary { left: Box::new(self.into()), op: BinaryOp::$op, right: Box::new(rhs.into()), }
                 }
             }

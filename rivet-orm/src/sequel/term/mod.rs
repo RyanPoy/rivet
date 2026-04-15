@@ -4,7 +4,7 @@ pub mod expr;
 pub mod func;
 pub mod index;
 pub mod join;
-pub mod literal;
+pub mod param;
 pub mod lock;
 pub mod ops;
 pub mod select_item;

@@ -5,7 +5,7 @@ use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::{Func, FuncArg};
 use crate::sequel::term::index::Index;
 use crate::sequel::term::join::{Join, JoinType};
-use crate::sequel::term::literal::{Literal, LiteralData};
+use crate::sequel::term::param::{Param, ParamData};
 use crate::sequel::term::lock::{Lock, Wait};
 use crate::sequel::term::ops::{BinaryOp, UnaryOp};
 use crate::sequel::term::select_item::SelectItem;
@@ -141,13 +141,13 @@ impl<D: Dialect> Visitor<D> {
         if let Some(f) = iter.next() {
             self.push(" WHERE ");
             match f {
-                Expr::Literal(lit) => self.visit_literal(lit).push(" = ").visit_literal(lit),
+                Expr::Param(lit) => self.visit_param(lit).push(" = ").visit_param(lit),
                 _ => self.visit_expr(f, 0),
             };
             for f in iter {
                 self.push(" AND ");
                 match f {
-                    Expr::Literal(lit) => self.visit_literal(lit).push(" = ").visit_literal(lit),
+                    Expr::Param(lit) => self.visit_param(lit).push(" = ").visit_param(lit),
                     _ => self.visit_expr(f, 0),
                 };
             }
@@ -230,10 +230,10 @@ impl<D: Dialect> Visitor<D> {
         }
         match expr {
             Expr::Column(c) => self.visit_column_ref(c),
-            Expr::Literal(l) => self.visit_literal(l),
+            Expr::Param(l) => self.visit_param(l),
             Expr::Binary { left, op, right } => match &**left {
-                Expr::Literal(l) => self
-                    .visit_literal(&l)
+                Expr::Param(l) => self
+                    .visit_param(&l)
                     .visit_binary_op(op)
                     .visit_expr(right, current_precedence),
                 _ => self
@@ -336,18 +336,18 @@ impl<D: Dialect> Visitor<D> {
         self.push_quote(&col.name)
     }
 
-    pub fn visit_literal(&mut self, lit: &Literal) -> &mut Self {
-        match lit {
-            Literal::Null => self.push("NULL"),
-            Literal::Param(data) => self.bind(data.clone()),
-            Literal::Lit(data) => match data {
-                LiteralData::Int(v) => self.push(&v.to_string()),
-                LiteralData::Float(v) => self.push(&v.to_string()),
-                LiteralData::Bool(v) => self.push(self.dialect.bool_str(*v)),
-                LiteralData::String(v) => self.push("'").push_escape(&v).push("'"),
-                LiteralData::Date(v) => self.push("'").push(&v.to_string()).push("'"),
-                LiteralData::DateTime(v) => self.push("'").push(&v.to_string()).push("'"),
-                LiteralData::Time(v) => self.push("'").push(&v.to_string()).push("'"),
+    pub fn visit_param(&mut self, p: &Param) -> &mut Self {
+        match p {
+            Param::Null => self.push("NULL"),
+            Param::Inline(data) => self.bind(data.clone()),
+            Param::Data(data) => match data {
+                ParamData::Int(v) => self.push(&v.to_string()),
+                ParamData::Float(v) => self.push(&v.to_string()),
+                ParamData::Bool(v) => self.push(self.dialect.bool_str(*v)),
+                ParamData::String(v) => self.push("'").push_escape(&v).push("'"),
+                ParamData::Date(v) => self.push("'").push(&v.to_string()).push("'"),
+                ParamData::DateTime(v) => self.push("'").push(&v.to_string()).push("'"),
+                ParamData::Time(v) => self.push("'").push(&v.to_string()).push("'"),
             },
         }
     }
@@ -361,7 +361,7 @@ impl<D: Dialect> Visitor<D> {
     }
 
     #[inline]
-    pub fn finish(&self) -> (String, Vec<LiteralData>) {
+    pub fn finish(&self) -> (String, Vec<ParamData>) {
         (self.builder.buff.clone(), self.builder.binder.clone())
     }
 
@@ -378,7 +378,7 @@ impl<D: Dialect> Visitor<D> {
     }
 
     #[inline]
-    fn bind(&mut self, v: LiteralData) -> &mut Self {
+    fn bind(&mut self, v: ParamData) -> &mut Self {
         self.builder.bind(v, &self.dialect);
         self
     }

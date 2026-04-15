@@ -1,6 +1,6 @@
 use crate::model::model::Model;
 use crate::sequel::term::calendar::{Date, DateTime};
-use crate::sequel::term::literal::LiteralData;
+use crate::sequel::term::param::ParamData;
 use crate::sequel::term::table::Table;
 use std::sync::LazyLock;
 
@@ -8,8 +8,8 @@ macro_rules! assert_mysql {
     ($stmt:expr, $expected_sql:expr, [$($params:expr),*]) => {
         let (sql, params_relt) = crate::sequel::visitor::visitor::mysql().visit_select_statement($stmt).finish();
         assert_eq!(sql, $expected_sql.to_string());
-        let expected: Vec<crate::sequel::term::literal::Literal> = vec![$($params.into()),*];
-        let expected: Vec<crate::sequel::term::literal::LiteralData> = expected.iter().map(|item: &crate::sequel::term::literal::Literal| item.data().unwrap().clone()).collect();
+        let expected: Vec<crate::sequel::term::param::Param> = vec![$($params.into()),*];
+        let expected: Vec<crate::sequel::term::param::ParamData> = expected.iter().map(|item: &crate::sequel::term::param::Param| item.data().unwrap().clone()).collect();
         assert_eq!(params_relt, expected);
     };
 }
@@ -18,8 +18,8 @@ macro_rules! assert_pg {
     ($stmt:expr, $expected_sql:expr, [$($params:expr),*]) => {
         let (sql, params_relt) = crate::sequel::visitor::visitor::postgre().visit_select_statement($stmt).finish();
         assert_eq!(sql, $expected_sql.to_string());
-        let expected: Vec<crate::sequel::term::literal::Literal> = vec![$($params.into()),*];
-        let expected: Vec<crate::sequel::term::literal::LiteralData> = expected.iter().map(|item: &crate::sequel::term::literal::Literal| item.data().unwrap().clone()).collect();
+        let expected: Vec<crate::sequel::term::param::Param> = vec![$($params.into()),*];
+        let expected: Vec<crate::sequel::term::param::ParamData> = expected.iter().map(|item: &crate::sequel::term::param::Param| item.data().unwrap().clone()).collect();
         assert_eq!(params_relt, expected);
     };
 }
@@ -28,8 +28,8 @@ macro_rules! assert_sqlite {
     ($stmt:expr, $expected_sql:expr, [$($params:expr),*]) => {
         let (sql, params_relt) = crate::sequel::visitor::visitor::sqlite().visit_select_statement($stmt).finish();
         assert_eq!(sql, $expected_sql.to_string());
-        let expected: Vec<crate::sequel::term::literal::Literal> = vec![$($params.into()),*];
-        let expected: Vec<crate::sequel::term::literal::LiteralData> = expected.iter().map(|item: &crate::sequel::term::literal::Literal| item.data().unwrap().clone()).collect();
+        let expected: Vec<crate::sequel::term::param::Param> = vec![$($params.into()),*];
+        let expected: Vec<crate::sequel::term::param::ParamData> = expected.iter().map(|item: &crate::sequel::term::param::Param| item.data().unwrap().clone()).collect();
         assert_eq!(params_relt, expected);
     };
 }

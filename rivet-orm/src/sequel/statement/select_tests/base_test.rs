@@ -1,6 +1,6 @@
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::statement::select::tests::helper::USERS;
-use crate::sequel::term::literal::Literal;
+use crate::sequel::term::param::{Param, lit};
 
 #[test]
 fn test_select_all() {
@@ -43,9 +43,7 @@ fn test_select_multiple_columns() {
 
 #[test]
 fn test_select_with_literal() {
-    let stmt = SelectStatement::from(&*USERS)
-        .select(Literal::from(1))
-        .select(Literal::from("hello"));
+    let stmt = SelectStatement::from(&*USERS).select(lit(1)).select(lit("hello"));
     assert_mysql!(&stmt, "SELECT 1, 'hello' FROM `users` AS `users0`", []);
     assert_pg!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "users0""#, []);
     assert_sqlite!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "users0""#, []);

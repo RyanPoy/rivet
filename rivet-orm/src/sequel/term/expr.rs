@@ -1,8 +1,8 @@
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::column::Column;
 use crate::sequel::term::func::Func;
-use crate::sequel::term::literal::{Literal, LiteralData};
 use crate::sequel::term::ops::{BinaryOp, UnaryOp};
+use crate::sequel::term::param::{Param, ParamData};
 use crate::sequel::term::select_item::SelectItem;
 
 #[derive(Debug, Clone)]
@@ -15,7 +15,7 @@ pub enum Expr {
     //      SELECT 'hello';
     //      SELECT true;
     //      SELECT NULL;
-    Literal(Literal),
+    Param(Param),
 
     // e.g. SELECT col in (1, 2, 3);
     //      SELECT col not in (1, 2, 3);
@@ -105,7 +105,7 @@ where
     fn from(value: Option<T>) -> Self {
         match value {
             Some(value) => value.into(),
-            None => Expr::Literal(Literal::Null),
+            None => Expr::Param(Param::Null),
         }
     }
 }
@@ -126,10 +126,10 @@ impl From<Func> for Expr {
 }
 impl<T> From<T> for Expr
 where
-    T: Into<Literal>,
+    T: Into<Param>,
 {
     fn from(value: T) -> Self {
-        Expr::Literal(value.into())
+        Expr::Param(value.into())
     }
 }
 impl std::ops::Not for Expr {
