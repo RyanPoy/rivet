@@ -1,10 +1,9 @@
+use crate::prelude::*;
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::statement::select::tests::helper::*;
-use crate::sequel::term::comparable::Comparable;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::{count, exists, func};
-use crate::sequel::term::param::{Param, lit};
-use crate::sequel::term::table::Table;
+use crate::sequel::term::param::lit;
 
 #[test]
 fn test_basic() {

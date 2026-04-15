@@ -1,5 +1,5 @@
+use crate::prelude::*;
 use crate::sequel::term::calendar::{Date, DateTime, Time};
-use crate::sequel::term::comparable::Comparable;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::select_item::SelectItem;
 

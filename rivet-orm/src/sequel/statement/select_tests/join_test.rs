@@ -1,6 +1,6 @@
+use crate::prelude::*;
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::statement::select::tests::helper::{CATEGORIES, COMPANIES, ORDERS, PRODUCTS, USERS};
-use crate::sequel::term::comparable::Comparable;
 use crate::sequel::term::table::Table;
 
 #[test]

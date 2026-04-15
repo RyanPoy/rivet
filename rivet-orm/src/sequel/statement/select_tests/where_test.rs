@@ -1,7 +1,6 @@
+use crate::prelude::*;
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::statement::select::tests::helper::USERS;
-use crate::sequel::term::comparable::Comparable;
-
 #[test]
 fn test_where() {
     let id = USERS.column("id");

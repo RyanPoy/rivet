@@ -1,6 +1,6 @@
+use crate::prelude::*;
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::statement::select::tests::helper::{ORDERS, USERS};
-use crate::sequel::term::comparable::Comparable;
 use crate::sequel::term::func::upper;
 
 #[test]

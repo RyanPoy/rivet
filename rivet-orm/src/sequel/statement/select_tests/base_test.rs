@@ -1,6 +1,6 @@
+use crate::prelude::*;
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::statement::select::tests::helper::{ORDERS, PRODUCTS, USERS};
-use crate::sequel::term::comparable::Comparable;
 use crate::sequel::term::func::{count, sum};
 use crate::sequel::term::param::lit;
 

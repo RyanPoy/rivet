@@ -1,4 +1,4 @@
-use crate::sequel::term::comparable::Comparable;
+use crate::prelude::*;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::TableInner;
