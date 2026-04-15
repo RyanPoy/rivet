@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::sequel::statement::select::SelectStatement;
-use crate::sequel::statement::select::tests::helper::{ORDERS, USERS};
+use crate::sequel::statement::select::tests::helper::{ORDERS, PARENT, USERS};
 #[test]
 fn test_where() {
     let id = USERS.column("id");
@@ -197,5 +197,45 @@ fn test_string_with_quotes() {
     assert_mysql!(
         &stmt,
         "SELECT `users0`.`name` FROM `users` AS `users0` WHERE `users0`.`name` = 'O''Brien'"
+    );
+}
+
+#[test]
+fn test_from_binary_equivalent() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("myid").eq(5_i64).alias("anon_1"))
+        .where_(USERS.column("name").eq("foo"));
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`myid` = ? AS `anon_1` FROM `users` AS `users0` WHERE `users0`.`name` = ?",
+        [5, "foo"]
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "users0"."myid" = $1 AS "anon_1" FROM "users" AS "users0" WHERE "users0"."name" = $2"#,
+        [5, "foo"]
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."myid" = ? AS "anon_1" FROM "users" AS "users0" WHERE "users0"."name" = ?"#,
+        [5, "foo"]
+    );
+}
+
+#[test]
+fn test_c_collection_as_from() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .select(USERS.column("data"));
+
+    assert_mysql!(&stmt, "SELECT `users0`.`id`, `users0`.`data` FROM `users` AS `users0`");
+    assert_pg!(
+        &stmt,
+        r#"SELECT "users0"."id", "users0"."data" FROM "users" AS "users0""#
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id", "users0"."data" FROM "users" AS "users0""#
     );
 }

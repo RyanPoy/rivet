@@ -41,3 +41,13 @@
 //     );
 // }
 //
+
+//
+//
+// #[test]
+// #[ignore = "rivet-orm 可能不支持 order_by() 方法"]
+// fn test_methods_generative_order_by() {}
+//
+// #[test]
+// #[ignore = "rivet-orm 可能不支持 group_by() 方法"]
+// fn test_methods_generative_group_by() {}

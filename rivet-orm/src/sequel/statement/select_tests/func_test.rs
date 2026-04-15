@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::statement::select::tests::helper::{ORDERS, USERS};
 use crate::sequel::term::expr::Expr;
@@ -125,5 +126,28 @@ fn test_coalesce_multiple() {
     assert_sqlite!(
         &stmt,
         r#"SELECT COALESCE("users0"."email", "users0"."phone", 'no-contact') FROM "users" AS "users0""#
+    );
+}
+
+#[test]
+fn test_from_func_not_the_first_arg_equivalent() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(func("bar", vec![lit(true).into(), Expr::from(USERS.column("myid"))]).alias("bar_1"))
+        .where_(USERS.column("name").eq("foo"));
+
+    assert_mysql!(
+        &stmt,
+        "SELECT BAR(1, `users0`.`myid`) AS `bar_1` FROM `users` AS `users0` WHERE `users0`.`name` = ?",
+        ["foo"]
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT BAR(true, "users0"."myid") AS "bar_1" FROM "users" AS "users0" WHERE "users0"."name" = $1"#,
+        ["foo"]
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT BAR(1, "users0"."myid") AS "bar_1" FROM "users" AS "users0" WHERE "users0"."name" = ?"#,
+        ["foo"]
     );
 }

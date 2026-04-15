@@ -10,5 +10,4 @@ mod limit_test;
 mod literal_test;
 mod select_test;
 mod subquery_test;
-mod test_sqlalchemy;
 mod where_test;
