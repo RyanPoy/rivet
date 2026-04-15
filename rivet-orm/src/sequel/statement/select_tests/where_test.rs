@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::sequel::statement::select::SelectStatement;
-use crate::sequel::statement::select::tests::helper::USERS;
+use crate::sequel::statement::select::tests::helper::{ORDERS, USERS};
 #[test]
 fn test_where() {
     let id = USERS.column("id");
@@ -95,5 +95,107 @@ fn test_where_nested_not_precedence() {
         &stmt,
         "SELECT * FROM `users` AS `users0` WHERE NOT (`users0`.`status` = ? OR `users0`.`status` = ?)",
         ["pending", "deleted"]
+    );
+}
+
+#[test]
+fn test_null_literal() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .where_(USERS.column("deleted_at").eq(Param::Null));
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id` FROM `users` AS `users0` WHERE `users0`.`deleted_at` IS NULL"
+    );
+}
+
+#[test]
+fn test_date_time_literals() {
+    use crate::sequel::term::calendar::{Date, DateTime, Time};
+
+    let date = Date::new(2024, 1, 15).unwrap();
+    let time = Time::new(10, 30, 0, 0).unwrap();
+    let datetime = DateTime::from(date, time).unwrap();
+
+    let stmt = SelectStatement::from(&*ORDERS)
+        .select(ORDERS.column("id"))
+        .where_(ORDERS.column("created_at").eq(datetime));
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `orders0`.`id` FROM `orders` AS `orders0` WHERE `orders0`.`created_at` = ?",
+        [datetime]
+    );
+}
+
+#[test]
+fn test_boolean_literals() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .where_(USERS.column("active").eq(true));
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id` FROM `users` AS `users0` WHERE `users0`.`active` = ?",
+        [true]
+    );
+
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .where_(USERS.column("active").eq(false));
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id` FROM `users` AS `users0` WHERE `users0`.`active` = ?",
+        [false]
+    );
+}
+
+#[test]
+fn test_float_literals() {
+    let stmt = SelectStatement::from(&*ORDERS)
+        .select(ORDERS.column("price"))
+        .where_(ORDERS.column("price").eq(19.99));
+    assert_mysql!(
+        &stmt,
+        "SELECT `orders0`.`price` FROM `orders` AS `orders0` WHERE `orders0`.`price` = ?",
+        [19.99f64]
+    );
+}
+
+#[test]
+fn test_string_with_backslash() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("path"))
+        .where_(USERS.column("path").eq("C:\\Users\\test"));
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`path` FROM `users` AS `users0` WHERE `users0`.`path` = ?",
+        ["C:\\Users\\test"]
+    );
+}
+
+#[test]
+fn test_empty_select_becomes_star() {
+    // 当没有指定 select 列时，应该生成 SELECT *
+    let stmt = SelectStatement::from(&*USERS);
+    assert_mysql!(&stmt, "SELECT * FROM `users` AS `users0`");
+}
+
+#[test]
+fn test_string_with_quotes() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("name"))
+        .where_(USERS.column("name").eq("O'Brien"));
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`name` FROM `users` AS `users0` WHERE `users0`.`name` = ?",
+        ["O'Brien"]
+    );
+
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("name"))
+        .where_(USERS.column("name").eq(lit("O'Brien")));
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`name` FROM `users` AS `users0` WHERE `users0`.`name` = 'O''Brien'"
     );
 }

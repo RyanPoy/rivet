@@ -68,7 +68,12 @@ pub struct DateTime {
     date: Date,
     time: Time,
 }
+
 impl DateTime {
+    pub fn from(d: Date, t: Time) -> Result<Self, ValueError> {
+        Self::new(d.year, d.month, d.day, t.hour, t.minute, t.second, t.microsecond)
+    }
+
     pub fn new(
         year: i32,
         month: u8,

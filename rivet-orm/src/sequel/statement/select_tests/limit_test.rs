@@ -2,6 +2,12 @@ use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::statement::select::tests::helper::USERS;
 
 #[test]
+fn test_limit_0() {
+    let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).limit(0);
+    assert_mysql!(&stmt, "SELECT `users0`.`id` FROM `users` AS `users0`");
+}
+
+#[test]
 fn test_limit_only() {
     let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).limit(10);
     assert_mysql!(&stmt, "SELECT `users0`.`id` FROM `users` AS `users0` LIMIT 10");
