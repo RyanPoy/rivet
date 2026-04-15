@@ -67,3 +67,23 @@ fn test_in_subquery() {
         r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE "users0"."id" IN ((SELECT "orders0"."user_id" FROM "orders" AS "orders0"))"#
     );
 }
+
+#[test]
+fn test_nested_subquery_with_join() {
+    let subquery = SelectStatement::from(&*ORDERS)
+        .select(max(ORDERS.column("total")))
+        .where_(ORDERS.column("status").eq("completed"));
+
+    let stmt = SelectStatement::from(&*USERS)
+        .select(vec![
+            USERS.column("id").into(),
+            Expr::from(subquery.clone()).alias("max_order"),
+        ])
+        .where_(subquery.gt(1000));
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id`, (SELECT MAX(`orders0`.`total`) FROM `orders` AS `orders0` WHERE `orders0`.`status` = ?) AS `max_order` FROM `users` AS `users0` WHERE (SELECT MAX(`orders0`.`total`) FROM `orders` AS `orders0` WHERE `orders0`.`status` = ?) > ?",
+        ["completed", "completed", 1000i64]
+    );
+}

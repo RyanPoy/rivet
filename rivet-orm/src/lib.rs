@@ -1,4 +1,5 @@
 pub mod model;
+pub mod prelude;
 pub mod schema;
 pub mod sequel;
 

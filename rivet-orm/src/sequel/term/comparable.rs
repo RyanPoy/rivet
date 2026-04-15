@@ -1,6 +1,6 @@
 use crate::sequel::term::expr::Expr;
-use crate::sequel::term::param::Param;
 use crate::sequel::term::ops::BinaryOp;
+use crate::sequel::term::param::Param;
 
 pub trait Comparable {
     fn into_expr(&self) -> Expr;

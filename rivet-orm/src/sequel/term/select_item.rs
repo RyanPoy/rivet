@@ -1,7 +1,9 @@
+use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::Func;
 use crate::sequel::term::param::{Param, lit};
+use crate::sequel::term::table::Table;
 use rivet_utils::impl_into_vec_for;
 
 #[derive(Clone, Debug)]
@@ -9,7 +11,16 @@ pub struct SelectItem {
     pub expr: Expr,
     pub alias: Option<String>,
 }
-impl_into_vec_for!(SelectItem => [Column, Func, Expr, Param, SelectItem]);
+impl_into_vec_for!(SelectItem => [SelectStatement, Column, Func, Expr, Param, SelectItem]);
+
+impl From<SelectStatement> for SelectItem {
+    fn from(value: SelectStatement) -> Self {
+        Self {
+            expr: Expr::Subquery(Box::new(value)),
+            alias: None,
+        }
+    }
+}
 
 impl From<Column> for SelectItem {
     fn from(value: Column) -> Self {

@@ -1,3 +1,4 @@
+use crate::sequel::term::comparable::Comparable;
 use crate::sequel::term::distinct::Distinct;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::index::Index;
@@ -129,6 +130,12 @@ impl SelectStatement {
 
     pub fn alias(self, name: &str) -> Table {
         Table::from(self).alias(name)
+    }
+}
+
+impl Comparable for SelectStatement {
+    fn into_expr(&self) -> Expr {
+        Expr::Subquery(Box::new(self.clone()))
     }
 }
 
