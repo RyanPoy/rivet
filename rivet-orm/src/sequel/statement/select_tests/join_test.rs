@@ -11,8 +11,7 @@ fn test_cross_join() {
         .cross_join(&*PRODUCTS);
     assert_mysql!(
         &stmt,
-        "SELECT `users0`.`id`, `products0`.`name` FROM `users` AS `users0` CROSS JOIN `products` AS `products0`",
-        []
+        "SELECT `users0`.`id`, `products0`.`name` FROM `users` AS `users0` CROSS JOIN `products` AS `products0`"
     );
 }
 #[test]
@@ -24,8 +23,7 @@ fn test_cross_join_with_same_table() {
         .cross_join(u2);
     assert_mysql!(
         &stmt,
-        "SELECT `users0`.`id`, `users1`.`name` FROM `users` AS `users0` CROSS JOIN `users` AS `users1`",
-        []
+        "SELECT `users0`.`id`, `users1`.`name` FROM `users` AS `users0` CROSS JOIN `users` AS `users1`"
     );
 }
 
@@ -41,7 +39,6 @@ fn test_join() {
         .full_join(&*COMPANIES, COMPANIES.column("id").eq(USERS.column("company_id")));
     assert_mysql!(
         &stmt,
-        "SELECT `users0`.`id`, `orders0`.`total`, `products0`.`name` FROM `users` AS `users0` INNER JOIN `orders` AS `orders0` ON `users0`.`id` = `orders0`.`user_id` LEFT JOIN `products` AS `products0` ON `orders0`.`id` = `products0`.`order_id` RIGHT JOIN `categories` AS `categories0` ON `categories0`.`id` = `products0`.`category_id` FULL JOIN `companies` AS `companies0` ON `companies0`.`id` = `users0`.`company_id`",
-        []
+        "SELECT `users0`.`id`, `orders0`.`total`, `products0`.`name` FROM `users` AS `users0` INNER JOIN `orders` AS `orders0` ON `users0`.`id` = `orders0`.`user_id` LEFT JOIN `products` AS `products0` ON `orders0`.`id` = `products0`.`order_id` RIGHT JOIN `categories` AS `categories0` ON `categories0`.`id` = `products0`.`category_id` FULL JOIN `companies` AS `companies0` ON `companies0`.`id` = `users0`.`company_id`"
     );
 }

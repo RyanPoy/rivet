@@ -10,8 +10,8 @@
 //         .select(USERS.column("id"))
 //         .for_update(Lock::Update, Wait::NoWait);
 //
-//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1` FOR UPDATE NOWAIT", []);
-//     assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" FOR UPDATE NOWAIT"#, []);
+//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1` FOR UPDATE NOWAIT");
+//     assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" FOR UPDATE NOWAIT"#);
 // }
 //
 // #[test]
@@ -22,7 +22,7 @@
 //         .select(USERS.column("id"))
 //         .for_update(Lock::Share, Wait::SkipLocked);
 //
-//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1` FOR SHARE SKIP LOCKED", []);
+//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1` FOR SHARE SKIP LOCKED");
 // }
 //
 // // ============================================================================
@@ -37,8 +37,7 @@
 //
 //     assert_mysql!(
 //         &stmt,
-//         "SELECT `t1`.`id` FROM `users` AS `t1` FORCE INDEX (idx_users_email)",
-//         []
+//         "SELECT `t1`.`id` FROM `users` AS `t1` FORCE INDEX (idx_users_email)"
 //     );
 // }
 //
@@ -101,14 +100,14 @@
 // fn test_empty_select_becomes_star() {
 //     // 当没有指定 select 列时，应该生成 SELECT *
 //     let stmt = SelectStatement::from(&*USERS);
-//     assert_mysql!(&stmt, "SELECT * FROM `users` AS `t1`", []);
+//     assert_mysql!(&stmt, "SELECT * FROM `users` AS `t1`");
 // }
 //
 // #[test]
 // fn test_zero_limit() {
 //     // limit(0) 应该被忽略
 //     let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).limit(0);
-//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1`", []);
+//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1`");
 // }
 //
 // #[test]
@@ -175,8 +174,7 @@
 //         .where_(USERS.column("deleted_at").eq(Literal::Null));
 //     assert_mysql!(
 //         &stmt,
-//         "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`deleted_at` IS NULL",
-//         []
+//         "SELECT `t1`.`id` FROM `users` AS `t1` WHERE `t1`.`deleted_at` IS NULL"
 //     );
 // }
 //

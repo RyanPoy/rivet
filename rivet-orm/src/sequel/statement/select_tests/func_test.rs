@@ -9,37 +9,31 @@ use crate::sequel::term::param::{Param, lit};
 #[test]
 fn test_count_all() {
     let stmt = SelectStatement::from(&*USERS).select(count_all());
-    assert_mysql!(&stmt, "SELECT COUNT(*) FROM `users` AS `users0`", []);
-    assert_pg!(&stmt, r#"SELECT COUNT(*) FROM "users" AS "users0""#, []);
-    assert_sqlite!(&stmt, r#"SELECT COUNT(*) FROM "users" AS "users0""#, []);
+    assert_mysql!(&stmt, "SELECT COUNT(*) FROM `users` AS `users0`");
+    assert_pg!(&stmt, r#"SELECT COUNT(*) FROM "users" AS "users0""#);
+    assert_sqlite!(&stmt, r#"SELECT COUNT(*) FROM "users" AS "users0""#);
 }
 
 #[test]
 fn test_count_column() {
     let c = USERS.column("email");
     let stmt = SelectStatement::from(&*USERS).select(count(c));
-    assert_mysql!(&stmt, "SELECT COUNT(`users0`.`email`) FROM `users` AS `users0`", []);
-    assert_pg!(&stmt, r#"SELECT COUNT("users0"."email") FROM "users" AS "users0""#, []);
-    assert_sqlite!(&stmt, r#"SELECT COUNT("users0"."email") FROM "users" AS "users0""#, []);
+    assert_mysql!(&stmt, "SELECT COUNT(`users0`.`email`) FROM `users` AS `users0`");
+    assert_pg!(&stmt, r#"SELECT COUNT("users0"."email") FROM "users" AS "users0""#);
+    assert_sqlite!(&stmt, r#"SELECT COUNT("users0"."email") FROM "users" AS "users0""#);
 }
 
 #[test]
 fn test_count_distinct() {
     let stmt = SelectStatement::from(&*USERS).select(count(USERS.column("city")).distinct());
-    assert_mysql!(
-        &stmt,
-        "SELECT COUNT(DISTINCT `users0`.`city`) FROM `users` AS `users0`",
-        []
-    );
+    assert_mysql!(&stmt, "SELECT COUNT(DISTINCT `users0`.`city`) FROM `users` AS `users0`");
     assert_pg!(
         &stmt,
-        r#"SELECT COUNT(DISTINCT "users0"."city") FROM "users" AS "users0""#,
-        []
+        r#"SELECT COUNT(DISTINCT "users0"."city") FROM "users" AS "users0""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT COUNT(DISTINCT "users0"."city") FROM "users" AS "users0""#,
-        []
+        r#"SELECT COUNT(DISTINCT "users0"."city") FROM "users" AS "users0""#
     );
 }
 
@@ -48,20 +42,17 @@ fn test_count_distinct_multiple() {
     let stmt = SelectStatement::from(&*USERS)
         .select(count([USERS.column("city"), USERS.column("username"), USERS.column("id")]).distinct())
         .select(USERS.column("id"));
-    // assert_mysql!(
-    //     &stmt,
-    //     "SELECT COUNT(DISTINCT `users0`.`city`, `users0`.`username`, `users0`.`id`), `users0`.`id` FROM `users` AS `users0`",
-    //     []
-    // );
-    // assert_pg!(
-    //     &stmt,
-    //     r#"SELECT COUNT(DISTINCT ("users0"."city", "users0"."username", "users0"."id")), "users0"."id" FROM "users" AS "users0""#,
-    //     []
-    // );
+    assert_mysql!(
+        &stmt,
+        "SELECT COUNT(DISTINCT `users0`.`city`, `users0`.`username`, `users0`.`id`), `users0`.`id` FROM `users` AS `users0`"
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT COUNT(DISTINCT ("users0"."city", "users0"."username", "users0"."id")), "users0"."id" FROM "users" AS "users0""#
+    );
     assert_sqlite!(
         &stmt,
-        r#"SELECT COUNT(*), "sq0"."id" FROM (SELECT DISTINCT "users0"."city", "users0"."username", "users0"."id", "users0"."id" FROM "users" AS "users0") AS "sq0""#,
-        []
+        r#"SELECT COUNT(*), "sq0"."id" FROM (SELECT DISTINCT "users0"."city", "users0"."username", "users0"."id", "users0"."id" FROM "users" AS "users0") AS "sq0""#
     );
 }
 
@@ -80,8 +71,7 @@ fn test_abs_ceil_floor() {
         .select(sqrt(ORDERS.column("quantity")));
     assert_mysql!(
         &stmt,
-        "SELECT SUM(`orders0`.`total`), AVG(`orders0`.`price`), MAX(`orders0`.`total`), MIN(`orders0`.`price`), ABS(`orders0`.`discount`), CEIL(`orders0`.`price`), FLOOR(`orders0`.`tax`), LOWER(`orders0`.`name`), UPPER(`orders0`.`brand_name`), SQRT(`orders0`.`quantity`) FROM `orders` AS `orders0`",
-        []
+        "SELECT SUM(`orders0`.`total`), AVG(`orders0`.`price`), MAX(`orders0`.`total`), MIN(`orders0`.`price`), ABS(`orders0`.`discount`), CEIL(`orders0`.`price`), FLOOR(`orders0`.`tax`), LOWER(`orders0`.`name`), UPPER(`orders0`.`brand_name`), SQRT(`orders0`.`quantity`) FROM `orders` AS `orders0`"
     );
 }
 
@@ -93,8 +83,7 @@ fn test_custom_func() {
     ));
     assert_mysql!(
         &stmt,
-        "SELECT CONCAT(`users0`.`first_name`, `users0`.`last_name`) FROM `users` AS `users0`",
-        []
+        "SELECT CONCAT(`users0`.`first_name`, `users0`.`last_name`) FROM `users` AS `users0`"
     );
 }
 
@@ -106,18 +95,15 @@ fn test_coalesce() {
     ]));
     assert_mysql!(
         &stmt,
-        "SELECT COALESCE(`users0`.`email`, 'no-email') FROM `users` AS `users0`",
-        []
+        "SELECT COALESCE(`users0`.`email`, 'no-email') FROM `users` AS `users0`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT COALESCE("users0"."email", 'no-email') FROM "users" AS "users0""#,
-        []
+        r#"SELECT COALESCE("users0"."email", 'no-email') FROM "users" AS "users0""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT COALESCE("users0"."email", 'no-email') FROM "users" AS "users0""#,
-        []
+        r#"SELECT COALESCE("users0"."email", 'no-email') FROM "users" AS "users0""#
     );
 }
 
@@ -130,17 +116,14 @@ fn test_coalesce_multiple() {
     ]));
     assert_mysql!(
         &stmt,
-        "SELECT COALESCE(`users0`.`email`, `users0`.`phone`, 'no-contact') FROM `users` AS `users0`",
-        []
+        "SELECT COALESCE(`users0`.`email`, `users0`.`phone`, 'no-contact') FROM `users` AS `users0`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT COALESCE("users0"."email", "users0"."phone", 'no-contact') FROM "users" AS "users0""#,
-        []
+        r#"SELECT COALESCE("users0"."email", "users0"."phone", 'no-contact') FROM "users" AS "users0""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT COALESCE("users0"."email", "users0"."phone", 'no-contact') FROM "users" AS "users0""#,
-        []
+        r#"SELECT COALESCE("users0"."email", "users0"."phone", 'no-contact') FROM "users" AS "users0""#
     );
 }

@@ -52,9 +52,9 @@ impl<D: Dialect> Visitor<D> {
         }
 
         // 3. 处理 WHERE 子句中的子查询 (测试用例中的 EXISTS 在这里)
-        // for where_expr in &stmt.where_clause {
-        //     self.register_table_from_expr(where_expr);
-        // }
+        for where_expr in &stmt.where_clause {
+            self.register_table_from_expr(where_expr);
+        }
     }
     fn register_table_from_expr(&mut self, expr: &Expr) {
         match expr {

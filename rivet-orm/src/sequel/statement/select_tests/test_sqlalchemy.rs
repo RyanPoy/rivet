@@ -15,18 +15,15 @@ fn test_basic() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `mytable0`.`myid` FROM `mytable` AS `mytable0` CROSS JOIN `myothertable` AS `myothertable0` WHERE `mytable0`.`myid` = `myothertable0`.`otherid`",
-        []
+        "SELECT `mytable0`.`myid` FROM `mytable` AS `mytable0` CROSS JOIN `myothertable` AS `myothertable0` WHERE `mytable0`.`myid` = `myothertable0`.`otherid`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "mytable0"."myid" FROM "mytable" AS "mytable0" CROSS JOIN "myothertable" AS "myothertable0" WHERE "mytable0"."myid" = "myothertable0"."otherid""#,
-        []
+        r#"SELECT "mytable0"."myid" FROM "mytable" AS "mytable0" CROSS JOIN "myothertable" AS "myothertable0" WHERE "mytable0"."myid" = "myothertable0"."otherid""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "mytable0"."myid" FROM "mytable" AS "mytable0" CROSS JOIN "myothertable" AS "myothertable0" WHERE "mytable0"."myid" = "myothertable0"."otherid""#,
-        []
+        r#"SELECT "mytable0"."myid" FROM "mytable" AS "mytable0" CROSS JOIN "myothertable" AS "myothertable0" WHERE "mytable0"."myid" = "myothertable0"."otherid""#
     );
 }
 
@@ -92,18 +89,15 @@ fn test_join_nofrom_implicit_left_side_explicit_onclause() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `mytable0`.`myid`, `mytable0`.`name`, `mytable0`.`description` FROM `mytable` AS `mytable0` INNER JOIN `myothertable` AS `myothertable0` ON `mytable0`.`myid` = `myothertable0`.`otherid`",
-        []
+        "SELECT `mytable0`.`myid`, `mytable0`.`name`, `mytable0`.`description` FROM `mytable` AS `mytable0` INNER JOIN `myothertable` AS `myothertable0` ON `mytable0`.`myid` = `myothertable0`.`otherid`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#,
-        []
+        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#,
-        []
+        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#
     );
 }
 
@@ -117,18 +111,15 @@ fn test_join_nofrom_implicit_left_side_explicit_onclause_3level() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `child0`.`parent_id` = `parent0`.`id` INNER JOIN `grandchild` AS `grandchild0` ON `grandchild0`.`child_id` = `child0`.`id`",
-        []
+        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `child0`.`parent_id` = `parent0`.`id` INNER JOIN `grandchild` AS `grandchild0` ON `grandchild0`.`child_id` = `child0`.`id`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "child0"."parent_id" = "parent0"."id" INNER JOIN "grandchild" AS "grandchild0" ON "grandchild0"."child_id" = "child0"."id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "child0"."parent_id" = "parent0"."id" INNER JOIN "grandchild" AS "grandchild0" ON "grandchild0"."child_id" = "child0"."id""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "child0"."parent_id" = "parent0"."id" INNER JOIN "grandchild" AS "grandchild0" ON "grandchild0"."child_id" = "child0"."id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "child0"."parent_id" = "parent0"."id" INNER JOIN "grandchild" AS "grandchild0" ON "grandchild0"."child_id" = "child0"."id""#
     );
 }
 
@@ -145,18 +136,15 @@ fn test_join_nofrom_explicit_left_side_explicit_onclause() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `mytable0`.`myid`, `mytable0`.`name`, `mytable0`.`description` FROM `mytable` AS `mytable0` INNER JOIN `myothertable` AS `myothertable0` ON `mytable0`.`myid` = `myothertable0`.`otherid`",
-        []
+        "SELECT `mytable0`.`myid`, `mytable0`.`name`, `mytable0`.`description` FROM `mytable` AS `mytable0` INNER JOIN `myothertable` AS `myothertable0` ON `mytable0`.`myid` = `myothertable0`.`otherid`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#,
-        []
+        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#,
-        []
+        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#
     );
 }
 
@@ -173,18 +161,15 @@ fn test_join_from_multiple_explicit_left_side_implicit_onclause_child_grandchild
 
     assert_mysql!(
         &stmt,
-        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id` INNER JOIN `grandchildwparent` AS `grandchildwparent0` ON `child0`.`id` = `grandchildwparent0`.`child_id`",
-        []
+        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id` INNER JOIN `grandchildwparent` AS `grandchildwparent0` ON `child0`.`id` = `grandchildwparent0`.`child_id`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchildwparent" AS "grandchildwparent0" ON "child0"."id" = "grandchildwparent0"."child_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchildwparent" AS "grandchildwparent0" ON "child0"."id" = "grandchildwparent0"."child_id""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchildwparent" AS "grandchildwparent0" ON "child0"."id" = "grandchildwparent0"."child_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchildwparent" AS "grandchildwparent0" ON "child0"."id" = "grandchildwparent0"."child_id""#
     );
 }
 
@@ -201,18 +186,15 @@ fn test_join_from_multiple_explicit_left_side_implicit_onclause_parent_grandchil
 
     assert_mysql!(
         &stmt,
-        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id` INNER JOIN `grandchildwparent` AS `grandchildwparent0` ON `parent0`.`id` = `grandchildwparent0`.`parent_id`",
-        []
+        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id` INNER JOIN `grandchildwparent` AS `grandchildwparent0` ON `parent0`.`id` = `grandchildwparent0`.`parent_id`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchildwparent" AS "grandchildwparent0" ON "parent0"."id" = "grandchildwparent0"."parent_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchildwparent" AS "grandchildwparent0" ON "parent0"."id" = "grandchildwparent0"."parent_id""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchildwparent" AS "grandchildwparent0" ON "parent0"."id" = "grandchildwparent0"."parent_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchildwparent" AS "grandchildwparent0" ON "parent0"."id" = "grandchildwparent0"."parent_id""#
     );
 }
 
@@ -229,18 +211,15 @@ fn test_join_from_multiple_explicit_left_side_implicit_onclause_grandchild_alone
 
     assert_mysql!(
         &stmt,
-        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id` INNER JOIN `grandchildwparent` AS `grandchildwparent0` ON `child0`.`id` = `grandchildwparent0`.`child_id`",
-        []
+        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id` INNER JOIN `grandchildwparent` AS `grandchildwparent0` ON `child0`.`id` = `grandchildwparent0`.`child_id`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchildwparent" AS "grandchildwparent0" ON "child0"."id" = "grandchildwparent0"."child_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchildwparent" AS "grandchildwparent0" ON "child0"."id" = "grandchildwparent0"."child_id""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchildwparent" AS "grandchildwparent0" ON "child0"."id" = "grandchildwparent0"."child_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchildwparent" AS "grandchildwparent0" ON "child0"."id" = "grandchildwparent0"."child_id""#
     );
 }
 
@@ -257,18 +236,15 @@ fn test_outerjoin_nofrom_explicit_left_side_explicit_onclause() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `mytable0`.`myid`, `mytable0`.`name`, `mytable0`.`description` FROM `mytable` AS `mytable0` LEFT JOIN `myothertable` AS `myothertable0` ON `mytable0`.`myid` = `myothertable0`.`otherid`",
-        []
+        "SELECT `mytable0`.`myid`, `mytable0`.`name`, `mytable0`.`description` FROM `mytable` AS `mytable0` LEFT JOIN `myothertable` AS `myothertable0` ON `mytable0`.`myid` = `myothertable0`.`otherid`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" LEFT JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#,
-        []
+        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" LEFT JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" LEFT JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#,
-        []
+        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" LEFT JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#
     );
 }
 
@@ -283,18 +259,15 @@ fn test_join_nofrom_implicit_left_side_implicit_onclause() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id`",
-        []
+        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#
     );
 }
 
@@ -308,18 +281,15 @@ fn test_join_nofrom_implicit_left_side_implicit_onclause_3level() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id` INNER JOIN `grandchild` AS `grandchild0` ON `child0`.`id` = `grandchild0`.`child_id`",
-        []
+        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id` INNER JOIN `grandchild` AS `grandchild0` ON `child0`.`id` = `grandchild0`.`child_id`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchild" AS "grandchild0" ON "child0"."id" = "grandchild0"."child_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchild" AS "grandchild0" ON "child0"."id" = "grandchild0"."child_id""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchild" AS "grandchild0" ON "child0"."id" = "grandchild0"."child_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id" INNER JOIN "grandchild" AS "grandchild0" ON "child0"."id" = "grandchild0"."child_id""#
     );
 }
 
@@ -332,18 +302,15 @@ fn test_join_nofrom_explicit_left_side_implicit_onclause() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id`",
-        []
+        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#
     );
 }
 
@@ -360,18 +327,15 @@ fn test_join_froms_implicit_left_side_explicit_onclause() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `mytable0`.`myid`, `mytable0`.`name`, `mytable0`.`description` FROM `mytable` AS `mytable0` INNER JOIN `myothertable` AS `myothertable0` ON `mytable0`.`myid` = `myothertable0`.`otherid`",
-        []
+        "SELECT `mytable0`.`myid`, `mytable0`.`name`, `mytable0`.`description` FROM `mytable` AS `mytable0` INNER JOIN `myothertable` AS `myothertable0` ON `mytable0`.`myid` = `myothertable0`.`otherid`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#,
-        []
+        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#,
-        []
+        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#
     );
 }
 
@@ -388,18 +352,15 @@ fn test_join_froms_explicit_left_side_explicit_onclause() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `mytable0`.`myid`, `mytable0`.`name`, `mytable0`.`description` FROM `mytable` AS `mytable0` INNER JOIN `myothertable` AS `myothertable0` ON `mytable0`.`myid` = `myothertable0`.`otherid`",
-        []
+        "SELECT `mytable0`.`myid`, `mytable0`.`name`, `mytable0`.`description` FROM `mytable` AS `mytable0` INNER JOIN `myothertable` AS `myothertable0` ON `mytable0`.`myid` = `myothertable0`.`otherid`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#,
-        []
+        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#,
-        []
+        r#"SELECT "mytable0"."myid", "mytable0"."name", "mytable0"."description" FROM "mytable" AS "mytable0" INNER JOIN "myothertable" AS "myothertable0" ON "mytable0"."myid" = "myothertable0"."otherid""#
     );
 }
 
@@ -412,18 +373,15 @@ fn test_join_froms_implicit_left_side_implicit_onclause() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id`",
-        []
+        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#
     );
 }
 
@@ -436,18 +394,15 @@ fn test_join_froms_explicit_left_side_implicit_onclause() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id`",
-        []
+        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#
     );
 }
 
@@ -458,18 +413,15 @@ fn test_join_implicit_left_side_wo_cols_onelevel() {
         .join(&*CHILD, PARENT.column("id").eq(CHILD.column("parent_id")));
     assert_mysql!(
         &stmt,
-        "SELECT `child0`.`id` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id`",
-        []
+        "SELECT `child0`.`id` FROM `parent` AS `parent0` INNER JOIN `child` AS `child0` ON `parent0`.`id` = `child0`.`parent_id`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "child0"."id" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#,
-        []
+        r#"SELECT "child0"."id" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "child0"."id" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#,
-        []
+        r#"SELECT "child0"."id" FROM "parent" AS "parent0" INNER JOIN "child" AS "child0" ON "parent0"."id" = "child0"."parent_id""#
     );
 }
 
@@ -488,18 +440,15 @@ fn test_right_nested_inner_join() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` LEFT JOIN (`child` AS `child0` INNER JOIN `grandchild` AS `grandchild0` ON `child0`.`id` = `grandchild0`.`child_id`) ON `parent0`.`id` = `child0`.`parent_id`",
-        []
+        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0` LEFT JOIN (`child` AS `child0` INNER JOIN `grandchild` AS `grandchild0` ON `child0`.`id` = `grandchild0`.`child_id`) ON `parent0`.`id` = `child0`.`parent_id`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" LEFT JOIN ("child" AS "child0" INNER JOIN "grandchild" AS "grandchild0" ON "child0"."id" = "grandchild0"."child_id") ON "parent0"."id" = "child0"."parent_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" LEFT JOIN ("child" AS "child0" INNER JOIN "grandchild" AS "grandchild0" ON "child0"."id" = "grandchild0"."child_id") ON "parent0"."id" = "child0"."parent_id""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" LEFT JOIN ("child" AS "child0" INNER JOIN "grandchild" AS "grandchild0" ON "child0"."id" = "grandchild0"."child_id") ON "parent0"."id" = "child0"."parent_id""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0" LEFT JOIN ("child" AS "child0" INNER JOIN "grandchild" AS "grandchild0" ON "child0"."id" = "grandchild0"."child_id") ON "parent0"."id" = "child0"."parent_id""#
     );
 }
 
@@ -718,17 +667,14 @@ fn test_c_collection_as_from() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0`",
-        []
+        "SELECT `parent0`.`id`, `parent0`.`data` FROM `parent` AS `parent0`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0""#,
-        []
+        r#"SELECT "parent0"."id", "parent0"."data" FROM "parent" AS "parent0""#
     );
 }

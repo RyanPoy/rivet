@@ -12,18 +12,15 @@ fn test_exists_subquery() {
         .where_(exists(SelectStatement::from(&*ORDERS).where_(where_clause)));
     assert_mysql!(
         &stmt,
-        "SELECT `users0`.`id` FROM `users` AS `users0` WHERE EXISTS((SELECT * FROM `orders` AS `orders0` WHERE `orders0`.`user_id` = `users0`.`id`))",
-        []
+        "SELECT `users0`.`id` FROM `users` AS `users0` WHERE EXISTS((SELECT * FROM `orders` AS `orders0` WHERE `orders0`.`user_id` = `users0`.`id`))"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE EXISTS((SELECT * FROM "orders" AS "orders0" WHERE "orders0"."user_id" = "users0"."id"))"#,
-        []
+        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE EXISTS((SELECT * FROM "orders" AS "orders0" WHERE "orders0"."user_id" = "users0"."id"))"#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE EXISTS((SELECT * FROM "orders" AS "orders0" WHERE "orders0"."user_id" = "users0"."id"))"#,
-        []
+        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE EXISTS((SELECT * FROM "orders" AS "orders0" WHERE "orders0"."user_id" = "users0"."id"))"#
     );
 }
 
@@ -37,18 +34,15 @@ fn test_scalar_subquery() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `users0`.`id`, (SELECT MAX(`orders0`.`total`) FROM `orders` AS `orders0` WHERE `orders0`.`user_id` = `users0`.`id`) FROM `users` AS `users0`",
-        []
+        "SELECT `users0`.`id`, (SELECT MAX(`orders0`.`total`) FROM `orders` AS `orders0` WHERE `orders0`.`user_id` = `users0`.`id`) FROM `users` AS `users0`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "users0"."id", (SELECT MAX("orders0"."total") FROM "orders" AS "orders0" WHERE "orders0"."user_id" = "users0"."id") FROM "users" AS "users0""#,
-        []
+        r#"SELECT "users0"."id", (SELECT MAX("orders0"."total") FROM "orders" AS "orders0" WHERE "orders0"."user_id" = "users0"."id") FROM "users" AS "users0""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "users0"."id", (SELECT MAX("orders0"."total") FROM "orders" AS "orders0" WHERE "orders0"."user_id" = "users0"."id") FROM "users" AS "users0""#,
-        []
+        r#"SELECT "users0"."id", (SELECT MAX("orders0"."total") FROM "orders" AS "orders0" WHERE "orders0"."user_id" = "users0"."id") FROM "users" AS "users0""#
     );
 }
 
@@ -62,17 +56,14 @@ fn test_in_subquery() {
 
     assert_mysql!(
         &stmt,
-        "SELECT `users0`.`id` FROM `users` AS `users0` WHERE `users0`.`id` IN ((SELECT `orders0`.`user_id` FROM `orders` AS `orders0`))",
-        []
+        "SELECT `users0`.`id` FROM `users` AS `users0` WHERE `users0`.`id` IN ((SELECT `orders0`.`user_id` FROM `orders` AS `orders0`))"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE "users0"."id" IN ((SELECT "orders0"."user_id" FROM "orders" AS "orders0"))"#,
-        []
+        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE "users0"."id" IN ((SELECT "orders0"."user_id" FROM "orders" AS "orders0"))"#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE "users0"."id" IN ((SELECT "orders0"."user_id" FROM "orders" AS "orders0"))"#,
-        []
+        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE "users0"."id" IN ((SELECT "orders0"."user_id" FROM "orders" AS "orders0"))"#
     );
 }

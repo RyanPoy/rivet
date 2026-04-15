@@ -7,18 +7,15 @@ fn test_arithmetic_operations() {
     let stmt = SelectStatement::from(&*ORDERS).select(ORDERS.column("price") * ORDERS.column("quantity"));
     assert_mysql!(
         &stmt,
-        "SELECT `orders0`.`price` * `orders0`.`quantity` FROM `orders` AS `orders0`",
-        []
+        "SELECT `orders0`.`price` * `orders0`.`quantity` FROM `orders` AS `orders0`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "orders0"."price" * "orders0"."quantity" FROM "orders" AS "orders0""#,
-        []
+        r#"SELECT "orders0"."price" * "orders0"."quantity" FROM "orders" AS "orders0""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "orders0"."price" * "orders0"."quantity" FROM "orders" AS "orders0""#,
-        []
+        r#"SELECT "orders0"."price" * "orders0"."quantity" FROM "orders" AS "orders0""#
     );
 }
 
@@ -30,18 +27,15 @@ fn test_addition_subtraction() {
     ]);
     assert_mysql!(
         &stmt,
-        "SELECT `orders0`.`price` + `orders0`.`tax`, `orders0`.`price` - `orders0`.`discount` FROM `orders` AS `orders0`",
-        []
+        "SELECT `orders0`.`price` + `orders0`.`tax`, `orders0`.`price` - `orders0`.`discount` FROM `orders` AS `orders0`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "orders0"."price" + "orders0"."tax", "orders0"."price" - "orders0"."discount" FROM "orders" AS "orders0""#,
-        []
+        r#"SELECT "orders0"."price" + "orders0"."tax", "orders0"."price" - "orders0"."discount" FROM "orders" AS "orders0""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "orders0"."price" + "orders0"."tax", "orders0"."price" - "orders0"."discount" FROM "orders" AS "orders0""#,
-        []
+        r#"SELECT "orders0"."price" + "orders0"."tax", "orders0"."price" - "orders0"."discount" FROM "orders" AS "orders0""#
     );
 }
 
@@ -53,18 +47,15 @@ fn test_division_modulo() {
     ]);
     assert_mysql!(
         &stmt,
-        "SELECT `orders0`.`total` / `orders0`.`quantity`, `orders0`.`total` % `orders0`.`quantity` FROM `orders` AS `orders0`",
-        []
+        "SELECT `orders0`.`total` / `orders0`.`quantity`, `orders0`.`total` % `orders0`.`quantity` FROM `orders` AS `orders0`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "orders0"."total" / "orders0"."quantity", "orders0"."total" % "orders0"."quantity" FROM "orders" AS "orders0""#,
-        []
+        r#"SELECT "orders0"."total" / "orders0"."quantity", "orders0"."total" % "orders0"."quantity" FROM "orders" AS "orders0""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "orders0"."total" / "orders0"."quantity", "orders0"."total" % "orders0"."quantity" FROM "orders" AS "orders0""#,
-        []
+        r#"SELECT "orders0"."total" / "orders0"."quantity", "orders0"."total" % "orders0"."quantity" FROM "orders" AS "orders0""#
     );
 }
 
@@ -74,17 +65,14 @@ fn test_mixed_arithmetic() {
         .select((ORDERS.column("price") * ORDERS.column("quantity") + ORDERS.column("tax")) * lit(0.9));
     assert_mysql!(
         &stmt,
-        "SELECT `orders0`.`price` * `orders0`.`quantity` + `orders0`.`tax` * 0.9 FROM `orders` AS `orders0`",
-        []
+        "SELECT `orders0`.`price` * `orders0`.`quantity` + `orders0`.`tax` * 0.9 FROM `orders` AS `orders0`"
     );
     assert_pg!(
         &stmt,
-        r#"SELECT "orders0"."price" * "orders0"."quantity" + "orders0"."tax" * 0.9 FROM "orders" AS "orders0""#,
-        []
+        r#"SELECT "orders0"."price" * "orders0"."quantity" + "orders0"."tax" * 0.9 FROM "orders" AS "orders0""#
     );
     assert_sqlite!(
         &stmt,
-        r#"SELECT "orders0"."price" * "orders0"."quantity" + "orders0"."tax" * 0.9 FROM "orders" AS "orders0""#,
-        []
+        r#"SELECT "orders0"."price" * "orders0"."quantity" + "orders0"."tax" * 0.9 FROM "orders" AS "orders0""#
     );
 }
