@@ -140,5 +140,5 @@ impl Comparable for SelectStatement {
 }
 
 #[cfg(test)]
-#[path = "./select_tests/all.rs"]
+#[path = "./select_test.rs"]
 mod tests;

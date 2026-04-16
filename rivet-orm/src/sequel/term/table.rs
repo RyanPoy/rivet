@@ -4,7 +4,6 @@ use crate::sequel::term::expr::Expr;
 use crate::sequel::term::join::{Join, JoinType};
 use rivet_utils::impl_into_vec_for;
 use rivet_utils::into_vec::IntoVec;
-use std::ops::Deref;
 use std::sync::Arc;
 
 #[derive(Debug, Clone)]
@@ -44,6 +43,14 @@ impl From<SelectStatement> for Table {
 impl Table {
     pub fn new(value: impl Into<String>) -> Self {
         let inner = TableInner::Named(value.into());
+        Self {
+            inner: Arc::new(inner),
+            alias: None,
+        }
+    }
+
+    pub fn fork(&self) -> Self {
+        let inner = (*self.inner).clone();
         Self {
             inner: Arc::new(inner),
             alias: None,
@@ -115,5 +122,20 @@ impl Table {
         T: Into<Table> + Clone,
     {
         self._join(other, JoinType::Cross, None)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    pub fn test_fork() {
+        let u = Table::new("foo");
+        let u_clone = u.clone();
+        let u_fork = u.fork();
+
+        assert!(Arc::ptr_eq(&u.inner, &u_clone.inner));
+        assert!(!Arc::ptr_eq(&u.inner, &u_fork.inner));
     }
 }
