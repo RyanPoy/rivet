@@ -1,50 +1,41 @@
 use crate::model::model::Model;
 use crate::sequel::term::calendar::{Date, DateTime};
+use crate::sequel::term::param::{Param, ParamData};
 use crate::sequel::term::table::Table;
 use std::sync::LazyLock;
 
-macro_rules! assert_mysql {
-    ($stmt:expr, $expected_sql:expr, [$($params:expr),*]) => {
-        let (sql, params_relt) = crate::sequel::visitor::visitor::mysql().visit_select_statement($stmt).finish();
+macro_rules! assert_dialect {
+    ($visitor:expr, $stmt:expr, $expected_sql:expr, [$($params:expr),*]) => {{
+        let (sql, params_relt) = $visitor.visit_select_statement($stmt).finish();
         assert_eq!(sql, $expected_sql.to_string());
-        let expected: Vec<crate::sequel::term::param::Param> = vec![$($params.into()),*];
-        let expected: Vec<crate::sequel::term::param::ParamData> = expected.iter().map(|item: &crate::sequel::term::param::Param| item.data().unwrap().clone()).collect();
+        let expected: Vec<crate::sequel::term::param::ParamData> = vec![$($params.into()),*]
+            .into_iter()
+            .map(|p: crate::sequel::term::param::Param| p.data().unwrap().clone())
+            .collect();
         assert_eq!(params_relt, expected);
-    };
-    ($stmt:expr, $expected_sql:expr) => {
-        let (sql, params_relt) = crate::sequel::visitor::visitor::mysql().visit_select_statement($stmt).finish();
+    }};
+    ($visitor:expr, $stmt:expr, $expected_sql:expr) => {{
+        let (sql, params_relt) = $visitor.visit_select_statement($stmt).finish();
         assert_eq!(sql, $expected_sql.to_string());
         assert_eq!(params_relt, Vec::<crate::sequel::term::param::ParamData>::new());
+    }};
+}
+
+macro_rules! assert_mysql {
+    ($stmt:expr, $expected_sql:expr $(, [$($params:expr),*])?) => {
+        assert_dialect!(crate::sequel::visitor::visitor::mysql(), $stmt, $expected_sql $(, [$($params),*])?)
     };
 }
 
 macro_rules! assert_pg {
-    ($stmt:expr, $expected_sql:expr, [$($params:expr),*]) => {
-        let (sql, params_relt) = crate::sequel::visitor::visitor::postgre().visit_select_statement($stmt).finish();
-        assert_eq!(sql, $expected_sql.to_string());
-        let expected: Vec<crate::sequel::term::param::Param> = vec![$($params.into()),*];
-        let expected: Vec<crate::sequel::term::param::ParamData> = expected.iter().map(|item: &crate::sequel::term::param::Param| item.data().unwrap().clone()).collect();
-        assert_eq!(params_relt, expected);
-    };
-    ($stmt:expr, $expected_sql:expr) => {
-        let (sql, params_relt) = crate::sequel::visitor::visitor::postgre().visit_select_statement($stmt).finish();
-        assert_eq!(sql, $expected_sql.to_string());
-        assert_eq!(params_relt, Vec::<crate::sequel::term::param::ParamData>::new());
+    ($stmt:expr, $expected_sql:expr $(, [$($params:expr),*])?) => {
+        assert_dialect!(crate::sequel::visitor::visitor::postgre(), $stmt, $expected_sql $(, [$($params),*])?)
     };
 }
 
 macro_rules! assert_sqlite {
-    ($stmt:expr, $expected_sql:expr, [$($params:expr),*]) => {
-        let (sql, params_relt) = crate::sequel::visitor::visitor::sqlite().visit_select_statement($stmt).finish();
-        assert_eq!(sql, $expected_sql.to_string());
-        let expected: Vec<crate::sequel::term::param::Param> = vec![$($params.into()),*];
-        let expected: Vec<crate::sequel::term::param::ParamData> = expected.iter().map(|item: &crate::sequel::term::param::Param| item.data().unwrap().clone()).collect();
-        assert_eq!(params_relt, expected);
-    };
-    ($stmt:expr, $expected_sql:expr) => {
-        let (sql, params_relt) = crate::sequel::visitor::visitor::sqlite().visit_select_statement($stmt).finish();
-        assert_eq!(sql, $expected_sql.to_string());
-        assert_eq!(params_relt, Vec::<crate::sequel::term::param::ParamData>::new());
+    ($stmt:expr, $expected_sql:expr $(, [$($params:expr),*])?) => {
+        assert_dialect!(crate::sequel::visitor::visitor::sqlite(), $stmt, $expected_sql $(, [$($params),*])?)
     };
 }
 
@@ -56,14 +47,6 @@ pub static ORDERS: LazyLock<Table> = LazyLock::new(|| Table::new("orders"));
 pub static PRODUCTS: LazyLock<Table> = LazyLock::new(|| Table::new("products"));
 pub static CATEGORIES: LazyLock<Table> = LazyLock::new(|| Table::new("categories"));
 pub static COMPANIES: LazyLock<Table> = LazyLock::new(|| Table::new("companies"));
-
-pub static MYTABLE: LazyLock<Table> = LazyLock::new(|| Table::new("mytable"));
-pub static MYOTHERTABLE: LazyLock<Table> = LazyLock::new(|| Table::new("myothertable"));
-pub static PARENT: LazyLock<Table> = LazyLock::new(|| Table::new("parent"));
-pub static CHILD: LazyLock<Table> = LazyLock::new(|| Table::new("child"));
-pub static GRANDCHILD: LazyLock<Table> = LazyLock::new(|| Table::new("grandchild"));
-pub static GRANDCHILD_W_PARENT: LazyLock<Table> = LazyLock::new(|| Table::new("grandchildwparent"));
-pub static TBL: LazyLock<Table> = LazyLock::new(|| Table::new("tbl"));
 
 pub struct User {
     id: u32,

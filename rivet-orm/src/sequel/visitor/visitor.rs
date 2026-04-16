@@ -5,9 +5,9 @@ use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::{Func, FuncArg};
 use crate::sequel::term::index::Index;
 use crate::sequel::term::join::{Join, JoinType};
-use crate::sequel::term::param::{Param, ParamData};
 use crate::sequel::term::lock::{Lock, Wait};
 use crate::sequel::term::ops::{BinaryOp, UnaryOp};
+use crate::sequel::term::param::{Param, ParamData};
 use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::{Table, TableInner};
 use crate::sequel::visitor::alias_cache::AliasCache;
@@ -128,7 +128,7 @@ impl<D: Dialect> Visitor<D> {
                 Lock::Share => self.push(" FOR SHARE"),
             };
             match wait {
-                Wait::DEFAULT => self.noop(),
+                Wait::Default => self.noop(),
                 Wait::NoWait => self.push(" NOWAIT"),
                 Wait::SkipLocked => self.push(" SKIP LOCKED"),
             };
@@ -321,7 +321,7 @@ impl<D: Dialect> Visitor<D> {
 
     pub fn visit_distinct(&mut self, distinct: &Distinct) -> &mut Self {
         match distinct {
-            Distinct::None => self,
+            Distinct::None => self.noop(),
             Distinct::All => self.push("DISTINCT "),
             Distinct::On(_) if !self.dialect.caps().distinct_on => self.push("DISTINCT "),
             Distinct::On(cols) => self.push("DISTINCT ON (").visit_expr_list(cols, 0).push(") "),

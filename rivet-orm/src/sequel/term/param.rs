@@ -22,20 +22,8 @@ pub enum Param {
 }
 
 impl Param {
-    pub fn param(v: impl Into<ParamData>) -> Self {
-        Self::Inline(v.into())
-    }
-
     pub fn alias(self, alias: impl Into<String>) -> SelectItem {
         Expr::Param(self).alias(alias)
-    }
-
-    #[inline]
-    pub fn to_param(self) -> Self {
-        match self {
-            Param::Data(d) => Self::Inline(d),
-            _ => self,
-        }
     }
     #[inline]
     pub fn is_null(&self) -> bool {
@@ -155,9 +143,8 @@ impl From<Time> for Param {
 }
 
 pub fn lit(v: impl Into<Param>) -> Param {
-    let p = v.into();
-    match p {
+    match v.into() {
         Param::Inline(d) => Param::Data(d),
-        _ => p,
+        p => p,
     }
 }

@@ -6,7 +6,7 @@ pub enum Lock {
 }
 #[derive(Clone, Debug)]
 pub enum Wait {
-    DEFAULT, // default: wait
+    Default, // default: wait
     NoWait,
     SkipLocked,
 }

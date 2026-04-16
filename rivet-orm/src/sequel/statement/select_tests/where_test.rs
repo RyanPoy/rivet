@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::sequel::statement::select::SelectStatement;
-use crate::sequel::statement::select::tests::helper::{ORDERS, PARENT, USERS};
+use crate::sequel::statement::select::tests::helper::{ORDERS, USERS};
 #[test]
 fn test_where() {
     let id = USERS.column("id");
