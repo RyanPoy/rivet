@@ -5,7 +5,7 @@ use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::{Func, FuncArg};
 use crate::sequel::term::index::Index;
 use crate::sequel::term::join::{Join, JoinType};
-use crate::sequel::term::lock::{Lock, Wait};
+use crate::sequel::term::lock::{Lock, Locking, Wait};
 use crate::sequel::term::ops::{BinaryOp, UnaryOp};
 use crate::sequel::term::param::{Param, ParamData};
 use crate::sequel::term::select_item::SelectItem;
@@ -118,24 +118,37 @@ impl<D: Dialect> Visitor<D> {
         self
     }
 
-    pub fn visit_locking(&mut self, locking: &Option<(Lock, Wait)>) -> &mut Self {
-        if self.dialect.caps().select_for_update
-            && let Some((lock, wait)) = locking
-        {
-            match lock {
-                Lock::Update => self.push(" FOR UPDATE"),
-                Lock::UpdateOf(n) => self.push(" FOR UPDATE OF ").push_quote(n),
-                Lock::Share => self.push(" FOR SHARE"),
-            };
-            match wait {
-                Wait::Default => self.noop(),
-                Wait::NoWait => self.push(" NOWAIT"),
-                Wait::SkipLocked => self.push(" SKIP LOCKED"),
-            };
+    pub fn visit_locking(&mut self, locking: &Option<Locking>) -> &mut Self {
+        if self.dialect.caps().select_with_locking {
+            if let Some(locking) = locking {
+                if let Some(lock) = &locking.lock {
+                    match lock {
+                        Lock::Share => self.push(" FOR SHARE"),
+                        Lock::Update => self.push(" FOR UPDATE"),
+                        Lock::UpdateOf(tables) => {
+                            let mut iter = tables.iter();
+                            if let Some(table) = iter.next() {
+                                self.push(" FOR UPDATE OF ");
+                                self.push_quote(&table.visible_name());
+                            }
+                            for table in iter {
+                                self.push(", ").push_quote(&table.visible_name());
+                            }
+                            self.noop()
+                        },
+                    };
+                    if let Some(wait) = &locking.wait {
+                        match wait {
+                            Wait::Default => self.noop(),
+                            Wait::NoWait => self.push(" NOWAIT"),
+                            Wait::SkipLocked => self.push(" SKIP LOCKED"),
+                        };
+                    }
+                }
+            }
         }
         self
     }
-
     pub fn visit_where_clause(&mut self, where_clause: &Vec<Expr>) -> &mut Self {
         let mut iter = where_clause.iter();
         if let Some(f) = iter.next() {

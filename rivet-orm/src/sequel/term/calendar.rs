@@ -1,12 +1,14 @@
 use std::fmt;
 use std::fmt::Formatter;
+use thiserror::Error;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Error)]
 #[error("ValueError: {msg}, but got {value}")]
 pub struct ValueError {
     msg: String,
     value: String,
 }
+
 impl ValueError {
     pub fn new<T: Into<String>, V: std::fmt::Display>(msg: T, value: V) -> Self {
         Self {
@@ -15,7 +17,6 @@ impl ValueError {
         }
     }
 }
-
 #[derive(Clone, Copy, Eq, PartialEq, Debug)]
 pub struct Time {
     hour: u8,

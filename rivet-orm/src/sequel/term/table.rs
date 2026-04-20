@@ -3,6 +3,7 @@ use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::join::{Join, JoinType};
 use rivet_utils::impl_into_vec_for;
+use rivet_utils::inflection::table_name_of;
 use rivet_utils::into_vec::IntoVec;
 use std::sync::Arc;
 
@@ -74,6 +75,16 @@ impl Table {
             alias.clone()
         } else {
             format!("t{}", default)
+        }
+    }
+
+    pub fn visible_name(&self) -> String {
+        if let Some(alias) = &self.alias {
+            return alias.clone();
+        }
+        match &*self.inner {
+            TableInner::Named(inner) => inner.clone(),
+            _ => String::from(""),
         }
     }
 

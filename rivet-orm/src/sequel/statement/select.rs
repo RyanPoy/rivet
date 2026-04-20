@@ -2,7 +2,7 @@ use crate::prelude::*;
 use crate::sequel::term::distinct::Distinct;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::index::Index;
-use crate::sequel::term::lock::{Lock, Wait};
+use crate::sequel::term::lock::{Lock, Locking, Wait};
 use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::Table;
 use rivet_utils::into_vec::IntoVec;
@@ -15,7 +15,7 @@ pub struct SelectStatement {
     pub where_clause: Vec<Expr>,
     pub limit: Option<usize>,
     pub offset: Option<usize>,
-    pub locking: Option<(Lock, Wait)>,
+    pub locking: Option<Locking>,
     pub indexes: Vec<Index>,
 }
 
@@ -31,7 +31,7 @@ impl SelectStatement {
             where_clause: Vec::new(),
             limit: None,
             offset: None,
-            locking: None,
+            locking: Some(Locking::new()),
             indexes: Vec::new(),
         }
     }
@@ -103,8 +103,41 @@ impl SelectStatement {
         self
     }
 
-    pub fn for_update(mut self, lock: Lock, wait: Wait) -> Self {
-        self.locking = Some((lock, wait));
+    pub fn for_share(self) -> Self {
+        self.set_lock_of_locker(Lock::Share)
+    }
+
+    pub fn for_update(self) -> Self {
+        self.set_lock_of_locker(Lock::Update)
+    }
+    pub fn for_update_of(self, tables: impl IntoVec<Table>) -> Self {
+        let tables = tables.into_vec();
+        self.set_lock_of_locker(Lock::UpdateOf(tables))
+    }
+
+    fn set_lock_of_locker(mut self, lock: Lock) -> Self {
+        let mut locking = self.locking.unwrap_or_else(|| Locking::new());
+        locking.lock = Some(lock);
+        if locking.wait.is_none() {
+            locking.wait = Some(Wait::Default)
+        }
+        self.locking = Some(locking);
+        self
+    }
+
+    pub fn wait(self) -> Self {
+        self.set_wait_for_locker(Wait::Default)
+    }
+    pub fn no_wait(self) -> Self {
+        self.set_wait_for_locker(Wait::NoWait)
+    }
+    pub fn skip(self) -> Self {
+        self.set_wait_for_locker(Wait::SkipLocked)
+    }
+    fn set_wait_for_locker(mut self, wait: Wait) -> Self {
+        let mut l = self.locking.unwrap_or_else(|| Locking::new());
+        l.wait = Some(wait);
+        self.locking = Some(l);
         self
     }
 

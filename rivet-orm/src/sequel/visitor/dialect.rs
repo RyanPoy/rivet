@@ -18,7 +18,7 @@ pub struct Capability {
     pub distinct_on: bool,
     pub returning: bool,
     pub standalone_offset: bool,
-    pub select_for_update: bool,
+    pub select_with_locking: bool,
     pub count_distinct: CountDistinctCap,
 }
 impl Capability {
@@ -27,7 +27,7 @@ impl Capability {
             distinct_on: true,
             returning: true,
             standalone_offset: true,
-            select_for_update: true,
+            select_with_locking: true,
             count_distinct: CountDistinctCap::default(),
         }
     }
@@ -47,7 +47,7 @@ impl Dialect for MySQL {
     fn caps(&self) -> Capability {
         Capability {
             count_distinct: CountDistinctCap::Extend,
-            select_for_update: true,
+            select_with_locking: true,
             ..Capability::default()
         }
     }

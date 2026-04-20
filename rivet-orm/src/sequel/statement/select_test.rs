@@ -892,33 +892,41 @@ fn test_alias__table_alias() {
     );
 }
 
-// // ============================================================================
-// // 12. 锁定子句测试 (FOR UPDATE 等)
-// // ============================================================================
-//
-// #[test]
-// fn test_for_update() {
-//     use crate::sequel::term::lock::{Lock, Wait};
-//
-//     let stmt = SelectStatement::from(&*USERS)
-//         .select(USERS.column("id"))
-//         .for_update(Lock::Update, Wait::NoWait);
-//
-//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1` FOR UPDATE NOWAIT");
-//     assert_pg!(&stmt, r#"SELECT "t1"."id" FROM "users" AS "t1" FOR UPDATE NOWAIT"#);
-// }
-//
-// #[test]
-// fn test_for_share() {
-//     use crate::sequel::term::lock::{Lock, Wait};
-//
-//     let stmt = SelectStatement::from(&*USERS)
-//         .select(USERS.column("id"))
-//         .for_update(Lock::Share, Wait::SkipLocked);
-//
-//     assert_mysql!(&stmt, "SELECT `t1`.`id` FROM `users` AS `t1` FOR SHARE SKIP LOCKED");
-// }
-//
+#[test]
+fn test_locker__for_update() {
+    use crate::sequel::term::lock::{Lock, Wait};
+
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .for_update()
+        .no_wait();
+
+    assert_mysql!(&stmt, "SELECT `users0`.`id` FROM `users` AS `users0` FOR UPDATE NOWAIT");
+    assert_pg!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" FOR UPDATE NOWAIT"#
+    );
+    assert_sqlite!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#);
+}
+
+#[test]
+fn test_locker__for_share() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .for_share()
+        .skip();
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id` FROM `users` AS `users0` FOR SHARE SKIP LOCKED"
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" FOR SHARE SKIP LOCKED"#
+    );
+    assert_sqlite!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#);
+}
+
 // // ============================================================================
 // // 13. 索引提示测试 (MySQL 特有)
 // // ============================================================================
@@ -931,7 +939,7 @@ fn test_alias__table_alias() {
 //
 //     assert_mysql!(
 //         &stmt,
-//         "SELECT `t1`.`id` FROM `users` AS `t1` FORCE INDEX (idx_users_email)"
+//         "SELECT `users0`.`id` FROM `users` AS `users0` FORCE INDEX (idx_users_email)"
 //     );
 // }
 //
