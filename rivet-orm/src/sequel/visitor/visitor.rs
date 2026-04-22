@@ -144,6 +144,12 @@ impl<D: Dialect> Visitor<D> {
                             Wait::SkipLocked => self.push(" SKIP LOCKED"),
                         };
                     }
+                } else if let Some(wait) = &locking.wait {
+                    match wait {
+                        Wait::Default => self.push(" FOR UPDATE"),
+                        Wait::NoWait => self.push(" FOR UPDATE NOWAIT"),
+                        Wait::SkipLocked => self.push(" FOR UPDATE SKIP LOCKED"),
+                    };
                 }
             }
         }

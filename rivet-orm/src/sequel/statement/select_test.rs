@@ -894,8 +894,6 @@ fn test_alias__table_alias() {
 
 #[test]
 fn test_locker__for_update() {
-    use crate::sequel::term::lock::{Lock, Wait};
-
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("id"))
         .for_update()
@@ -907,10 +905,85 @@ fn test_locker__for_update() {
         r#"SELECT "users0"."id" FROM "users" AS "users0" FOR UPDATE NOWAIT"#
     );
     assert_sqlite!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#);
+
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .for_update()
+        .wait();
+
+    assert_mysql!(&stmt, "SELECT `users0`.`id` FROM `users` AS `users0` FOR UPDATE");
+    assert_pg!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0" FOR UPDATE"#);
+    assert_sqlite!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#);
+
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .for_update()
+        .skip();
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id` FROM `users` AS `users0` FOR UPDATE SKIP LOCKED"
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" FOR UPDATE SKIP LOCKED"#
+    );
+    assert_sqlite!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#);
+}
+
+#[test]
+fn test_locker__default_for_update() {
+    let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).no_wait();
+
+    assert_mysql!(&stmt, "SELECT `users0`.`id` FROM `users` AS `users0` FOR UPDATE NOWAIT");
+    assert_pg!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" FOR UPDATE NOWAIT"#
+    );
+    assert_sqlite!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#);
+
+    let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).wait();
+
+    assert_mysql!(&stmt, "SELECT `users0`.`id` FROM `users` AS `users0` FOR UPDATE");
+    assert_pg!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0" FOR UPDATE"#);
+    assert_sqlite!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#);
+
+    let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).skip();
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id` FROM `users` AS `users0` FOR UPDATE SKIP LOCKED"
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" FOR UPDATE SKIP LOCKED"#
+    );
+    assert_sqlite!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#);
 }
 
 #[test]
 fn test_locker__for_share() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .for_share()
+        .no_wait();
+
+    assert_mysql!(&stmt, "SELECT `users0`.`id` FROM `users` AS `users0` FOR SHARE NOWAIT");
+    assert_pg!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" FOR SHARE NOWAIT"#
+    );
+    assert_sqlite!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#);
+
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .for_share()
+        .wait();
+
+    assert_mysql!(&stmt, "SELECT `users0`.`id` FROM `users` AS `users0` FOR SHARE");
+    assert_pg!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0" FOR SHARE"#);
+    assert_sqlite!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#);
+
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("id"))
         .for_share()
