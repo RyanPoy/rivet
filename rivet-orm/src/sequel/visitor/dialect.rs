@@ -13,6 +13,20 @@ pub enum CountDistinctCap {
     Merge,
     Rewrite,
 }
+#[derive(Clone, Debug, Copy, Default, PartialEq, Eq)]
+pub struct IndexRender {
+    pub before: &'static str,
+    pub after: &'static str,
+    pub support_multiple: bool,
+}
+
+#[derive(Clone, Debug, Copy, Default, PartialEq, Eq)]
+pub struct IndexRenderCap {
+    pub force: Option<IndexRender>,
+    pub use_: Option<IndexRender>,
+    pub ignore: Option<IndexRender>,
+}
+
 #[derive(Clone, Debug, Copy, Default)]
 pub struct Capability {
     pub distinct_on: bool,
@@ -20,7 +34,9 @@ pub struct Capability {
     pub standalone_offset: bool,
     pub select_with_locking: bool,
     pub count_distinct: CountDistinctCap,
+    pub index_render_cap: IndexRenderCap,
 }
+
 impl Capability {
     pub fn all() -> Self {
         Capability {
@@ -29,6 +45,11 @@ impl Capability {
             standalone_offset: true,
             select_with_locking: true,
             count_distinct: CountDistinctCap::default(),
+            index_render_cap: IndexRenderCap {
+                force: None,
+                use_: None,
+                ignore: None,
+            },
         }
     }
 }
@@ -48,6 +69,23 @@ impl Dialect for MySQL {
         Capability {
             count_distinct: CountDistinctCap::Extend,
             select_with_locking: true,
+            index_render_cap: IndexRenderCap {
+                force: Some(IndexRender {
+                    before: "FORCE INDEX (",
+                    after: ")",
+                    support_multiple: true,
+                }),
+                use_: Some(IndexRender {
+                    before: "USE INDEX (",
+                    after: ")",
+                    support_multiple: true,
+                }),
+                ignore: Some(IndexRender {
+                    before: "IGNORE INDEX (",
+                    after: ")",
+                    support_multiple: true,
+                }),
+            },
             ..Capability::default()
         }
     }
@@ -98,6 +136,7 @@ impl Dialect for PostgreSQL {
     fn placeholder_style(&self) -> PlaceHolderStyle {
         PlaceHolderStyle::Numbered
     }
+
     fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder) {}
     #[inline]
     fn bool_str(&self, v: bool) -> &'static str {
@@ -113,6 +152,19 @@ impl Dialect for SQLite {
             returning: true,
             standalone_offset: true,
             count_distinct: CountDistinctCap::Rewrite,
+            index_render_cap: IndexRenderCap {
+                force: Some(IndexRender {
+                    before: "INDEXED BY",
+                    after: "",
+                    support_multiple: false,
+                }),
+                use_: None,
+                ignore: Some(IndexRender {
+                    before: "IGNORE INDEX (",
+                    after: ")",
+                    support_multiple: false,
+                }),
+            },
             ..Capability::default()
         }
     }
@@ -124,6 +176,7 @@ impl Dialect for SQLite {
     fn placeholder_style(&self) -> PlaceHolderStyle {
         PlaceHolderStyle::QuestionMark
     }
+
     fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder) {
         let mut iter = indexes.iter();
         if let Some(index) = iter.next() {

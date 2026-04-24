@@ -1,7 +1,7 @@
 use crate::prelude::*;
 use crate::sequel::term::distinct::Distinct;
 use crate::sequel::term::expr::Expr;
-use crate::sequel::term::index::Index;
+use crate::sequel::term::index::{Index, Indexes};
 use crate::sequel::term::lock::{Lock, Locking, Wait};
 use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::Table;
@@ -16,7 +16,7 @@ pub struct SelectStatement {
     pub limit: Option<usize>,
     pub offset: Option<usize>,
     pub locking: Option<Locking>,
-    pub indexes: Vec<Index>,
+    pub indexes: Indexes,
 }
 
 impl SelectStatement {
@@ -32,7 +32,7 @@ impl SelectStatement {
             limit: None,
             offset: None,
             locking: Some(Locking::new()),
-            indexes: Vec::new(),
+            indexes: Indexes::new(),
         }
     }
     pub fn distinct(mut self) -> Self {
@@ -141,11 +141,22 @@ impl SelectStatement {
         self
     }
 
-    pub fn force_index<T>(mut self, index: T) -> Self
-    where
-        T: Into<Index>,
-    {
-        self.indexes.push(index.into());
+    pub fn force_index(mut self, indexes: impl IntoVec<Index>) -> Self {
+        for index in indexes.into_vec() {
+            self.indexes.push_force(index);
+        }
+        self
+    }
+    pub fn use_index(mut self, indexes: impl IntoVec<Index>) -> Self {
+        for index in indexes.into_vec() {
+            self.indexes.push_use(index);
+        }
+        self
+    }
+    pub fn ignore_index(mut self, indexes: impl IntoVec<Index>) -> Self {
+        for index in indexes.into_vec() {
+            self.indexes.push_ignore(index);
+        }
         self
     }
 

@@ -3,7 +3,7 @@ use crate::sequel::term::column::Column;
 use crate::sequel::term::distinct::Distinct;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::{Func, FuncArg};
-use crate::sequel::term::index::Index;
+use crate::sequel::term::index::{Index, Indexes};
 use crate::sequel::term::join::{Join, JoinType};
 use crate::sequel::term::lock::{Lock, Locking, Wait};
 use crate::sequel::term::ops::{BinaryOp, UnaryOp};
@@ -12,7 +12,7 @@ use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::{Table, TableInner};
 use crate::sequel::visitor::alias_cache::AliasCache;
 use crate::sequel::visitor::builder::Builder;
-use crate::sequel::visitor::dialect::{CountDistinctCap, Dialect, MySQL, PostgreSQL, SQLite};
+use crate::sequel::visitor::dialect::{CountDistinctCap, Dialect, IndexRender, MySQL, PostgreSQL, SQLite};
 use crate::sequel::visitor::rewriter::rewrite_count_distinct;
 
 pub fn mysql() -> Visitor<MySQL> {
@@ -385,11 +385,30 @@ impl<D: Dialect> Visitor<D> {
     }
 
     #[inline]
-    fn visit_indexes(&mut self, indexes: &[Index]) -> &mut Self {
-        self.dialect.render_force_index_hint(indexes, &mut self.builder);
+    fn visit_indexes(&mut self, indexes: &Indexes) -> &mut Self {
+        let caps = self.dialect.caps();
+        self._visit_index_by(caps.index_render_cap.force, &indexes.force);
+        self._visit_index_by(caps.index_render_cap.use_, &indexes.use_);
+        self._visit_index_by(caps.index_render_cap.ignore, &indexes.ignore);
         self
     }
 
+    fn _visit_index_by(&mut self, render: Option<IndexRender>, indexes: &Vec<Index>) -> &mut Self {
+        if let Some(render) = render {
+            let mut iter = indexes.iter();
+            if let Some(index) = iter.next() {
+                self.push(" ").push(render.before).push(" ");
+                self.push_quote(&index.to_string());
+                if render.support_multiple {
+                    for index in iter {
+                        self.push(", ").push_quote(&index.to_string());
+                    }
+                }
+                self.push(render.after);
+            }
+        }
+        self
+    }
     #[inline]
     fn push(&mut self, v: &str) -> &mut Self {
         self.builder.push(v);

@@ -1000,22 +1000,22 @@ fn test_locker__for_share() {
     assert_sqlite!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#);
 }
 
-// // ============================================================================
-// // 13. 索引提示测试 (MySQL 特有)
-// // ============================================================================
-//
-// #[test]
-// fn test_force_index() {
-//     let stmt = SelectStatement::from(&*USERS)
-//         .select(USERS.column("id"))
-//         .force_index("idx_users_email");
-//
-//     assert_mysql!(
-//         &stmt,
-//         "SELECT `users0`.`id` FROM `users` AS `users0` FORCE INDEX (idx_users_email)"
-//     );
-// }
-//
+#[test]
+fn test_force_index() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .force_index(["idx_users_email", "idx_user_name"]);
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id` FROM `users` AS `users0` FORCE INDEX ( `idx_users_email`, `idx_user_name`)"
+    );
+    assert_pg!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#);
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" INDEXED BY "idx_users_email""#
+    );
+}
 
 //
 //
