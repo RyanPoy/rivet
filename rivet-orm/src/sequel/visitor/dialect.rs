@@ -59,7 +59,6 @@ pub trait Dialect {
     fn quote_char(&self) -> &'static str;
     fn placeholder_style(&self) -> PlaceHolderStyle;
     fn bool_str(&self, v: bool) -> &'static str;
-    fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder);
 }
 
 pub struct MySQL;
@@ -98,21 +97,6 @@ impl Dialect for MySQL {
         PlaceHolderStyle::QuestionMark
     }
 
-    fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder) {
-        let mut iter = indexes.iter();
-        if let Some(index) = iter.next() {
-            let char = self.quote_char();
-            builder
-                .push(" FORCE INDEX (")
-                .push(char)
-                .push(&index.to_string())
-                .push(char);
-            for index in iter {
-                builder.push(", ").push(char).push(&index.to_string()).push(char);
-            }
-            builder.push(")");
-        }
-    }
     #[inline]
     fn bool_str(&self, v: bool) -> &'static str {
         if v { "1" } else { "0" }
@@ -137,7 +121,6 @@ impl Dialect for PostgreSQL {
         PlaceHolderStyle::Numbered
     }
 
-    fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder) {}
     #[inline]
     fn bool_str(&self, v: bool) -> &'static str {
         if v { "true" } else { "false" }
@@ -177,17 +160,6 @@ impl Dialect for SQLite {
         PlaceHolderStyle::QuestionMark
     }
 
-    fn render_force_index_hint(&self, indexes: &[Index], builder: &mut Builder) {
-        let mut iter = indexes.iter();
-        if let Some(index) = iter.next() {
-            let char = self.quote_char();
-            builder
-                .push(" INDEXED BY ")
-                .push(char)
-                .push(&index.to_string())
-                .push(char);
-        }
-    }
     #[inline]
     fn bool_str(&self, v: bool) -> &'static str {
         if v { "1" } else { "0" }
