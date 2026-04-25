@@ -1,5 +1,5 @@
-pub mod visitor;
-pub mod dialect;
-pub mod builder;
 mod alias_cache;
+pub mod builder;
+pub mod dialect;
 mod rewriter;
+pub mod visitor;

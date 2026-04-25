@@ -4,7 +4,8 @@ use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::{Func, FuncArg};
 use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::Table;
-use crate::sequel::visitor::dialect::{CountDistinctCap, Dialect};
+use crate::sequel::visitor::dialect::Dialect;
+use crate::sequel::visitor::dialect::caps::CountDistinctCap;
 
 pub fn normalize(stmt: &SelectStatement) -> SelectStatement {
     let mut stmt = stmt.clone();

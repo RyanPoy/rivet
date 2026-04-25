@@ -12,7 +12,11 @@ use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::{Table, TableInner};
 use crate::sequel::visitor::alias_cache::AliasCache;
 use crate::sequel::visitor::builder::Builder;
-use crate::sequel::visitor::dialect::{CountDistinctCap, Dialect, IndexFormat, MySQL, PostgreSQL, SQLite};
+use crate::sequel::visitor::dialect::Dialect;
+use crate::sequel::visitor::dialect::caps::{CountDistinctCap, IndexFormat};
+use crate::sequel::visitor::dialect::mysql::MySQL;
+use crate::sequel::visitor::dialect::postgre::PostgreSQL;
+use crate::sequel::visitor::dialect::sqlite::SQLite;
 use crate::sequel::visitor::rewriter::rewrite_count_distinct;
 
 pub fn mysql() -> Visitor<MySQL> {
