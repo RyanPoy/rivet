@@ -1017,6 +1017,100 @@ fn test_force_index() {
     );
 }
 
+#[test]
+fn test_use_index() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .use_index(["idx_users_email", "idx_user_name"]);
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id` FROM `users` AS `users0` USE INDEX ( `idx_users_email`, `idx_user_name`)"
+    );
+    assert_pg!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#);
+    assert_sqlite!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#);
+}
+
+#[test]
+fn test_ignore_index() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .ignore_index(["idx_users_email", "idx_user_name"]);
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id` FROM `users` AS `users0` IGNORE INDEX ( `idx_users_email`, `idx_user_name`)"
+    );
+    assert_pg!(&stmt, r#"SELECT "users0"."id" FROM "users" AS "users0""#);
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" IGNORE INDEX ( "idx_users_email")"#
+    );
+}
+
+#[test]
+fn test_force_index__single() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .force_index(["idx_users_email"]);
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id` FROM `users` AS `users0` FORCE INDEX ( `idx_users_email`)"
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" INDEXED BY "idx_users_email""#
+    );
+}
+
+#[test]
+fn test_use_index__single() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .use_index(["idx_users_email"]);
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id` FROM `users` AS `users0` USE INDEX ( `idx_users_email`)"
+    );
+}
+
+#[test]
+fn test_ignore_index__single() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .ignore_index(["idx_users_email"]);
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id` FROM `users` AS `users0` IGNORE INDEX ( `idx_users_email`)"
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" IGNORE INDEX ( "idx_users_email")"#
+    );
+}
+
+#[test]
+fn test_force_index__with_where() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .where_(USERS.column("email").eq("test@example.com"))
+        .force_index(["idx_users_email"]);
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id` FROM `users` AS `users0` FORCE INDEX ( `idx_users_email`) WHERE `users0`.`email` = ?",
+        ["test@example.com"]
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" INDEXED BY "idx_users_email" WHERE "users0"."email" = ?"#,
+        ["test@example.com"]
+    );
+}
+
 //
 //
 // #[test]
