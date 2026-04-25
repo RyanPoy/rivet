@@ -14,17 +14,17 @@ pub enum CountDistinctCap {
     Rewrite,
 }
 #[derive(Clone, Debug, Copy, Default, PartialEq, Eq)]
-pub struct IndexRender {
+pub struct IndexFormat {
     pub before: &'static str,
     pub after: &'static str,
     pub support_multiple: bool,
 }
 
 #[derive(Clone, Debug, Copy, Default, PartialEq, Eq)]
-pub struct IndexRenderCap {
-    pub force: Option<IndexRender>,
-    pub use_: Option<IndexRender>,
-    pub ignore: Option<IndexRender>,
+pub struct IndexCap {
+    pub force: Option<IndexFormat>,
+    pub use_: Option<IndexFormat>,
+    pub ignore: Option<IndexFormat>,
 }
 
 #[derive(Clone, Debug, Copy, Default)]
@@ -34,7 +34,7 @@ pub struct Capability {
     pub standalone_offset: bool,
     pub select_with_locking: bool,
     pub count_distinct: CountDistinctCap,
-    pub index_render_cap: IndexRenderCap,
+    pub index_cap: IndexCap,
 }
 
 impl Capability {
@@ -45,7 +45,7 @@ impl Capability {
             standalone_offset: true,
             select_with_locking: true,
             count_distinct: CountDistinctCap::default(),
-            index_render_cap: IndexRenderCap {
+            index_cap: IndexCap {
                 force: None,
                 use_: None,
                 ignore: None,
@@ -68,18 +68,18 @@ impl Dialect for MySQL {
         Capability {
             count_distinct: CountDistinctCap::Extend,
             select_with_locking: true,
-            index_render_cap: IndexRenderCap {
-                force: Some(IndexRender {
+            index_cap: IndexCap {
+                force: Some(IndexFormat {
                     before: "FORCE INDEX (",
                     after: ")",
                     support_multiple: true,
                 }),
-                use_: Some(IndexRender {
+                use_: Some(IndexFormat {
                     before: "USE INDEX (",
                     after: ")",
                     support_multiple: true,
                 }),
-                ignore: Some(IndexRender {
+                ignore: Some(IndexFormat {
                     before: "IGNORE INDEX (",
                     after: ")",
                     support_multiple: true,
@@ -135,14 +135,14 @@ impl Dialect for SQLite {
             returning: true,
             standalone_offset: true,
             count_distinct: CountDistinctCap::Rewrite,
-            index_render_cap: IndexRenderCap {
-                force: Some(IndexRender {
+            index_cap: IndexCap {
+                force: Some(IndexFormat {
                     before: "INDEXED BY",
                     after: "",
                     support_multiple: false,
                 }),
                 use_: None,
-                ignore: Some(IndexRender {
+                ignore: Some(IndexFormat {
                     before: "IGNORE INDEX (",
                     after: ")",
                     support_multiple: false,

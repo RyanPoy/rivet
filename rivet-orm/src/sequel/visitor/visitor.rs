@@ -12,7 +12,7 @@ use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::{Table, TableInner};
 use crate::sequel::visitor::alias_cache::AliasCache;
 use crate::sequel::visitor::builder::Builder;
-use crate::sequel::visitor::dialect::{CountDistinctCap, Dialect, IndexRender, MySQL, PostgreSQL, SQLite};
+use crate::sequel::visitor::dialect::{CountDistinctCap, Dialect, IndexFormat, MySQL, PostgreSQL, SQLite};
 use crate::sequel::visitor::rewriter::rewrite_count_distinct;
 
 pub fn mysql() -> Visitor<MySQL> {
@@ -387,13 +387,13 @@ impl<D: Dialect> Visitor<D> {
     #[inline]
     fn visit_indexes(&mut self, indexes: &Indexes) -> &mut Self {
         let caps = self.dialect.caps();
-        self._visit_index_by(caps.index_render_cap.force, &indexes.force);
-        self._visit_index_by(caps.index_render_cap.use_, &indexes.use_);
-        self._visit_index_by(caps.index_render_cap.ignore, &indexes.ignore);
+        self._visit_index_by(caps.index_cap.force, &indexes.force);
+        self._visit_index_by(caps.index_cap.use_, &indexes.use_);
+        self._visit_index_by(caps.index_cap.ignore, &indexes.ignore);
         self
     }
 
-    fn _visit_index_by(&mut self, render: Option<IndexRender>, indexes: &Vec<Index>) -> &mut Self {
+    fn _visit_index_by(&mut self, render: Option<IndexFormat>, indexes: &Vec<Index>) -> &mut Self {
         if let Some(render) = render {
             let mut iter = indexes.iter();
             if let Some(index) = iter.next() {
