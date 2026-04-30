@@ -1,12 +1,11 @@
+use crate::model::model::Model;
 use crate::prelude::*;
 use crate::sequel::statement::select::SelectStatement;
+use crate::sequel::term::calendar::{Date, DateTime};
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::{
     abs, avg, ceil, coalesce, count, count_all, exists, floor, func, lower, max, min, sqrt, sum, upper,
 };
-
-use crate::model::model::Model;
-use crate::sequel::term::calendar::{Date, DateTime};
 use crate::sequel::term::table::Table;
 use std::sync::LazyLock;
 
@@ -1111,12 +1110,192 @@ fn test_force_index__with_where() {
     );
 }
 
+#[test]
+fn test_group_by__single() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("city"))
+        .group_by(USERS.column("city"));
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`city` FROM `users` AS `users0` GROUP BY `users0`.`city`"
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "users0"."city" FROM "users" AS "users0" GROUP BY "users0"."city""#
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."city" FROM "users" AS "users0" GROUP BY "users0"."city""#
+    );
+}
+
+#[test]
+fn test_group_by__multiple() {
+    let user_id = ORDERS.column("user_id");
+    let status = ORDERS.column("status");
+    let stmt = SelectStatement::from(&*ORDERS)
+        .select([user_id.clone(), status.clone()])
+        .group_by([user_id, status]);
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `orders0`.`user_id`, `orders0`.`status` FROM `orders` AS `orders0` GROUP BY `orders0`.`user_id`, `orders0`.`status`"
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "orders0"."user_id", "orders0"."status" FROM "orders" AS "orders0" GROUP BY "orders0"."user_id", "orders0"."status""#
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "orders0"."user_id", "orders0"."status" FROM "orders" AS "orders0" GROUP BY "orders0"."user_id", "orders0"."status""#
+    );
+}
+
+#[test]
+fn test_group_by__with_having() {
+    let user_id = ORDERS.column("user_id");
+    let stmt = SelectStatement::from(&*ORDERS)
+        .select(user_id.clone())
+        .select(count(user_id.clone()).alias("order_count"))
+        .group_by(user_id.clone())
+        .having(user_id.eq(1));
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `orders0`.`user_id`, COUNT(`orders0`.`user_id`) AS `order_count` FROM `orders` AS `orders0` GROUP BY `orders0`.`user_id` HAVING `orders0`.`user_id` = ?",
+        [1_i64]
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "orders0"."user_id", COUNT("orders0"."user_id") AS "order_count" FROM "orders" AS "orders0" GROUP BY "orders0"."user_id" HAVING "orders0"."user_id" = $1"#,
+        [1_i64]
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "orders0"."user_id", COUNT("orders0"."user_id") AS "order_count" FROM "orders" AS "orders0" GROUP BY "orders0"."user_id" HAVING "orders0"."user_id" = ?"#,
+        [1_i64]
+    );
+}
+
+#[test]
+fn test_group_by__with_where() {
+    let user_id = ORDERS.column("user_id");
+    let stmt = SelectStatement::from(&*ORDERS)
+        .select(user_id.clone())
+        .where_(ORDERS.column("status").eq("completed"))
+        .group_by(user_id);
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `orders0`.`user_id` FROM `orders` AS `orders0` WHERE `orders0`.`status` = ? GROUP BY `orders0`.`user_id`",
+        ["completed"]
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "orders0"."user_id" FROM "orders" AS "orders0" WHERE "orders0"."status" = $1 GROUP BY "orders0"."user_id""#,
+        ["completed"]
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "orders0"."user_id" FROM "orders" AS "orders0" WHERE "orders0"."status" = ? GROUP BY "orders0"."user_id""#,
+        ["completed"]
+    );
+}
+
+#[test]
+fn test_group_by__with_where_and_having() {
+    let user_id = ORDERS.column("user_id");
+    let total_sum = sum(ORDERS.column("total"));
+    let stmt = SelectStatement::from(&*ORDERS)
+        .select(user_id.clone())
+        .select(total_sum.clone().alias("total_amount"))
+        .where_(ORDERS.column("status").eq("completed"))
+        .group_by(user_id)
+        .having(total_sum.gt(100));
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `orders0`.`user_id`, SUM(`orders0`.`total`) AS `total_amount` FROM `orders` AS `orders0` WHERE `orders0`.`status` = ? GROUP BY `orders0`.`user_id` HAVING SUM(`orders0`.`total`) > ?",
+        ["completed", 100_i64]
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "orders0"."user_id", SUM("orders0"."total") AS "total_amount" FROM "orders" AS "orders0" WHERE "orders0"."status" = $1 GROUP BY "orders0"."user_id" HAVING SUM("orders0"."total") > $2"#,
+        ["completed", 100_i64]
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "orders0"."user_id", SUM("orders0"."total") AS "total_amount" FROM "orders" AS "orders0" WHERE "orders0"."status" = ? GROUP BY "orders0"."user_id" HAVING SUM("orders0"."total") > ?"#,
+        ["completed", 100_i64]
+    );
+}
+
+#[test]
+fn test_group_by__with_func() {
+    let user_id = ORDERS.column("user_id");
+    let stmt = SelectStatement::from(&*ORDERS)
+        .select(ORDERS.column("user_id"))
+        .select(count(ORDERS.column("id")))
+        .select(sum(ORDERS.column("total")))
+        .select(avg(ORDERS.column("price")))
+        .group_by(user_id);
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `orders0`.`user_id`, COUNT(`orders0`.`id`), SUM(`orders0`.`total`), AVG(`orders0`.`price`) FROM `orders` AS `orders0` GROUP BY `orders0`.`user_id`"
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "orders0"."user_id", COUNT("orders0"."id"), SUM("orders0"."total"), AVG("orders0"."price") FROM "orders" AS "orders0" GROUP BY "orders0"."user_id""#
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "orders0"."user_id", COUNT("orders0"."id"), SUM("orders0"."total"), AVG("orders0"."price") FROM "orders" AS "orders0" GROUP BY "orders0"."user_id""#
+    );
+}
+
+#[test]
+fn test_group_by__with_having_multiple() {
+    use crate::sequel::term::ops::BinaryOp;
+    use crate::sequel::term::param::Param;
+
+    let user_id_col = ORDERS.column("user_id");
+    let user_id_expr: Expr = user_id_col.clone().into();
+    let order_count_func = count(ORDERS.column("id"));
+    let order_count_expr: Expr = order_count_func.clone().into();
+    let gt_expr = Expr::Binary {
+        left: Box::new(order_count_expr),
+        op: BinaryOp::Gt,
+        right: Box::new(Param::Inline(ParamData::Int(5)).into()),
+    };
+    let stmt = SelectStatement::from(&*ORDERS)
+        .select(user_id_col.clone())
+        .select(order_count_func.clone().alias("order_count"))
+        .select(sum(ORDERS.column("total")).alias("total_amount"))
+        .group_by(vec![user_id_expr])
+        .having(user_id_col.eq(1))
+        .having(gt_expr);
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `orders0`.`user_id`, COUNT(`orders0`.`id`) AS `order_count`, SUM(`orders0`.`total`) AS `total_amount` FROM `orders` AS `orders0` GROUP BY `orders0`.`user_id` HAVING `orders0`.`user_id` = ? AND COUNT(`orders0`.`id`) > ?",
+        [1_i64, 5_i64]
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "orders0"."user_id", COUNT("orders0"."id") AS "order_count", SUM("orders0"."total") AS "total_amount" FROM "orders" AS "orders0" GROUP BY "orders0"."user_id" HAVING "orders0"."user_id" = $1 AND COUNT("orders0"."id") > $2"#,
+        [1_i64, 5_i64]
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "orders0"."user_id", COUNT("orders0"."id") AS "order_count", SUM("orders0"."total") AS "total_amount" FROM "orders" AS "orders0" GROUP BY "orders0"."user_id" HAVING "orders0"."user_id" = ? AND COUNT("orders0"."id") > ?"#,
+        [1_i64, 5_i64]
+    );
+}
+
 //
 //
 // #[test]
 // #[ignore = "rivet-orm 可能不支持 order_by() 方法"]
 // fn test_methods_generative_order_by() {}
-//
-// #[test]
-// #[ignore = "rivet-orm 可能不支持 group_by() 方法"]
-// fn test_methods_generative_group_by() {}

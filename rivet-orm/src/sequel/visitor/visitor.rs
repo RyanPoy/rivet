@@ -31,6 +31,10 @@ pub fn sqlite() -> Visitor<SQLite> {
     Visitor::new(SQLite {})
 }
 
+enum FilterScope {
+    Where,
+    Having,
+}
 pub struct Visitor<D> {
     builder: Builder,
     dialect: D,
@@ -59,7 +63,13 @@ impl<D: Dialect> Visitor<D> {
         for where_expr in &stmt.where_clause {
             self.register_table_from_expr(where_expr);
         }
+
+        // 4. 处理 WHERE 子句中的子查询 (测试用例中的 EXISTS 在这里)
+        for having_expr in &stmt.having_clause {
+            self.register_table_from_expr(having_expr);
+        }
     }
+
     fn register_table_from_expr(&mut self, expr: &Expr) {
         match expr {
             Expr::Subquery(sq) => self.register_tables(sq),
@@ -117,6 +127,8 @@ impl<D: Dialect> Visitor<D> {
 
         self.visit_indexes(&select_stmt.indexes);
         self.visit_where_clause(&select_stmt.where_clause);
+        self.visit_group(&select_stmt.groups);
+        self.visit_having_clause(&select_stmt.having_clause);
         self.visit_limit_and_offset(select_stmt.limit, select_stmt.offset);
         self.visit_locking(&select_stmt.locking);
         self
@@ -159,10 +171,41 @@ impl<D: Dialect> Visitor<D> {
         }
         self
     }
+
+    pub fn visit_group(&mut self, groups: &Vec<Expr>) -> &mut Self {
+        // let parenthesis = if groups.len() > 1 { true } else { false };
+        let mut iter = groups.iter();
+        if let Some(item) = iter.next() {
+            self.push(" GROUP BY ");
+            // if parenthesis {
+            //     self.push("(");
+            // }
+            self.visit_expr(item, 0);
+            for item in iter {
+                self.push(", ");
+                self.visit_expr(item, 0);
+            }
+            // if parenthesis {
+            //     self.push(")");
+            // }
+        }
+        self
+    }
     pub fn visit_where_clause(&mut self, where_clause: &Vec<Expr>) -> &mut Self {
-        let mut iter = where_clause.iter();
+        self.visit_filter_clause(where_clause, FilterScope::Where)
+    }
+    pub fn visit_having_clause(&mut self, having_clause: &Vec<Expr>) -> &mut Self {
+        self.visit_filter_clause(having_clause, FilterScope::Having)
+    }
+
+    fn visit_filter_clause(&mut self, filter_clause: &Vec<Expr>, scope: FilterScope) -> &mut Self {
+        let prefix = match scope {
+            FilterScope::Having => " HAVING ",
+            FilterScope::Where => " WHERE ",
+        };
+        let mut iter = filter_clause.iter();
         if let Some(f) = iter.next() {
-            self.push(" WHERE ");
+            self.push(prefix);
             match f {
                 Expr::Param(lit) => self.visit_param(lit).push(" = ").visit_param(lit),
                 _ => self.visit_expr(f, 0),
@@ -177,7 +220,6 @@ impl<D: Dialect> Visitor<D> {
         }
         self
     }
-
     pub fn visit_select_clause(&mut self, select_clause: &Vec<SelectItem>) -> &mut Self {
         let mut iter = select_clause.iter();
         if let Some(item) = iter.next() {

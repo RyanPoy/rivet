@@ -1,3 +1,4 @@
+use crate::prelude::Comparable;
 use crate::sequel::statement::select::SelectStatement;
 use crate::sequel::term::column::Column;
 use crate::sequel::term::expr::Expr;
@@ -78,4 +79,10 @@ define_functions!(
 #[inline]
 pub fn count_all() -> Func {
     func("COUNT", vec![FuncArg::Wildcard])
+}
+
+impl Comparable for Func {
+    fn into_expr(&self) -> Expr {
+        Expr::Func(self.clone())
+    }
 }

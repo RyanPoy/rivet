@@ -4,6 +4,7 @@ use crate::sequel::term::func::Func;
 use crate::sequel::term::ops::{BinaryOp, UnaryOp};
 use crate::sequel::term::param::{Param, ParamData};
 use crate::sequel::term::select_item::SelectItem;
+use rivet_utils::impl_into_vec_for;
 
 #[derive(Debug, Clone)]
 pub enum Expr {
@@ -98,6 +99,8 @@ impl Expr {
         }
     }
 }
+impl_into_vec_for!(Expr => [Expr, Column, Func]);
+
 impl<T> From<Option<T>> for Expr
 where
     T: Into<Expr>,

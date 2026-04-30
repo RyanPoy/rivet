@@ -13,6 +13,8 @@ pub struct SelectStatement {
     pub select_clause: Vec<SelectItem>,
     pub from_clause: Table,
     pub where_clause: Vec<Expr>,
+    pub having_clause: Vec<Expr>,
+    pub groups: Vec<Expr>,
     pub limit: Option<usize>,
     pub offset: Option<usize>,
     pub locking: Option<Locking>,
@@ -29,6 +31,8 @@ impl SelectStatement {
             select_clause: Vec::new(),
             from_clause: t.clone().into(),
             where_clause: Vec::new(),
+            having_clause: Vec::new(),
+            groups: Vec::new(),
             limit: None,
             offset: None,
             locking: Some(Locking::new()),
@@ -61,6 +65,21 @@ impl SelectStatement {
         T: Into<Expr> + Clone,
     {
         self.where_clause.push(c.into());
+        self
+    }
+
+    pub fn having<T>(mut self, c: T) -> Self
+    where
+        T: Into<Expr> + Clone,
+    {
+        self.having_clause.push(c.into());
+        self
+    }
+
+    pub fn group_by(mut self, cs: impl IntoVec<Expr>) -> Self {
+        for item in cs.into_vec() {
+            self.groups.push(item);
+        }
         self
     }
 
