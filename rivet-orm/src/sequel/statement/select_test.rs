@@ -1294,8 +1294,93 @@ fn test_group_by__with_having_multiple() {
     );
 }
 
-//
-//
-// #[test]
-// #[ignore = "rivet-orm 可能不支持 order_by() 方法"]
-// fn test_methods_generative_order_by() {}
+#[test]
+fn test_order_by__single_column() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .order_by(USERS.column("name"));
+
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" ORDER BY "users0"."name""#
+    );
+
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .order_by_desc(USERS.column("name"));
+
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" ORDER BY "users0"."name" DESC"#
+    );
+}
+
+#[test]
+fn test_order_by__multiple_columns() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .order_by([USERS.column("name"), USERS.column("email")]);
+
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" ORDER BY "users0"."name", "users0"."email""#
+    );
+}
+
+#[test]
+fn test_order_by__mixed_asc_desc() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .order_by(USERS.column("name"))
+        .order_by_desc(USERS.column("created_at"));
+
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" ORDER BY "users0"."name", "users0"."created_at" DESC"#
+    );
+}
+
+#[test]
+fn test_order_by__with_func() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .order_by(func("LENGTH", [USERS.column("name")]));
+
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" ORDER BY LENGTH("users0"."name")"#
+    );
+
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .order_by_desc(lower(USERS.column("name")));
+
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" ORDER BY LOWER("users0"."name") DESC"#
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" ORDER BY LOWER("users0"."name") DESC"#
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" ORDER BY LOWER("users0"."name") DESC"#
+    );
+}
+
+#[test]
+fn test_order_by__with_subquery() {
+    let subquery = SelectStatement::from(&*ORDERS)
+        .select(count(ORDERS.column("id")))
+        .where_(ORDERS.column("user_id").eq(USERS.column("id")));
+
+    let stmt = SelectStatement::from(&*USERS)
+        .select([USERS.column("id"), USERS.column("name")])
+        .order_by(subquery);
+
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id", "users0"."name" FROM "users" AS "users0" ORDER BY (SELECT COUNT("orders0"."id") FROM "orders" AS "orders0" WHERE "orders0"."user_id" = "users0"."id")"#
+    );
+}

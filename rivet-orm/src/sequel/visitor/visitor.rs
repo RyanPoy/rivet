@@ -7,6 +7,7 @@ use crate::sequel::term::index::{Index, Indexes};
 use crate::sequel::term::join::{Join, JoinType};
 use crate::sequel::term::lock::{Lock, Locking, Wait};
 use crate::sequel::term::ops::{BinaryOp, UnaryOp};
+use crate::sequel::term::order::Order;
 use crate::sequel::term::param::{Param, ParamData};
 use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::{Table, TableInner};
@@ -127,8 +128,9 @@ impl<D: Dialect> Visitor<D> {
 
         self.visit_indexes(&select_stmt.indexes);
         self.visit_where_clause(&select_stmt.where_clause);
-        self.visit_group(&select_stmt.groups);
+        self.visit_groups(&select_stmt.groups);
         self.visit_having_clause(&select_stmt.having_clause);
+        self.visit_orders(&select_stmt.orders);
         self.visit_limit_and_offset(select_stmt.limit, select_stmt.offset);
         self.visit_locking(&select_stmt.locking);
         self
@@ -172,7 +174,7 @@ impl<D: Dialect> Visitor<D> {
         self
     }
 
-    pub fn visit_group(&mut self, groups: &Vec<Expr>) -> &mut Self {
+    pub fn visit_groups(&mut self, groups: &Vec<Expr>) -> &mut Self {
         // let parenthesis = if groups.len() > 1 { true } else { false };
         let mut iter = groups.iter();
         if let Some(item) = iter.next() {
@@ -188,6 +190,24 @@ impl<D: Dialect> Visitor<D> {
             // if parenthesis {
             //     self.push(")");
             // }
+        }
+        self
+    }
+    pub fn visit_orders(&mut self, orders: &Vec<Order>) -> &mut Self {
+        let mut iter = orders.iter();
+        if let Some(item) = iter.next() {
+            self.push(" ORDER BY ");
+            self.visit_expr(&item.expr, 0);
+            if item.is_desc() {
+                self.push(" DESC");
+            }
+            for item in iter {
+                self.push(", ");
+                self.visit_expr(&item.expr, 0);
+                if item.is_desc() {
+                    self.push(" DESC");
+                }
+            }
         }
         self
     }

@@ -3,6 +3,7 @@ use crate::sequel::term::distinct::Distinct;
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::index::{Index, Indexes};
 use crate::sequel::term::lock::{Lock, Locking, Wait};
+use crate::sequel::term::order::Order;
 use crate::sequel::term::select_item::SelectItem;
 use crate::sequel::term::table::Table;
 use rivet_utils::into_vec::IntoVec;
@@ -15,6 +16,7 @@ pub struct SelectStatement {
     pub where_clause: Vec<Expr>,
     pub having_clause: Vec<Expr>,
     pub groups: Vec<Expr>,
+    pub orders: Vec<Order>,
     pub limit: Option<usize>,
     pub offset: Option<usize>,
     pub locking: Option<Locking>,
@@ -33,6 +35,7 @@ impl SelectStatement {
             where_clause: Vec::new(),
             having_clause: Vec::new(),
             groups: Vec::new(),
+            orders: Vec::new(),
             limit: None,
             offset: None,
             locking: Some(Locking::new()),
@@ -79,6 +82,19 @@ impl SelectStatement {
     pub fn group_by(mut self, cs: impl IntoVec<Expr>) -> Self {
         for item in cs.into_vec() {
             self.groups.push(item);
+        }
+        self
+    }
+
+    pub fn order_by(mut self, cs: impl IntoVec<Expr>) -> Self {
+        for item in cs.into_vec() {
+            self.orders.push(Order::asc(item));
+        }
+        self
+    }
+    pub fn order_by_desc(mut self, cs: impl IntoVec<Expr>) -> Self {
+        for item in cs.into_vec() {
+            self.orders.push(Order::desc(item));
         }
         self
     }

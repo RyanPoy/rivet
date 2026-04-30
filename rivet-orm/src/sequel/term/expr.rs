@@ -99,7 +99,7 @@ impl Expr {
         }
     }
 }
-impl_into_vec_for!(Expr => [Expr, Column, Func]);
+impl_into_vec_for!(Expr => [Expr, Column, Func, SelectStatement]);
 
 impl<T> From<Option<T>> for Expr
 where
