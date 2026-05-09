@@ -104,4 +104,22 @@ pub trait Comparable {
             negated: true,
         }
     }
+
+    fn between(&self, low: impl Into<Expr>, high: impl Into<Expr>) -> Expr {
+        Expr::Between {
+            expr: Box::new(self.into_expr()),
+            low: Box::new(low.into()),
+            high: Box::new(high.into()),
+            negated: false,
+        }
+    }
+
+    fn not_between(&self, low: impl Into<Expr>, high: impl Into<Expr>) -> Expr {
+        Expr::Between {
+            expr: Box::new(self.into_expr()),
+            low: Box::new(low.into()),
+            high: Box::new(high.into()),
+            negated: true,
+        }
+    }
 }

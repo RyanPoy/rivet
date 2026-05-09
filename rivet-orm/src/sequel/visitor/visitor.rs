@@ -332,6 +332,12 @@ impl<D: Dialect> Visitor<D> {
                 .push("(")
                 .visit_expr_list(list, 0)
                 .push(")"),
+            Expr::Between { expr, low, high, negated } => self
+                .visit_expr(expr, current_precedence)
+                .push(if *negated { " NOT BETWEEN " } else { " BETWEEN " })
+                .visit_expr(low, current_precedence)
+                .push(" AND ")
+                .visit_expr(high, current_precedence),
             Expr::Unary { op, expr } => self.visit_unary_op(op).visit_expr(expr, current_precedence),
             Expr::Func(f) => self.visit_func(f),
             Expr::Subquery(sq) => self.push("(").visit_select_statement(sq).push(")"),
@@ -408,8 +414,10 @@ impl<D: Dialect> Visitor<D> {
         match distinct {
             Distinct::None => self.noop(),
             Distinct::All => self.push("DISTINCT "),
-            Distinct::On(_) if !self.dialect.caps().distinct_on => self.push("DISTINCT "),
-            Distinct::On(cols) => self.push("DISTINCT ON (").visit_expr_list(cols, 0).push(") "),
+            Distinct::On(cols) if self.dialect.caps().distinct_on => {
+                self.push("DISTINCT ON (").visit_expr_list(cols, 0).push(") ")
+            },
+            _ => self.push("DISTINCT "),
         }
     }
 
@@ -424,8 +432,8 @@ impl<D: Dialect> Visitor<D> {
     pub fn visit_param(&mut self, p: &Param) -> &mut Self {
         match p {
             Param::Null => self.push("NULL"),
-            Param::Inline(data) => self.bind(data.clone()),
-            Param::Data(data) => match data {
+            Param::Value(data) => self.bind(data.clone()),
+            Param::Literal(data) => match data {
                 ParamData::Int(v) => self.push(&v.to_string()),
                 ParamData::Float(v) => self.push(&v.to_string()),
                 ParamData::Bool(v) => self.push(self.dialect.bool_str(*v)),

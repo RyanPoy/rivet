@@ -53,52 +53,6 @@ pub static PRODUCTS: LazyLock<Table> = LazyLock::new(|| Table::new("products"));
 pub static CATEGORIES: LazyLock<Table> = LazyLock::new(|| Table::new("categories"));
 pub static COMPANIES: LazyLock<Table> = LazyLock::new(|| Table::new("companies"));
 
-pub struct User {
-    id: u32,
-    username: String,
-    age: u32,
-    company_id: u32,
-}
-pub struct Order {
-    id: u32,
-    user_id: u32,
-    created_at: DateTime,
-}
-pub struct Product {
-    id: u32,
-    name: String,
-    expired_on: Date,
-    category_id: u32,
-}
-pub struct Category {
-    id: u32,
-    name: String,
-}
-pub struct Company {
-    id: u32,
-    name: String,
-}
-
-impl Model for User {
-    const TABLE_NAME: &'static str = "users";
-}
-
-impl Model for Order {
-    const TABLE_NAME: &'static str = "orders";
-}
-
-impl Model for Product {
-    const TABLE_NAME: &'static str = "products";
-}
-
-impl Model for Category {
-    const TABLE_NAME: &'static str = "categories";
-}
-
-impl Model for Company {
-    const TABLE_NAME: &'static str = "companies";
-}
-
 #[test]
 fn test_select__all() {
     let stmt = SelectStatement::from(&*USERS);
@@ -1260,22 +1214,14 @@ fn test_group_by__with_having_multiple() {
     use crate::sequel::term::ops::BinaryOp;
     use crate::sequel::term::param::Param;
 
-    let user_id_col = ORDERS.column("user_id");
-    let user_id_expr: Expr = user_id_col.clone().into();
-    let order_count_func = count(ORDERS.column("id"));
-    let order_count_expr: Expr = order_count_func.clone().into();
-    let gt_expr = Expr::Binary {
-        left: Box::new(order_count_expr),
-        op: BinaryOp::Gt,
-        right: Box::new(Param::Inline(ParamData::Int(5)).into()),
-    };
+    let user_id = ORDERS.column("user_id");
+    let order_count = count(ORDERS.column("id"));
     let stmt = SelectStatement::from(&*ORDERS)
-        .select(user_id_col.clone())
-        .select(order_count_func.clone().alias("order_count"))
+        .select([user_id.clone().into(), order_count.clone().alias("order_count")])
         .select(sum(ORDERS.column("total")).alias("total_amount"))
-        .group_by(vec![user_id_expr])
-        .having(user_id_col.eq(1))
-        .having(gt_expr);
+        .group_by(user_id.clone())
+        .having(user_id.eq(1))
+        .having(order_count.gt(5));
 
     assert_mysql!(
         &stmt,
@@ -1382,5 +1328,88 @@ fn test_order_by__with_subquery() {
     assert_sqlite!(
         &stmt,
         r#"SELECT "users0"."id", "users0"."name" FROM "users" AS "users0" ORDER BY (SELECT COUNT("orders0"."id") FROM "orders" AS "orders0" WHERE "orders0"."user_id" = "users0"."id")"#
+    );
+}
+
+#[test]
+fn test_where__between() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .where_(USERS.column("age").between(18, 65));
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id` FROM `users` AS `users0` WHERE `users0`.`age` BETWEEN ? AND ?",
+        [18_i64, 65_i64]
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE "users0"."age" BETWEEN $1 AND $2"#,
+        [18_i64, 65_i64]
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE "users0"."age" BETWEEN ? AND ?"#,
+        [18_i64, 65_i64]
+    );
+}
+
+#[test]
+fn test_where__not_between() {
+    let stmt = SelectStatement::from(&*USERS)
+        .select(USERS.column("id"))
+        .where_(USERS.column("age").not_between(18, 65));
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `users0`.`id` FROM `users` AS `users0` WHERE `users0`.`age` NOT BETWEEN ? AND ?",
+        [18_i64, 65_i64]
+    );
+    assert_pg!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE "users0"."age" NOT BETWEEN $1 AND $2"#,
+        [18_i64, 65_i64]
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "users0"."id" FROM "users" AS "users0" WHERE "users0"."age" NOT BETWEEN ? AND ?"#,
+        [18_i64, 65_i64]
+    );
+}
+
+#[test]
+fn test_where__between_with_column() {
+    let stmt = SelectStatement::from(&*ORDERS)
+        .select(ORDERS.column("id"))
+        .where_(ORDERS.column("total").between(ORDERS.column("min_amount"), ORDERS.column("max_amount")));
+
+    assert_mysql!(
+        &stmt,
+        "SELECT `orders0`.`id` FROM `orders` AS `orders0` WHERE `orders0`.`total` BETWEEN `orders0`.`min_amount` AND `orders0`.`max_amount`"
+    );
+    assert_sqlite!(
+        &stmt,
+        r#"SELECT "orders0"."id" FROM "orders" AS "orders0" WHERE "orders0"."total" BETWEEN "orders0"."min_amount" AND "orders0"."max_amount""#
+    );
+}
+
+#[test]
+fn test_select__literal_vs_value() {
+    use crate::sequel::term::param::{lit, Param, ParamData};
+
+    let literal_stmt = SelectStatement::from(&*USERS)
+        .select(lit(1))
+        .select(lit("hello"));
+
+    assert_mysql!(&literal_stmt, "SELECT 1, 'hello' FROM `users` AS `users0`");
+
+    let value_stmt = SelectStatement::from(&*USERS)
+        .select(Param::Value(ParamData::Int(1)))
+        .select(Param::Value(ParamData::String("hello".into())));
+
+    assert_mysql!(
+        &value_stmt,
+        "SELECT ?, ? FROM `users` AS `users0`",
+        [1_i64, "hello"]
     );
 }

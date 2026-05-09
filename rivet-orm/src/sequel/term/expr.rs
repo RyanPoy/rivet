@@ -18,6 +18,15 @@ pub enum Expr {
     //      SELECT NULL;
     Param(Param),
 
+    // e.g. SELECT col between 1 and 3;
+    //      SELECT col not between 1 and 3;
+    Between {
+        expr: Box<Expr>,
+        low: Box<Expr>,
+        high: Box<Expr>,
+        negated: bool,
+    },
+
     // e.g. SELECT col in (1, 2, 3);
     //      SELECT col not in (1, 2, 3);
     In {
