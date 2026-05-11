@@ -63,7 +63,7 @@ impl SelectStatement {
         self
     }
 
-    pub fn where_<T>(mut self, c: T) -> Self
+    pub fn filter<T>(mut self, c: T) -> Self
     where
         T: Into<Expr> + Clone,
     {

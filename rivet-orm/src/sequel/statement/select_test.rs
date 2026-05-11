@@ -98,7 +98,7 @@ fn test_select__with_literal() {
     assert_sqlite!(&stmt, r#"SELECT 1, 'hello' FROM "users" AS "users0""#);
 }
 #[test]
-fn test_where() {
+fn test_filter() {
     let id = USERS.column("id");
     let age = USERS.column("age");
     let score = USERS.column("score");
@@ -109,18 +109,18 @@ fn test_where() {
 
     let stmt = SelectStatement::from(&*USERS)
         .select(id.clone())
-        .where_(id.eq(5))
-        .where_(id.not_eq(10))
-        .where_(age.gt(20))
-        .where_(age.lt(100))
-        .where_(score.gte(60))
-        .where_(score.lte(96))
-        .where_(name.like("%John%"))
-        .where_(name.not_like("%Lucy%"))
-        .where_(country.in_(vec!["China", "Japan"]))
-        .where_(country.not_in(["USA", "England"]))
-        .where_(email.not_eq(None::<i32>))
-        .where_(ext.eq(None::<i32>));
+        .filter(id.eq(5))
+        .filter(id.not_eq(10))
+        .filter(age.gt(20))
+        .filter(age.lt(100))
+        .filter(score.gte(60))
+        .filter(score.lte(96))
+        .filter(name.like("%John%"))
+        .filter(name.not_like("%Lucy%"))
+        .filter(country.in_(vec!["China", "Japan"]))
+        .filter(country.not_in(["USA", "England"]))
+        .filter(email.not_eq(None::<i32>))
+        .filter(ext.eq(None::<i32>));
 
     assert_mysql!(
         &stmt,
@@ -146,8 +146,8 @@ fn test_where() {
 }
 
 #[test]
-fn test_where__logic() {
-    let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).where_(
+fn test_filter__logic() {
+    let stmt = SelectStatement::from(&*USERS).select(USERS.column("id")).filter(
         USERS
             .column("active")
             .eq(true)
@@ -167,9 +167,9 @@ fn test_where__logic() {
 }
 
 #[test]
-fn test_where__complex_precedence_auto_grouping() {
+fn test_filter__complex_precedence_auto_grouping() {
     let age_limit = USERS.column("age").lt(18).or(USERS.column("age").gt(60));
-    let stmt = SelectStatement::from(&*USERS).where_(age_limit.and(USERS.column("status").eq("active")));
+    let stmt = SelectStatement::from(&*USERS).filter(age_limit.and(USERS.column("status").eq("active")));
     assert_mysql!(
         &stmt,
         "SELECT * FROM `users` AS `users0` WHERE (`users0`.`age` < ? OR `users0`.`age` > ?) AND `users0`.`status` = ?",
@@ -178,13 +178,13 @@ fn test_where__complex_precedence_auto_grouping() {
 }
 
 #[test]
-fn test_where__nested_not_precedence() {
+fn test_filter__nested_not_precedence() {
     let condition = !USERS
         .column("status")
         .eq("pending")
         .or(USERS.column("status").eq("deleted"));
 
-    let stmt = SelectStatement::from(&*USERS).where_(condition);
+    let stmt = SelectStatement::from(&*USERS).filter(condition);
 
     // 因为 10 (OR) < 40 (NOT)，所以括号必须出现
     assert_mysql!(
@@ -195,10 +195,10 @@ fn test_where__nested_not_precedence() {
 }
 
 #[test]
-fn test_where__null_literal() {
+fn test_filter__null_literal() {
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("id"))
-        .where_(USERS.column("deleted_at").eq(Param::Null));
+        .filter(USERS.column("deleted_at").eq(Param::Null));
     assert_mysql!(
         &stmt,
         "SELECT `users0`.`id` FROM `users` AS `users0` WHERE `users0`.`deleted_at` IS NULL"
@@ -206,7 +206,7 @@ fn test_where__null_literal() {
 }
 
 #[test]
-fn test_where__date_time_literals() {
+fn test_filter__date_time_literals() {
     use crate::sequel::term::calendar::{Date, DateTime, Time};
 
     let date = Date::new(2024, 1, 15).unwrap();
@@ -215,7 +215,7 @@ fn test_where__date_time_literals() {
 
     let stmt = SelectStatement::from(&*ORDERS)
         .select(ORDERS.column("id"))
-        .where_(ORDERS.column("created_at").eq(datetime));
+        .filter(ORDERS.column("created_at").eq(datetime));
 
     assert_mysql!(
         &stmt,
@@ -225,10 +225,10 @@ fn test_where__date_time_literals() {
 }
 
 #[test]
-fn test_where__boolean_literals() {
+fn test_filter__boolean_literals() {
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("id"))
-        .where_(USERS.column("active").eq(true));
+        .filter(USERS.column("active").eq(true));
     assert_mysql!(
         &stmt,
         "SELECT `users0`.`id` FROM `users` AS `users0` WHERE `users0`.`active` = ?",
@@ -237,7 +237,7 @@ fn test_where__boolean_literals() {
 
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("id"))
-        .where_(USERS.column("active").eq(false));
+        .filter(USERS.column("active").eq(false));
     assert_mysql!(
         &stmt,
         "SELECT `users0`.`id` FROM `users` AS `users0` WHERE `users0`.`active` = ?",
@@ -246,10 +246,10 @@ fn test_where__boolean_literals() {
 }
 
 #[test]
-fn test_where__float_literals() {
+fn test_filter__float_literals() {
     let stmt = SelectStatement::from(&*ORDERS)
         .select(ORDERS.column("price"))
-        .where_(ORDERS.column("price").eq(19.99));
+        .filter(ORDERS.column("price").eq(19.99));
     assert_mysql!(
         &stmt,
         "SELECT `orders0`.`price` FROM `orders` AS `orders0` WHERE `orders0`.`price` = ?",
@@ -258,10 +258,10 @@ fn test_where__float_literals() {
 }
 
 #[test]
-fn test_where__string_with_backslash() {
+fn test_filter__string_with_backslash() {
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("path"))
-        .where_(USERS.column("path").eq("C:\\Users\\test"));
+        .filter(USERS.column("path").eq("C:\\Users\\test"));
     assert_mysql!(
         &stmt,
         "SELECT `users0`.`path` FROM `users` AS `users0` WHERE `users0`.`path` = ?",
@@ -270,17 +270,17 @@ fn test_where__string_with_backslash() {
 }
 
 #[test]
-fn test_where__empty_select_becomes_star() {
+fn test_filter__empty_select_becomes_star() {
     // 当没有指定 select 列时，应该生成 SELECT *
     let stmt = SelectStatement::from(&*USERS);
     assert_mysql!(&stmt, "SELECT * FROM `users` AS `users0`");
 }
 
 #[test]
-fn test_where__string_with_quotes() {
+fn test_filter__string_with_quotes() {
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("name"))
-        .where_(USERS.column("name").eq("O'Brien"));
+        .filter(USERS.column("name").eq("O'Brien"));
     assert_mysql!(
         &stmt,
         "SELECT `users0`.`name` FROM `users` AS `users0` WHERE `users0`.`name` = ?",
@@ -289,7 +289,7 @@ fn test_where__string_with_quotes() {
 
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("name"))
-        .where_(USERS.column("name").eq(lit("O'Brien")));
+        .filter(USERS.column("name").eq(lit("O'Brien")));
     assert_mysql!(
         &stmt,
         "SELECT `users0`.`name` FROM `users` AS `users0` WHERE `users0`.`name` = 'O''Brien'"
@@ -297,10 +297,10 @@ fn test_where__string_with_quotes() {
 }
 
 #[test]
-fn test_where__from_binary_equivalent() {
+fn test_filter__from_binary_equivalent() {
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("myid").eq(5_i64).alias("anon_1"))
-        .where_(USERS.column("name").eq("foo"));
+        .filter(USERS.column("name").eq("foo"));
 
     assert_mysql!(
         &stmt,
@@ -320,7 +320,7 @@ fn test_where__from_binary_equivalent() {
 }
 
 #[test]
-fn test_where__collection_as_from() {
+fn test_filter__collection_as_from() {
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("id"))
         .select(USERS.column("data"));
@@ -351,7 +351,7 @@ fn test_complex_query() {
         ])
         .join(&o, u.column("id").eq(o.column("user_id")))
         .join(&p, o.column("product_id").eq(p.column("id")))
-        .where_(o.column("total").gt(100).and(p.column("category_id").eq(5)))
+        .filter(o.column("total").gt(100).and(p.column("category_id").eq(5)))
         .distinct()
         .limit(10)
         .offset(20);
@@ -520,7 +520,7 @@ fn test_func__coalesce_multiple() {
 fn test_func__from_func_not_the_first_arg_equivalent() {
     let stmt = SelectStatement::from(&*USERS)
         .select(func("bar", vec![lit(true).into(), Expr::from(USERS.column("myid"))]).alias("bar_1"))
-        .where_(USERS.column("name").eq("foo"));
+        .filter(USERS.column("name").eq("foo"));
 
     assert_mysql!(
         &stmt,
@@ -712,7 +712,7 @@ fn test_subquery__exists_subquery() {
     let where_clause = ORDERS.column("user_id").eq(USERS.column("id"));
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("id"))
-        .where_(exists(SelectStatement::from(&*ORDERS).where_(where_clause)));
+        .filter(exists(SelectStatement::from(&*ORDERS).filter(where_clause)));
     assert_mysql!(
         &stmt,
         "SELECT `users0`.`id` FROM `users` AS `users0` WHERE EXISTS((SELECT * FROM `orders` AS `orders0` WHERE `orders0`.`user_id` = `users0`.`id`))"
@@ -731,7 +731,7 @@ fn test_subquery__exists_subquery() {
 fn test_subquery__scalar_subquery() {
     let subquery = SelectStatement::from(&*ORDERS)
         .select(max(ORDERS.column("total")))
-        .where_(ORDERS.column("user_id").eq(USERS.column("id")));
+        .filter(ORDERS.column("user_id").eq(USERS.column("id")));
 
     let stmt = SelectStatement::from(&*USERS).select(vec![USERS.column("id").into(), Expr::from(subquery)]);
 
@@ -755,7 +755,7 @@ fn test_subquery__in_subquery() {
 
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("id"))
-        .where_(USERS.column("id").in_(vec![subquery]));
+        .filter(USERS.column("id").in_(vec![subquery]));
 
     assert_mysql!(
         &stmt,
@@ -775,14 +775,14 @@ fn test_subquery__in_subquery() {
 fn test_subquery__nested_subquery_with_join() {
     let subquery = SelectStatement::from(&*ORDERS)
         .select(max(ORDERS.column("total")))
-        .where_(ORDERS.column("status").eq("completed"));
+        .filter(ORDERS.column("status").eq("completed"));
 
     let stmt = SelectStatement::from(&*USERS)
         .select(vec![
             USERS.column("id").into(),
             Expr::from(subquery.clone()).alias("max_order"),
         ])
-        .where_(subquery.gt(1000));
+        .filter(subquery.gt(1000));
 
     assert_mysql!(
         &stmt,
@@ -1050,7 +1050,7 @@ fn test_ignore_index__single() {
 fn test_force_index__with_where() {
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("id"))
-        .where_(USERS.column("email").eq("test@example.com"))
+        .filter(USERS.column("email").eq("test@example.com"))
         .force_index(["idx_users_email"]);
 
     assert_mysql!(
@@ -1138,7 +1138,7 @@ fn test_group_by__with_where() {
     let user_id = ORDERS.column("user_id");
     let stmt = SelectStatement::from(&*ORDERS)
         .select(user_id.clone())
-        .where_(ORDERS.column("status").eq("completed"))
+        .filter(ORDERS.column("status").eq("completed"))
         .group_by(user_id);
 
     assert_mysql!(
@@ -1165,7 +1165,7 @@ fn test_group_by__with_where_and_having() {
     let stmt = SelectStatement::from(&*ORDERS)
         .select(user_id.clone())
         .select(total_sum.clone().alias("total_amount"))
-        .where_(ORDERS.column("status").eq("completed"))
+        .filter(ORDERS.column("status").eq("completed"))
         .group_by(user_id)
         .having(total_sum.gt(100));
 
@@ -1320,7 +1320,7 @@ fn test_order_by__with_func() {
 fn test_order_by__with_subquery() {
     let subquery = SelectStatement::from(&*ORDERS)
         .select(count(ORDERS.column("id")))
-        .where_(ORDERS.column("user_id").eq(USERS.column("id")));
+        .filter(ORDERS.column("user_id").eq(USERS.column("id")));
 
     let stmt = SelectStatement::from(&*USERS)
         .select([USERS.column("id"), USERS.column("name")])
@@ -1333,10 +1333,10 @@ fn test_order_by__with_subquery() {
 }
 
 #[test]
-fn test_where__between() {
+fn test_filter__between() {
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("id"))
-        .where_(USERS.column("age").between(18, 65));
+        .filter(USERS.column("age").between(18, 65));
 
     assert_mysql!(
         &stmt,
@@ -1356,10 +1356,10 @@ fn test_where__between() {
 }
 
 #[test]
-fn test_where__not_between() {
+fn test_filter__not_between() {
     let stmt = SelectStatement::from(&*USERS)
         .select(USERS.column("id"))
-        .where_(USERS.column("age").not_between(18, 65));
+        .filter(USERS.column("age").not_between(18, 65));
 
     assert_mysql!(
         &stmt,
@@ -1379,8 +1379,8 @@ fn test_where__not_between() {
 }
 
 #[test]
-fn test_where__between_with_column() {
-    let stmt = SelectStatement::from(&*ORDERS).select(ORDERS.column("id")).where_(
+fn test_filter__between_with_column() {
+    let stmt = SelectStatement::from(&*ORDERS).select(ORDERS.column("id")).filter(
         ORDERS
             .column("total")
             .between(ORDERS.column("min_amount"), ORDERS.column("max_amount")),
