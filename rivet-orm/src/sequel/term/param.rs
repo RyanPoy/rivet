@@ -53,94 +53,47 @@ impl From<()> for Param {
     }
 }
 
-// 整数
-impl From<i8> for Param {
-    fn from(v: i8) -> Self {
-        Self::Value(ParamData::Int(v as i64))
-    }
-}
-impl From<i16> for Param {
-    fn from(v: i16) -> Self {
-        Self::Value(ParamData::Int(v as i64))
-    }
-}
-impl From<i32> for Param {
-    fn from(v: i32) -> Self {
-        Self::Value(ParamData::Int(v as i64))
-    }
-}
-impl From<i64> for Param {
-    fn from(v: i64) -> Self {
-        Self::Value(ParamData::Int(v))
-    }
+macro_rules! impl_from_int_for_param {
+    ($($t:ty),*) => {
+        $(impl From<$t> for Param {
+            fn from(v: $t) -> Self {
+                Self::Value(ParamData::Int(v as i64))
+            }
+        })*
+    };
 }
 
-impl From<u8> for Param {
-    fn from(v: u8) -> Self {
-        Self::Value(ParamData::Int(v as i64))
-    }
+macro_rules! impl_from_float_for_param {
+    ($($t:ty),*) => {
+        $(impl From<$t> for Param {
+            fn from(v: $t) -> Self {
+                Self::Value(ParamData::Float(v as f64))
+            }
+        })*
+    };
 }
-impl From<u16> for Param {
-    fn from(v: u16) -> Self {
-        Self::Value(ParamData::Int(v as i64))
-    }
-}
-impl From<u32> for Param {
-    fn from(v: u32) -> Self {
-        Self::Value(ParamData::Int(v as i64))
-    }
-}
-impl From<u64> for Param {
-    fn from(v: u64) -> Self {
-        Self::Value(ParamData::Int(v as i64))
-    }
+macro_rules! impl_from_for_param {
+    ($(($t:ty, $variant:ident)),*) => {
+        $(impl From<$t> for Param {
+            fn from(v: $t) -> Self {
+                Self::Value(ParamData::$variant(v))
+            }
+        })*
+    };
 }
 
-// 浮点
-impl From<f32> for Param {
-    fn from(v: f32) -> Self {
-        Self::Value(ParamData::Float(v as f64))
-    }
-}
-impl From<f64> for Param {
-    fn from(v: f64) -> Self {
-        Self::Value(ParamData::Float(v))
-    }
-}
-
-// 字符串
+impl_from_int_for_param!(i8, i16, i32, i64, u8, u16, u32, u64);
+impl_from_float_for_param!(f32, f64);
+impl_from_for_param!(
+    (bool, Bool),
+    (String, String),
+    (Date, Date),
+    (DateTime, DateTime),
+    (Time, Time)
+);
 impl From<&str> for Param {
-    fn from(v: &str) -> Self {
-        Self::Value(ParamData::String(v.into()))
-    }
-}
-impl From<String> for Param {
-    fn from(v: String) -> Self {
-        Self::Value(ParamData::String(v))
-    }
-}
-
-// 布尔值
-impl From<bool> for Param {
-    fn from(v: bool) -> Self {
-        Self::Value(ParamData::Bool(v))
-    }
-}
-
-// 时间和日期
-impl From<Date> for Param {
-    fn from(v: Date) -> Self {
-        Self::Value(ParamData::Date(v))
-    }
-}
-impl From<DateTime> for Param {
-    fn from(v: DateTime) -> Self {
-        Self::Value(ParamData::DateTime(v))
-    }
-}
-impl From<Time> for Param {
-    fn from(v: Time) -> Self {
-        Self::Value(ParamData::Time(v))
+    fn from(value: &str) -> Self {
+        Self::Value(ParamData::String(value.to_string()))
     }
 }
 
