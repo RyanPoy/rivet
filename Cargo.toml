@@ -13,8 +13,8 @@ edition = "2024"
 
 [package]
 name = "rivet"
-version = "0.1.0"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 
 [features]
 default = ["orm"]
