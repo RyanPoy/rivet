@@ -150,3 +150,10 @@ pub fn lit(v: impl Into<Param>) -> Param {
         p => p,
     }
 }
+
+pub fn value(v: impl Into<Param>) -> Param {
+    match v.into() {
+        Param::Literal(d) => Param::Value(d),
+        p => p,
+    }
+}

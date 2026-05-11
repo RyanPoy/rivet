@@ -6,6 +6,7 @@ use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::{
     abs, avg, ceil, coalesce, count, count_all, exists, floor, func, lower, max, min, sqrt, sum, upper,
 };
+use crate::sequel::term::param::value;
 use crate::sequel::term::table::Table;
 use std::sync::LazyLock;
 
@@ -1379,9 +1380,11 @@ fn test_where__not_between() {
 
 #[test]
 fn test_where__between_with_column() {
-    let stmt = SelectStatement::from(&*ORDERS)
-        .select(ORDERS.column("id"))
-        .where_(ORDERS.column("total").between(ORDERS.column("min_amount"), ORDERS.column("max_amount")));
+    let stmt = SelectStatement::from(&*ORDERS).select(ORDERS.column("id")).where_(
+        ORDERS
+            .column("total")
+            .between(ORDERS.column("min_amount"), ORDERS.column("max_amount")),
+    );
 
     assert_mysql!(
         &stmt,
@@ -1395,21 +1398,9 @@ fn test_where__between_with_column() {
 
 #[test]
 fn test_select__literal_vs_value() {
-    use crate::sequel::term::param::{lit, Param, ParamData};
-
-    let literal_stmt = SelectStatement::from(&*USERS)
-        .select(lit(1))
-        .select(lit("hello"));
-
+    let literal_stmt = SelectStatement::from(&*USERS).select(lit(1)).select(lit("hello"));
     assert_mysql!(&literal_stmt, "SELECT 1, 'hello' FROM `users` AS `users0`");
 
-    let value_stmt = SelectStatement::from(&*USERS)
-        .select(Param::Value(ParamData::Int(1)))
-        .select(Param::Value(ParamData::String("hello".into())));
-
-    assert_mysql!(
-        &value_stmt,
-        "SELECT ?, ? FROM `users` AS `users0`",
-        [1_i64, "hello"]
-    );
+    let value_stmt = SelectStatement::from(&*USERS).select(value(1)).select(value("hello"));
+    assert_mysql!(&value_stmt, "SELECT ?, ? FROM `users` AS `users0`", [1_i64, "hello"]);
 }
