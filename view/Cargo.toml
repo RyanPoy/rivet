@@ -1,0 +1,6 @@
+[package]
+name = "view"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

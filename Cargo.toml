@@ -1,10 +1,29 @@
 [workspace]
 members = [
-    "rivet",
-    "rivet-utils",
-    "rivet-orm",
-    "rivet-orm-macros",
-    "rivet-view",
-    "rivet-web"
+    "orm",
+    "orm-macros",
+    "utils",
+    "web",
+    "view",
 ]
-resolver = "2"
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+
+
+[package]
+name = "rivet"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = ["orm"]
+orm = ["dep:orm", "dep:orm-macros"]
+web = ["dep:web"]
+view = ["dep:view"]
+
+[dependencies]
+orm = { path = "orm", optional = true }
+orm-macros = { path = "orm-macros", optional = true }
+web = { path = "web", optional = true }
+view = { path = "view", optional = true }
