@@ -441,7 +441,16 @@ impl<D: Dialect> Visitor<D> {
                 ParamData::Date(v) => self.push("'").push(&v.to_string()).push("'"),
                 ParamData::DateTime(v) => self.push("'").push(&v.to_string()).push("'"),
                 ParamData::Time(v) => self.push("'").push(&v.to_string()).push("'"),
-                _ => todo!("unsupported literal type"),
+                ParamData::Decimal(v) => self.push(&v.to_string()),
+                ParamData::Uuid(v) => self.push("'").push(&v.to_string()).push("'"),
+                ParamData::Json(v) => self.push("'").push_escape(&v.to_string()).push("'"),
+                ParamData::Binary(v) => {
+                    self.push("X'");
+                    for byte in v {
+                        self.push(&format!("{:02x}", byte));
+                    }
+                    self.push("'")
+                }
             },
         }
     }
