@@ -2,9 +2,12 @@ use crate::prelude::*;
 use crate::sequel::term::calendar::{Date, DateTime, Time};
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::select_item::SelectItem;
-use std::fmt;
-use std::fmt::{Display, Formatter};
+use rust_decimal::Decimal;
+use serde_json::Value;
+use uuid::Uuid;
 
+
+pub type Json = Value;
 #[derive(Debug, Clone, PartialEq)]
 pub enum ParamData {
     Int(i64),
@@ -14,6 +17,10 @@ pub enum ParamData {
     Date(Date),
     DateTime(DateTime),
     Time(Time),
+    Decimal(Decimal),
+    Json(Json),
+    Uuid(Uuid),
+    Binary(Vec<u8>),
 }
 
 #[derive(Clone, Debug)]
@@ -89,7 +96,11 @@ impl_from_for_param!(
     (String, String),
     (Date, Date),
     (DateTime, DateTime),
-    (Time, Time)
+    (Time, Time),
+    (Decimal, Decimal),
+    (Uuid, Uuid),
+    (Value, Json),
+    (Vec<u8>, Binary)
 );
 impl From<&str> for Param {
     fn from(value: &str) -> Self {

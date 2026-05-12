@@ -1,12 +1,14 @@
 use crate::prelude::*;
 use crate::sequel::statement::select::SelectStatement;
-use crate::sequel::term::calendar::{Date, DateTime};
+use crate::sequel::term::calendar::{Date, DateTime, Time};
 use crate::sequel::term::expr::Expr;
 use crate::sequel::term::func::{
     abs, avg, ceil, coalesce, count, count_all, exists, floor, func, lower, max, min, sqrt, sum, upper,
 };
-use crate::sequel::term::param::value;
+use crate::sequel::term::param::{lit, value};
 use crate::sequel::term::table::Table;
+use rust_decimal::Decimal;
+use uuid::Uuid;
 use std::sync::LazyLock;
 
 macro_rules! assert_dialect {
@@ -1402,4 +1404,80 @@ fn test_select__literal_vs_value() {
 
     let value_stmt = SelectStatement::from(&*USERS).select(value(1)).select(value("hello"));
     assert_mysql!(&value_stmt, "SELECT ?, ? FROM `users` AS `users0`", [1_i64, "hello"]);
+}
+
+#[test]
+fn test_select__param_data_types() {
+    let date = Date::new(2024, 1, 15).unwrap();
+    let datetime = DateTime::new(2024, 1, 15, 10, 30, 0, 0).unwrap();
+    let time = Time::new(10, 30, 0, 0).unwrap();
+    let decimal: Decimal = "123.45".parse().unwrap();
+    let uuid = Uuid::new_v4();
+    let json = serde_json::json!({"key": "value"});
+    let binary = vec![0x01, 0x02, 0x03];
+
+    let stmt = SelectStatement::from(&*USERS)
+        .select(value(42_i32))
+        .select(value(3.14_f64))
+        .select(value(true))
+        .select(value("text"))
+        .select(value(date))
+        .select(value(datetime))
+        .select(value(time))
+        .select(value(decimal))
+        .select(value(uuid))
+        .select(value(json))
+        .select(value(binary));
+
+    let (_, params) = crate::sequel::visitor::visitor::mysql().visit_select_statement(&stmt).finish();
+    assert_eq!(params.len(), 11);
+    assert!(matches!(params[0], crate::sequel::term::param::ParamData::Int(42)));
+    assert!(matches!(params[1], crate::sequel::term::param::ParamData::Float(f) if (f - 3.14).abs() < 0.0001));
+    assert!(matches!(params[2], crate::sequel::term::param::ParamData::Bool(true)));
+    assert!(matches!(params[3], crate::sequel::term::param::ParamData::String(ref s) if s == "text"));
+    assert!(matches!(params[4], crate::sequel::term::param::ParamData::Date(_)));
+    assert!(matches!(params[5], crate::sequel::term::param::ParamData::DateTime(_)));
+    assert!(matches!(params[6], crate::sequel::term::param::ParamData::Time(_)));
+    assert!(matches!(params[7], crate::sequel::term::param::ParamData::Decimal(_)));
+    assert!(matches!(params[8], crate::sequel::term::param::ParamData::Uuid(_)));
+    assert!(matches!(params[9], crate::sequel::term::param::ParamData::Json(_)));
+    assert!(matches!(params[10], crate::sequel::term::param::ParamData::Binary(_)));
+}
+
+#[test]
+fn test_select__param_data_types_literal() {
+    let date = Date::new(2024, 1, 15).unwrap();
+    let datetime = DateTime::new(2024, 1, 15, 10, 30, 0, 0).unwrap();
+    let time = Time::new(10, 30, 0, 0).unwrap();
+    let decimal: Decimal = "123.45".parse().unwrap();
+    let uuid = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
+    let json = serde_json::json!({"key": "value"});
+    let binary = vec![0x01, 0x02, 0x03];
+
+    let stmt = SelectStatement::from(&*USERS)
+        .select(lit(42_i32))
+        .select(lit(3.14_f64))
+        .select(lit(true))
+        .select(lit("text"))
+        .select(lit(date))
+        .select(lit(datetime))
+        .select(lit(time))
+        .select(lit(decimal))
+        .select(lit(uuid))
+        .select(lit(json))
+        .select(lit(binary));
+
+    let (sql, _) = crate::sequel::visitor::visitor::mysql().visit_select_statement(&stmt).finish();
+
+    assert!(sql.contains("42"));
+    assert!(sql.contains("3.14"));
+    assert!(sql.contains("1")); // bool true
+    assert!(sql.contains("'text'"));
+    assert!(sql.contains("'2024-1-15'"));
+    assert!(sql.contains("'2024-1-15 10:30:00.000000'"));
+    assert!(sql.contains("'10:30:00.000000'"));
+    assert!(sql.contains("123.45"));
+    assert!(sql.contains("'550e8400-e29b-41d4-a716-446655440000'"));
+    assert!(sql.contains(r#"{"key":"value"}"#));
+    assert!(sql.contains("X'010203'"));
 }

@@ -441,6 +441,7 @@ impl<D: Dialect> Visitor<D> {
                 ParamData::Date(v) => self.push("'").push(&v.to_string()).push("'"),
                 ParamData::DateTime(v) => self.push("'").push(&v.to_string()).push("'"),
                 ParamData::Time(v) => self.push("'").push(&v.to_string()).push("'"),
+                _ => todo!("unsupported literal type"),
             },
         }
     }
