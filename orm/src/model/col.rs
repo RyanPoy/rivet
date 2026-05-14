@@ -1,12 +1,14 @@
+// use crate::sequel::term::table::Table;
+//
 // #[derive(Debug)]
 // pub struct Col {
 //     pub name: &'static str,
 //     pub table: Table,
 // }
-
+//
 // impl<T: ColType> Col<T> {
 //     pub const fn new(name: &'static str, table: Table) -> Self {
-//         Self { name, table, _marker: PhantomData }
+//         Self { name, table }
 //     }
 //
 //     pub fn eq<V>(&self, v: V) -> Expr
@@ -87,9 +89,3 @@
 //         Expr::new_binary(self.name, Op::NotLike, Value::from(scalar))
 //     }
 // }
-//
-// /// 测试模块。
-// /// Test module.
-// #[cfg(test)]
-// #[path = "./col_test.rs"]
-// mod tests;
